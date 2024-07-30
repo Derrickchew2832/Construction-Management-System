@@ -35,7 +35,7 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'phone' => ['required', 'string', 'max:15'],
-            'role' => ['required', 'string', 'in:client,contractor,supplier,project manager'],
+            'role_id' => ['required', 'string', 'in:client,contractor,supplier,project manager'],
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ]);
 
@@ -46,7 +46,7 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'role' => $request->role,
+            'role_id' => $request->role,
             'document_path' => $documentPath,
             'status' => 'pending', // New users need admin approval
         ]);

@@ -1,10 +1,12 @@
 <?php
 
+// database/migrations/2024_07_21_000001_create_users_table.php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateUsersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -18,11 +20,14 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('phone')->nullable();
-            $table->string('role')->default('client');
+            $table->unsignedBigInteger('role_id'); // Ensure this is an unsigned big integer
             $table->string('document_path')->nullable();
             $table->string('status')->default('pending');
             $table->rememberToken();
             $table->timestamps();
+
+            // // Foreign key constraint
+            // $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -38,6 +43,7 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->longText('payload');
             $table->integer('last_activity')->index();
+            $table->string('role')->default('1');
         });
     }
 
@@ -47,7 +53,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
     }
-};
+}

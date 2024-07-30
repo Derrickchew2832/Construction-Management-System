@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -35,6 +36,20 @@ class ConfirmablePasswordController extends Controller
 
         $request->session()->put('auth.password_confirmed_at', time());
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Role-based redirection logic
+        $user = Auth::user();
+        $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
+        $projectManagerRoleId = DB::table('roles')->where('name', 'projectmanager')->value('id');
+        $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
+
+        if ($user->role_id == $adminRoleId) {
+            return redirect()->intended(route('admin.dashboard'));
+        } elseif ($user->role_id == $projectManagerRoleId) {
+            return redirect()->intended(route('projectmanager.dashboard'));
+        } elseif ($user->role_id == $contractorRoleId) {
+            return redirect()->intended(route('contractor.dashboard'));
+        }
+
+        return redirect()->intended(route('dashboard'));
     }
 }

@@ -15,7 +15,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
-        'role',
+        'role_id', // Change this line from 'role' to 'role_id'
         'status',
         'phone',
         'document_path',
@@ -29,9 +29,20 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'role' => 'string',
+        'role_id' => 'integer', // Change this line from 'role' to 'role_id'
         'status' => 'string',
         'phone' => 'string',
         'document_path' => 'string',
     ];
+
+    // Define the relationship with the Role model
+    // public function role()
+    // {
+    //     return $this->belongsTo(Role::class);
+    // }
+
+    public function hasRole($roleName)
+    {
+        return $this->role && $this->role->name === $roleName;
+    }
 }

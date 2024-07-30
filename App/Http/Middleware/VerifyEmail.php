@@ -1,5 +1,6 @@
-<?php
 
+<?php
+/* 
 namespace App\Http\Middleware;
 
 use Closure;
@@ -27,3 +28,5 @@ class VerifyEmail
         return $next($request);
     }
 }
+
+*/
