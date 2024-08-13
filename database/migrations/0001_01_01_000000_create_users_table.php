@@ -1,7 +1,5 @@
 <?php
 
-// database/migrations/2024_07_21_000001_create_users_table.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -26,8 +24,8 @@ class CreateUsersTable extends Migration
             $table->rememberToken();
             $table->timestamps();
 
-            // // Foreign key constraint
-            // $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            // Add the foreign key constraint
+            //$table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -52,6 +50,8 @@ class CreateUsersTable extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
     }
 }
