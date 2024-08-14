@@ -26,7 +26,7 @@ class AuthenticatedSessionController extends Controller
         // Role-based redirection
         $user = Auth::user();
         $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
-        $projectManagerRoleId = DB::table('roles')->where('name', 'project manager')->value('id');
+        $projectManagerRoleId = DB::table('roles')->where('name', 'project_manager')->value('id');
         $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
 
         // error_log('User Role ID: ' . $user->role_id);
@@ -37,7 +37,7 @@ class AuthenticatedSessionController extends Controller
         if ($user->role_id == $adminRoleId) {
             return redirect()->intended(route('admin.dashboard', absolute: false));
         } elseif ($user->role_id == $projectManagerRoleId) {
-            return redirect()->intended(route('projectmanager.dashboard', absolute: false));
+            return redirect()->intended(route('project_manager.dashboard', absolute: false));
         } elseif ($user->role_id == $contractorRoleId) {
             return redirect()->intended(route('contractor.dashboard', absolute: false));
         }

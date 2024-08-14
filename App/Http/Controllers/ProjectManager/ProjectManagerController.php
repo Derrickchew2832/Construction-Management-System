@@ -3,198 +3,157 @@
 namespace App\Http\Controllers\ProjectManager;
 
 use App\Http\Controllers\Controller;
-use App\Models\Project;
-use App\Models\ProjectDocument;
-use App\Models\ProjectContractor;
-use App\Models\ProjectInvitation;
-use App\Models\User;
-use App\Notifications\ProjectInvitationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
-use Illuminate\Http\RedirectResponse;
 
 class ProjectManagerController extends Controller
 {
     public function dashboard()
     {
-        return view('projectmanager.dashboard');
+        return view('project_manager.dashboard');
     }
 
-    public function index()
+    public function indexProjects()
     {
-        $projects = Project::all();
-        return view('projectmanager.projects.index', compact('projects'));
+        $projects = DB::table('projects')
+            ->where('project_manager_id', Auth::id())
+            ->get();
+        return view('project_manager.projects.index', compact('projects'));
     }
 
-    public function create()
+    public function createProject()
     {
-        return view('projectmanager.projects.create');
+        return view('project_manager.projects.create');
     }
 
-    public function store(Request $request)
+    public function showProject($projectId)
     {
-        $request->validate([
+        $project = DB::table('projects')->where('id', $projectId)->first();
+    
+        if (!$project) {
+            return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
+        }
+    
+        // Debugging: Dump the project object to see its structure
+        dd($project);
+    
+        return view('project_manager.projects.show', compact('project'));
+    }
+    
+
+
+    public function storeProject(Request $request)
+    {
+        $data = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'total_budget' => 'required|numeric|min:0',
-            'budget_remaining' => 'required|numeric|min:0',
+            'end_date' => 'required|date',
+            'total_budget' => 'required|numeric',
+            'budget_remaining' => 'required|numeric',
             'location' => 'required|string|max:255',
-            'documents.*' => 'file|mimes:pdf,doc,docx,xls,xlsx|max:2048',
         ]);
 
-        $project = Project::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'total_budget' => $request->total_budget,
-            'budget_remaining' => $request->budget_remaining,
-            'location' => $request->location,
+        $projectId = DB::table('projects')->insertGetId([
+            'project_manager_id' => Auth::id(),
+            'name' => $data['name'],
+            'description' => $data['description'],
+            'start_date' => $data['start_date'],
+            'end_date' => $data['end_date'],
+            'total_budget' => $data['total_budget'],
+            'budget_remaining' => $data['budget_remaining'],
+            'location' => $data['location'],
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        if ($request->hasFile('documents')) {
-            foreach ($request->file('documents') as $document) {
-                $path = $document->store('project_documents');
-                ProjectDocument::create([
-                    'project_id' => $project->id,
-                    'document_path' => $path,
-                ]);
-            }
-        }
-
-        return redirect()->route('projectmanager.projects.index')->with('success', 'Project created successfully');
+        return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project created successfully!');
     }
 
-    public function show($id)
+    public function inviteContractor($projectId)
     {
-        $project = Project::with(['documents', 'contractors'])->findOrFail($id);
-        return view('projectmanager.projects.show', compact('project'));
+        $project = DB::table('projects')->where('id', $projectId)->first();
+        $contractors = DB::table('users')->where('role_id', 'contractor')->get();
+        return view('project_manager.projects.invite', compact('project', 'contractors'));
     }
 
-    public function invite($id)
+    public function storeInvite(Request $request, $projectId)
     {
-        $project = Project::findOrFail($id);
-        return view('projectmanager.projects.invite', compact('project'));
-    }
-
-    public function sendInvitation(Request $request, $id)
-    {
-        $project = Project::findOrFail($id);
-        $request->validate([
-            'email' => 'required|email',
-        ]);
-
-        $token = Str::random(32);
-        ProjectInvitation::create([
-            'project_id' => $project->id,
-            'email' => $request->email,
-            'token' => $token,
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-        if ($user) {
-            $user->notify(new ProjectInvitationNotification($project, $token));
-        }
-
-        return redirect()->route('projectmanager.projects.show', $project->id)->with('success', 'Invitation sent successfully');
-    }
-
-    public function quote(Request $request, $id)
-    {
-        $project = Project::findOrFail($id);
-        $request->validate([
-            'contractor_id' => 'required|exists:users,id',
-            'quoted_price' => 'required|numeric|min:0',
-        ]);
-
-        ProjectContractor::create([
-            'project_id' => $project->id,
-            'contractor_id' => $request->contractor_id,
-            'quoted_price' => $request->quoted_price,
-        ]);
-
-        return redirect()->route('projectmanager.projects.show', $project->id)->with('success', 'Quote submitted successfully');
-    }
-
-    public function appointMainContractor(Request $request, $id)
-    {
-        $project = Project::findOrFail($id);
-        $request->validate([
+        $data = $request->validate([
             'contractor_id' => 'required|exists:users,id',
         ]);
 
-        $project->main_contractor_id = $request->contractor_id;
-        $project->save();
+        DB::table('project_contractor')->insert([
+            'project_id' => $projectId,
+            'contractor_id' => $data['contractor_id'],
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-        return redirect()->route('projectmanager.projects.show', $project->id)->with('success', 'Main contractor appointed successfully');
+        return redirect()->route('project_manager.projects.show', $projectId);
+    }
+
+    public function manageQuotes($projectId)
+    {
+        $quotes = DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->join('users', 'project_contractor.contractor_id', '=', 'users.id')
+            ->select('project_contractor.*', 'users.name as contractor_name')
+            ->get();
+
+        $project = DB::table('projects')->where('id', $projectId)->first();
+
+        return view('project_manager.projects.quotes', compact('project', 'quotes'));
+    }
+
+    public function approveQuote($projectId, $contractorId)
+    {
+        DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractorId)
+            ->update(['status' => 'approved', 'updated_at' => now()]);
+
+        DB::table('projects')
+            ->where('id', $projectId)
+            ->update(['main_contractor_id' => $contractorId, 'updated_at' => now()]);
+
+        return redirect()->route('project_manager.projects.show', $projectId);
+    }
+
+    public function rejectQuote($projectId, $contractorId)
+    {
+        DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractorId)
+            ->update(['status' => 'rejected', 'updated_at' => now()]);
+
+        return redirect()->route('project_manager.projects.show', $projectId);
     }
 
     public function editProfile()
     {
-        if (Auth::check() && Auth::user()->role === 'projectmanager') {
-            return view('projectmanager.profile', ['user' => Auth::user()]);
-        }
-
-        return redirect('/')->with('error', 'Unauthorized access');
+        $user = Auth::user();  // Get the authenticated user
+        return view('project_manager.profile', compact('user'));  // Load the profile.blade.php view
     }
 
     public function updateProfile(Request $request)
     {
-        if (Auth::check() && Auth::user()->role === 'projectmanager') {
-            $user = Auth::user();
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . Auth::id(),
+        ]);
+
+        DB::table('users')
+            ->where('id', Auth::id())
+            ->update([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'updated_at' => now(),
             ]);
 
-            DB::table('users')->where('id', $user->id)->update([
-                'name' => $request->name,
-                'email' => $request->email,
-            ]);
-
-            return redirect()->route('projectmanager.profile.edit')->with('success', 'Profile updated successfully');
-        }
-
-        return redirect('/')->with('error', 'Unauthorized access');
-    }
-
-    public function changePassword()
-    {
-        return view('projectmanager.change_password');
-    }
-
-    public function updatePassword(Request $request): RedirectResponse
-    {
-        if (Auth::check() && Auth::user()->role === 'projectmanager') {
-            $validated = $request->validateWithBag('updatePassword', [
-                'password' => [
-                    'required',
-                    'confirmed',
-                    Password::min(8)->letters()->mixedCase()->numbers()->symbols(),
-                ],
-            ]);
-
-            $user = Auth::user();
-            DB::table('users')->where('id', $user->id)->update([
-                'password' => Hash::make($validated['password']),
-            ]);
-
-            return redirect()->route('projectmanager.profile.edit')->with('success', 'Password updated successfully');
-        }
-
-        return redirect()->route('projectmanager.profile.edit')->withErrors(['password' => 'Password validation failed. Please re-enter a valid password.'], 'updatePassword');
-    }
-
-    public function logout()
-    {
-        Auth::logout();
-        return redirect('/login')->with('success', 'Logged out successfully');
+        return redirect()->route('project_manager.profile')->with('success', 'Profile updated successfully!');
     }
 }
+

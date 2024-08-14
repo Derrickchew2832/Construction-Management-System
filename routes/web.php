@@ -39,13 +39,11 @@ Route::get('/email/verify', function () {
 
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
-
     return redirect('/home');
 })->middleware(['auth', 'signed'])->name('verification.verify');
 
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
-
     return back()->with('message', 'Verification link sent!');
 })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
@@ -61,15 +59,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 });
 
 // Project Manager Routes
-Route::middleware(['auth', 'role:project manager'])->prefix('projectmanager')->name('projectmanager.')->group(function () {
+Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->name('project_manager.')->group(function () {
     Route::get('/dashboard', [ProjectManagerController::class, 'dashboard'])->name('dashboard');
-    Route::resource('/projects', ProjectManagerController::class);
-    Route::get('/projects/{project}/invite', [ProjectManagerController::class, 'invite'])->name('projects.invite');
-    Route::post('/projects/{project}/invite', [ProjectManagerController::class, 'sendInvitation'])->name('projects.sendInvitation');
-    Route::post('/projects/{project}/quote', [ProjectManagerController::class, 'quote'])->name('projects.quote');
-    Route::post('/projects/{project}/appoint', [ProjectManagerController::class, 'appointMainContractor'])->name('projects.appointMainContractor');
-    Route::get('/profile/edit', [ProjectManagerController::class, 'editProfile'])->name('profile.edit');
-    Route::post('/profile/update', [ProjectManagerController::class, 'updateProfile'])->name('profile.update');
+
+    // Project Management Routes
+    Route::get('/projects', [ProjectManagerController::class, 'indexProjects'])->name('projects.index');
+    Route::get('/projects/create', [ProjectManagerController::class, 'createProject'])->name('projects.create');
+    Route::post('/projects', [ProjectManagerController::class, 'storeProject'])->name('projects.store');
+    Route::get('/projects/{project}/invite', [ProjectManagerController::class, 'inviteContractor'])->name('projects.invite');
+    Route::post('/projects/{project}/invite', [ProjectManagerController::class, 'storeInvite'])->name('projects.storeInvite');
+    Route::get('/projects/{project}/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
+    Route::post('/projects/{project}/quotes/{contractor}/approve', [ProjectManagerController::class, 'approveQuote'])->name('projects.approveQuote');
+    Route::post('/projects/{project}/quotes/{contractor}/reject', [ProjectManagerController::class, 'rejectQuote'])->name('projects.rejectQuote');
+    Route::get('/projects/{project}', [ProjectManagerController::class, 'showProject'])->name('projects.show');
+    Route::get('/profile', [ProjectManagerController::class, 'editProfile'])->name('profile');
+    Route::put('/profile', [ProjectManagerController::class, 'updateProfile'])->name('profile.update');
 });
 
 // Contractor Routes
@@ -78,6 +82,8 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::get('/quotes', [ContractorController::class, 'quotes'])->name('quotes.index');
     Route::get('/quotes/{quote}', [ContractorController::class, 'showQuote'])->name('quotes.show');
     Route::put('/quotes/{quote}', [ContractorController::class, 'updateQuote'])->name('quotes.update');
+
+    // Profile Management Routes
     Route::get('/profile/edit', [ContractorController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile/update', [ContractorController::class, 'updateProfile'])->name('profile.update');
 });

@@ -27,8 +27,14 @@ return new class extends Migration {
         });
     }
 
-    public function down(): void
-    {
-        Schema::dropIfExists('projects');
-    }
+    public function down()
+{
+    Schema::disableForeignKeyConstraints();
+    
+    Schema::dropIfExists('project_contractor');
+    Schema::dropIfExists('project_invitation');
+    Schema::dropIfExists('projects');
+
+    Schema::enableForeignKeyConstraints();
+}
 };

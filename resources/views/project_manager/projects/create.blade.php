@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.projectmanagerapp')
 
 @section('content')
 <div class="container">
     <h1>Create Project</h1>
-    <form action="{{ route('projectmanager.projects.store') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('project_manager.projects.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="form-group">
             <label for="name">Project Name</label>

@@ -5,7 +5,7 @@
 @section('content')
 <div class="container mt-4">
     <h1>Change Password</h1>
-    <form action="{{ route('projectmanager.password.update') }}" method="POST">
+    <form action="{{ route('project_manager.password.update') }}" method="POST">
         @csrf
         <div class="form-group">
             <label for="password">New Password</label>

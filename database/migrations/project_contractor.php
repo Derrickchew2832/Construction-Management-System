@@ -1,5 +1,7 @@
 <?php
 
+// database/migrations/2024_08_12_000003_create_project_contractor_table.php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -7,11 +9,13 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('project_contractors', function (Blueprint $table) {
-            $table->id(); // Creates an unsignedBigInteger primary key
+        Schema::create('project_contractor', function (Blueprint $table) {
+            $table->id();
             $table->unsignedBigInteger('project_id');
             $table->unsignedBigInteger('contractor_id');
             $table->decimal('quoted_price', 15, 2);
+            $table->string('quote_document_path');
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamps();
 
             // Foreign keys
@@ -22,7 +26,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('project_contractors');
+        Schema::dropIfExists('project_contractor');
     }
 };
-

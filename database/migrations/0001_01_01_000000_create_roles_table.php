@@ -24,7 +24,7 @@ class CreateRolesTable extends Migration
         DB::table('roles')->insert([
             ['name' => 'admin'],
             ['name' => 'client'],
-            ['name' => 'project manager'],
+            ['name' => 'project_manager'],
             ['name' => 'contractor'],
             ['name' => 'supplier'],
         ]);

@@ -10,6 +10,7 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
+        'project_manager_id',
         'name',
         'description',
         'start_date',
@@ -20,23 +21,20 @@ class Project extends Model
         'main_contractor_id',
     ];
 
-    public function documents()
+    public function manager()
     {
-        return $this->hasMany(ProjectDocument::class);
-    }
-
-    public function contractors()
-    {
-        return $this->hasMany(ProjectContractor::class);
-    }
-
-    public function users()
-    {
-        return $this->belongsToMany(User::class, 'project_user');
+        return $this->belongsTo(User::class, 'project_manager_id');
     }
 
     public function mainContractor()
     {
         return $this->belongsTo(User::class, 'main_contractor_id');
+    }
+
+    public function contractors()
+    {
+        return $this->belongsToMany(User::class, 'project_contractor')
+                    ->withPivot('quoted_price', 'quote_document_path', 'status')
+                    ->withTimestamps();
     }
 }
