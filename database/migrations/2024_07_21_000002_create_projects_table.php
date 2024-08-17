@@ -20,6 +20,7 @@ return new class extends Migration {
             $table->string('location');
             $table->unsignedBigInteger('main_contractor_id')->nullable();
             $table->timestamps();
+            $table->boolean('is_favorite')->default(false);
 
             // Foreign keys
             $table->foreign('project_manager_id')->references('id')->on('users')->onDelete('cascade');
@@ -32,7 +33,6 @@ return new class extends Migration {
     Schema::disableForeignKeyConstraints();
     
     Schema::dropIfExists('project_contractor');
-    Schema::dropIfExists('project_invitation');
     Schema::dropIfExists('projects');
 
     Schema::enableForeignKeyConstraints();

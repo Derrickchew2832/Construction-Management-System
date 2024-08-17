@@ -61,19 +61,22 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // Project Manager Routes
 Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->name('project_manager.')->group(function () {
     Route::get('/dashboard', [ProjectManagerController::class, 'dashboard'])->name('dashboard');
-
     // Project Management Routes
     Route::get('/projects', [ProjectManagerController::class, 'indexProjects'])->name('projects.index');
     Route::get('/projects/create', [ProjectManagerController::class, 'createProject'])->name('projects.create');
     Route::post('/projects', [ProjectManagerController::class, 'storeProject'])->name('projects.store');
-    Route::get('/projects/{project}/invite', [ProjectManagerController::class, 'inviteContractor'])->name('projects.invite');
-    Route::post('/projects/{project}/invite', [ProjectManagerController::class, 'storeInvite'])->name('projects.storeInvite');
     Route::get('/projects/{project}/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
     Route::post('/projects/{project}/quotes/{contractor}/approve', [ProjectManagerController::class, 'approveQuote'])->name('projects.approveQuote');
     Route::post('/projects/{project}/quotes/{contractor}/reject', [ProjectManagerController::class, 'rejectQuote'])->name('projects.rejectQuote');
     Route::get('/projects/{project}', [ProjectManagerController::class, 'showProject'])->name('projects.show');
+    Route::get('projects/{project}/edit', [ProjectManagerController::class, 'editProject'])->name('projects.edit');
+    Route::delete('projects/{project}', [ProjectManagerController::class, 'deleteProject'])->name('projects.delete');
+    Route::put('projects/{project}', [ProjectManagerController::class, 'updateProject'])->name('projects.update');
     Route::get('/profile', [ProjectManagerController::class, 'editProfile'])->name('profile');
     Route::put('/profile', [ProjectManagerController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/projects/{project}/favorite', [ProjectManagerController::class, 'toggleFavorite'])->name('projects.toggleFavorite');
+    Route::get('/projects/{project}/invite', [ProjectManagerController::class, 'inviteContractor'])->name('projects.invite');
+    Route::post('/projects/{project}/invite', [ProjectManagerController::class, 'storeInvite'])->name('projects.storeInvite');
 });
 
 // Contractor Routes

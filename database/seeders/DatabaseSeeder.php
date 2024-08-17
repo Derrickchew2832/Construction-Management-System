@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
         $clientRoleId = DB::table('roles')->where('name', 'client')->value('id');
         $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
         $supplierRoleId = DB::table('roles')->where('name', 'supplier')->value('id');
-        $projectManagerRoleId = DB::table('roles')->where('name', 'project manager')->value('id');
+        $projectManagerRoleId = DB::table('roles')->where('name', 'project_manager')->value('id');
 
         // Create an admin user
         User::create([
@@ -29,6 +29,15 @@ class DatabaseSeeder extends Seeder
             'role_id' => $adminRoleId,
             'status' => 'approved', // Assuming admin accounts are auto-approved
         ]);
+
+        User::create([
+            'name' => 'Project',
+            'email' => 'project@example.com',
+            'password' => Hash::make('123456'), // Replace 'adminpassword' with your desired password
+            'role_id' => $projectManagerRoleId,
+            'status' => 'approved', // Assuming admin accounts are auto-approved
+        ]);
+
 
         // Create other users for testing
         /*User::factory()->count(5)->create([
