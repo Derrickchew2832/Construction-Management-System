@@ -1,11 +1,11 @@
-@extends('layouts.app')
+@extends('layouts.contractorapp')
 
 @section('title', 'Change Password')
 
 @section('content')
 <div class="container mt-4">
     <h1>Change Password</h1>
-    <form action="{{ route('contractor.password.update') }}" method="POST">
+    <form action="{{ route('contractor.update_password') }}" method="POST">
         @csrf
         <div class="form-group">
             <label for="password">New Password</label>

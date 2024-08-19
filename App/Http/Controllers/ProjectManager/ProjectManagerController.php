@@ -183,11 +183,26 @@ class ProjectManagerController extends Controller
                 ->with('error', 'The email provided does not exist in the system.');
         }
     
+        // Fetch the contractor role ID dynamically
+        $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
+    
         // Check if the user has a contractor role
-        if (!$contractor->role_id == config('roles.contractor')) {
+        if ($contractor->role_id != $contractorRoleId) {
             // If the user is not a contractor
             return redirect()->route('project_manager.projects.invite', $projectId)
                 ->with('error', 'The provided email does not belong to a contractor.');
+        }
+    
+        // Check if the contractor has already been invited to this project
+        $existingInvitation = DB::table('project_invitations')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractor->id)
+            ->exists();
+    
+        if ($existingInvitation) {
+            // If the contractor has already been invited
+            return redirect()->route('project_manager.projects.invite', $projectId)
+                ->with('error', 'This contractor has already been invited to the project.');
         }
     
         // Insert the invitation into the database
@@ -204,6 +219,8 @@ class ProjectManagerController extends Controller
         return redirect()->route('project_manager.projects.invite', $projectId)
             ->with('success', 'Contractor invited successfully!');
     }
+    
+
     
 
     public function manageQuotes($projectId)

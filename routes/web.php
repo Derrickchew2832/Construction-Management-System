@@ -1,10 +1,9 @@
 <?php
 
-
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ContractorsController;  // Updated
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProjectManager\ProjectManagerController;
-use App\Http\Controllers\Contractor\ContractorController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -79,14 +78,30 @@ Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->
     Route::post('/projects/{project}/invite', [ProjectManagerController::class, 'storeInvite'])->name('projects.storeInvite');
 });
 
-// Contractor Routes
 Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('contractor.')->group(function () {
-    Route::get('/dashboard', [ContractorController::class, 'dashboard'])->name('dashboard');
-    Route::get('/quotes', [ContractorController::class, 'quotes'])->name('quotes.index');
-    Route::get('/quotes/{quote}', [ContractorController::class, 'showQuote'])->name('quotes.show');
-    Route::put('/quotes/{quote}', [ContractorController::class, 'updateQuote'])->name('quotes.update');
 
-    // Profile Management Routes
-    Route::get('/profile/edit', [ContractorController::class, 'editProfile'])->name('profile.edit');
-    Route::post('/profile/update', [ContractorController::class, 'updateProfile'])->name('profile.update');
+    // Contractor Dashboard
+    Route::get('/dashboard', [ContractorsController::class, 'dashboard'])->name('dashboard');
+
+    // Contractor Projects
+    Route::get('/projects', [ContractorsController::class, 'indexProjects'])->name('projects.index');
+
+    // Contractor Quotes
+    Route::get('/quotes', [ContractorsController::class, 'quotes'])->name('quotes.index');
+    Route::get('/quotes/{id}', [ContractorsController::class, 'showQuote'])->name('quotes.show');
+    Route::post('/quotes/{id}', [ContractorsController::class, 'updateQuote'])->name('quotes.update');
+
+    // Contractor Profile
+    Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
+    Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');
+
+    // Contractor Change Password
+    Route::get('/change-password', [ContractorsController::class, 'changePassword'])->name('change_password');
+    Route::post('/change-password', [ContractorsController::class, 'updatePassword'])->name('update_password');
+
+    // Contractor Supply Order
+    Route::get('/supply-order', [ContractorsController::class, 'supplyOrder'])->name('supply_order');
+
+    // Contractor Logout
+    Route::post('/logout', [ContractorsController::class, 'logout'])->name('logout');
 });

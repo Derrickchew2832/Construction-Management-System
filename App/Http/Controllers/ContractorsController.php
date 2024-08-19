@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Contractor;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProjectContractor;
@@ -11,12 +11,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Http\RedirectResponse;
 
-class ContractorController extends Controller
+class ContractorsController extends Controller
 {
     public function dashboard()
     {
         return view('contractor.dashboard');
     }
+
+    public function indexProjects()
+{
+    // Assuming you have a model named Project, and that the contractor has projects associated with them
+    $projects = DB::table('projects')
+        ->join('project_contractor', 'projects.id', '=', 'project_contractor.project_id')
+        ->where('project_contractor.contractor_id', Auth::id())
+        ->select('projects.*')
+        ->get();
+
+    return view('contractor.projects.index', compact('projects'));
+}
+
 
     public function quotes()
     {
