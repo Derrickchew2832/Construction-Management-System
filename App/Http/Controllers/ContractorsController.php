@@ -1,15 +1,11 @@
 <?php
 
+
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\ProjectContractor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules\Password;
-use Illuminate\Http\RedirectResponse;
 
 class ContractorsController extends Controller
 {
@@ -19,71 +15,82 @@ class ContractorsController extends Controller
     }
 
     public function indexProjects()
-{
-    // Assuming you have a model named Project, and that the contractor has projects associated with them
-    $projects = DB::table('projects')
-        ->join('project_contractor', 'projects.id', '=', 'project_contractor.project_id')
-        ->where('project_contractor.contractor_id', Auth::id())
-        ->select('projects.*')
-        ->get();
-
-    return view('contractor.projects.index', compact('projects'));
-}
-
-
-    public function quotes()
     {
-        $quotes = ProjectContractor::where('contractor_id', Auth::id())->get();
-        return view('contractor.quotes.index', compact('quotes'));
+        $projects = DB::table('projects')
+            ->join('project_invitations', 'projects.id', '=', 'project_invitations.project_id')
+            ->where('project_invitations.contractor_id', Auth::id())
+            ->where('project_invitations.status', 'pending')
+            ->select('projects.*', 'project_invitations.status as invitation_status')
+            ->get();
+
+        return view('contractor.projects.index', compact('projects'));
     }
 
-    public function showQuote($id)
+    public function showProject($projectId)
     {
-        $quote = ProjectContractor::with('project')->findOrFail($id);
-        return view('contractor.quotes.show', compact('quote'));
+        $project = DB::table('projects')->where('id', $projectId)->first();
+    
+        if (!$project) {
+            return redirect()->route('contractor.projects.index')->with('error', 'Project not found.');
+        }
+
+        $invitation = DB::table('project_invitations')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', Auth::id())
+            ->first();
+
+        if (!$invitation) {
+            return redirect()->route('contractor.projects.index')->with('error', 'You have not been invited to this project.');
+        }
+
+        return view('contractor.projects.show', compact('project', 'invitation'));
     }
 
-    public function updateQuote(Request $request, $id)
+    public function submitQuote(Request $request, $projectId)
     {
-        $quote = ProjectContractor::findOrFail($id);
-        $request->validate([
+        $data = $request->validate([
             'quoted_price' => 'required|numeric|min:0',
+            'quote_pdf' => 'required|file|mimes:pdf|max:2048',
         ]);
 
-        $quote->update([
-            'quoted_price' => $request->quoted_price,
-        ]);
+        // Save the uploaded PDF
+        $pdfPath = $request->file('quote_pdf')->store('quotes', 'public');
 
-        return redirect()->route('contractor.quotes.index')->with('success', 'Quote updated successfully');
+        // Update or insert the quote
+        DB::table('project_contractor')->updateOrInsert(
+            ['project_id' => $projectId, 'contractor_id' => Auth::id()],
+            ['quoted_price' => $data['quoted_price'], 'quote_pdf' => $pdfPath, 'status' => 'submitted', 'updated_at' => now()]
+        );
+
+        // Update the invitation status
+        DB::table('project_invitations')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', Auth::id())
+            ->update(['status' => 'submitted', 'updated_at' => now()]);
+
+        return redirect()->route('contractor.projects.show', $projectId)->with('success', 'Quote submitted successfully!');
     }
 
     public function editProfile()
     {
-        if (Auth::check() && Auth::user()->role === 'contractor') {
-            return view('contractor.profile', ['user' => Auth::user()]);
-        }
-
-        return redirect('/')->with('error', 'Unauthorized access');
+        $user = Auth::user();
+        return view('contractor.profile', compact('user'));
     }
 
     public function updateProfile(Request $request)
     {
-        if (Auth::check() && Auth::user()->role === 'contractor') {
-            $user = Auth::user();
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            ]);
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . Auth::id(),
+        ]);
 
-            DB::table('users')->where('id', $user->id)->update([
-                'name' => $request->name,
-                'email' => $request->email,
-            ]);
+        DB::table('users')->where('id', Auth::id())->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'updated_at' => now(),
+        ]);
 
-            return redirect()->route('contractor.profile.edit')->with('success', 'Profile updated successfully');
-        }
-
-        return redirect('/')->with('error', 'Unauthorized access');
+        return redirect()->route('contractor.profile.edit')->with('success', 'Profile updated successfully');
     }
 
     public function changePassword()
@@ -91,26 +98,22 @@ class ContractorsController extends Controller
         return view('contractor.change_password');
     }
 
-    public function updatePassword(Request $request): RedirectResponse
+    public function updatePassword(Request $request)
     {
-        if (Auth::check() && Auth::user()->role === 'contractor') {
-            $validated = $request->validateWithBag('updatePassword', [
-                'password' => [
-                    'required',
-                    'confirmed',
-                    Password::min(8)->letters()->mixedCase()->numbers()->symbols(),
-                ],
-            ]);
+        $validated = $request->validateWithBag('updatePassword', [
+            'password' => [
+                'required',
+                'confirmed',
+                \Illuminate\Validation\Rules\Password::min(8)->letters()->mixedCase()->numbers()->symbols(),
+            ],
+        ]);
 
-            $user = Auth::user();
-            DB::table('users')->where('id', $user->id)->update([
-                'password' => Hash::make($validated['password']),
-            ]);
+        DB::table('users')->where('id', Auth::id())->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'updated_at' => now(),
+        ]);
 
-            return redirect()->route('contractor.profile.edit')->with('success', 'Password updated successfully');
-        }
-
-        return redirect()->route('contractor.profile.edit')->withErrors(['password' => 'Password validation failed. Please re-enter a valid password.'], 'updatePassword');
+        return redirect()->route('contractor.profile.edit')->with('success', 'Password updated successfully');
     }
 
     public function logout()

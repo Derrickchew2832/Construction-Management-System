@@ -83,14 +83,9 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     // Contractor Dashboard
     Route::get('/dashboard', [ContractorsController::class, 'dashboard'])->name('dashboard');
 
-    // Contractor Projects
     Route::get('/projects', [ContractorsController::class, 'indexProjects'])->name('projects.index');
-
-    // Contractor Quotes
-    Route::get('/quotes', [ContractorsController::class, 'quotes'])->name('quotes.index');
-    Route::get('/quotes/{id}', [ContractorsController::class, 'showQuote'])->name('quotes.show');
-    Route::post('/quotes/{id}', [ContractorsController::class, 'updateQuote'])->name('quotes.update');
-
+    Route::get('/projects/{project}', [ContractorsController::class, 'showProject'])->name('projects.show');
+    Route::post('/projects/{project}/submit-quote', [ContractorsController::class, 'submitQuote'])->name('projects.submitQuote');
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');

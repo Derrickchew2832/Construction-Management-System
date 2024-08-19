@@ -15,33 +15,39 @@ class ProjectManagerController extends Controller
     }
 
     public function indexProjects()
-{
-    $projects = DB::table('projects')
-        ->where('project_manager_id', Auth::id())
-        ->orderBy('name') // Default order by name
-        ->get();
+    {
+        $projects = DB::table('projects')
+            ->where('project_manager_id', Auth::id())
+            ->orderBy('name') // Default order by name
+            ->get();
 
-    foreach ($projects as $project) {
-        // Assuming you have a 'project_invitations' table that tracks contractor invitations
-        $project->contractors_invited_count = DB::table('project_invitations')
-            ->where('project_id', $project->id)
-            ->count();
+        foreach ($projects as $project) {
+            // Assuming you have a 'project_invitations' table that tracks contractor invitations
+            $project->contractors_invited_count = DB::table('project_invitations')
+                ->where('project_id', $project->id)
+                ->count();
 
-        // Assuming you have a project_user table to count the members
-        $project->members_count = DB::table('project_user')
-            ->where('project_id', $project->id)
-            ->count();
+            // Assuming you have a project_user table to count the members
+            $project->members_count = DB::table('project_user')
+                ->where('project_id', $project->id)
+                ->count();
 
-        // Check if the project is favorited by the current user
-        $project->is_favorite = DB::table('project_user_favorites')
-            ->where('project_id', $project->id)
-            ->where('user_id', Auth::id())
-            ->exists();
+            // Check if the project is favorited by the current user
+            $project->is_favorite = DB::table('project_user_favorites')
+                ->where('project_id', $project->id)
+                ->where('user_id', Auth::id())
+                ->exists();
+
+            // Add the contractors property
+            $project->contractors = DB::table('project_invitations')
+                ->join('users', 'project_invitations.contractor_id', '=', 'users.id')
+                ->where('project_invitations.project_id', $project->id)
+                ->select('users.id', 'users.name', 'project_invitations.status')
+                ->get();
+        }
+
+        return view('project_manager.projects.index', compact('projects'));
     }
-
-    return view('project_manager.projects.index', compact('projects'));
-}
-
 
     public function createProject()
     {
@@ -70,7 +76,7 @@ class ProjectManagerController extends Controller
     
         return view('project_manager.projects.show', compact('project', 'members'));
     }
-    
+
     public function storeProject(Request $request)
     {
         $data = $request->validate([
@@ -110,15 +116,14 @@ class ProjectManagerController extends Controller
     }
 
     public function editProject($projectId)
-{
-    $project = DB::table('projects')->where('id', $projectId)->first();
-    if (!$project) {
-        return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
+    {
+        $project = DB::table('projects')->where('id', $projectId)->first();
+        if (!$project) {
+            return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
+        }
+
+        return view('project_manager.projects.edit', compact('project'));
     }
-
-    return view('project_manager.projects.edit', compact('project'));
-}
-
 
     public function updateProject(Request $request, $projectId)
     {
@@ -165,7 +170,6 @@ class ProjectManagerController extends Controller
     
         return view('project_manager.projects.invite', compact('project', 'invitedContractors'));
     }
-    
 
     public function storeInvite(Request $request, $projectId)
     {
@@ -219,9 +223,6 @@ class ProjectManagerController extends Controller
         return redirect()->route('project_manager.projects.invite', $projectId)
             ->with('success', 'Contractor invited successfully!');
     }
-    
-
-    
 
     public function manageQuotes($projectId)
     {
@@ -300,9 +301,6 @@ class ProjectManagerController extends Controller
     
         return response()->json(['is_favorite' => $isFavorite]);
     }
-    
-
-
 
     public function editProfile()
     {
