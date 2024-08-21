@@ -27,6 +27,13 @@
                             <a class="nav-link" href="{{ route('project_manager.projects.index') }}">Projects</a>
                         </li>
                         <li class="nav-item">
+                            @if(isset($project))
+                                <a class="nav-link" href="{{ route('project_manager.projects.quotes', ['project' => $project->id]) }}">Quotes</a>
+                            @else
+                                <a class="nav-link" href="#">Quotes</a> <!-- Or handle differently -->
+                            @endif
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{{ route('project_manager.profile') }}">Profile</a>
                         </li>
                     </ul>
@@ -60,8 +67,54 @@
     </div>
 
     <!-- jQuery and Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Your custom script -->
+    <script>
+        $('#actionModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var quoteId = button.data('quote-id');
+            var contractorId = button.data('contractor-id');
+            var projectId = button.data('project-id');
+            var price = button.data('price');
+            var status = button.data('status');
+            var pdfLink = button.data('pdf-link');
+    
+            var modal = $(this);
+            modal.find('#quoteId').val(quoteId);
+            modal.find('#contractorId').val(contractorId);
+            modal.find('#projectId').val(projectId);
+            modal.find('#quotedPrice').text(price || 'N/A');
+            modal.find('#quoteStatus').text(status || 'N/A');
+            modal.find('#quotePdfLink').attr('href', pdfLink || '#');
+    
+            // Set form actions for approve and reject
+            $('#approveLink').off('click').on('click', function() {
+                var action = '{{ route('project_manager.projects.approveQuote', ['project' => '__project_id__', 'contractor' => '__contractor_id__']) }}'
+                    .replace('__project_id__', projectId)
+                    .replace('__contractor_id__', contractorId);
+                $('#actionForm').attr('action', action);
+                $('#actionForm').submit();
+            });
+    
+            $('#rejectLink').off('click').on('click', function() {
+                var action = '{{ route('project_manager.projects.rejectQuote', ['project' => '__project_id__', 'contractor' => '__contractor_id__']) }}'
+                    .replace('__project_id__', projectId)
+                    .replace('__contractor_id__', contractorId);
+                $('#actionForm').attr('action', action);
+                $('#actionForm').submit();
+            });
+    
+            $('#suggestLink').off('click').on('click', function() {
+                $('#actionModal').modal('hide');
+                $('#suggestPriceModal').modal('show');
+                $('#suggestQuoteId').val(quoteId);
+                $('#suggestContractorId').val(contractorId);
+            });
+        });
+    </script>
+    
 </body>
 </html>

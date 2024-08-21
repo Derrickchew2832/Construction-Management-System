@@ -60,32 +60,48 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // Project Manager Routes
 Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->name('project_manager.')->group(function () {
     Route::get('/dashboard', [ProjectManagerController::class, 'dashboard'])->name('dashboard');
+    
     // Project Management Routes
     Route::get('/projects', [ProjectManagerController::class, 'indexProjects'])->name('projects.index');
     Route::get('/projects/create', [ProjectManagerController::class, 'createProject'])->name('projects.create');
     Route::post('/projects', [ProjectManagerController::class, 'storeProject'])->name('projects.store');
-    Route::get('/projects/{project}/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
+    
+    // Route for viewing and managing quotes (modified)
+    Route::get('/projects/{project}/quotes/{quote}', [ProjectManagerController::class, 'viewQuote'])->name('projects.viewQuote');
     Route::post('/projects/{project}/quotes/{contractor}/approve', [ProjectManagerController::class, 'approveQuote'])->name('projects.approveQuote');
     Route::post('/projects/{project}/quotes/{contractor}/reject', [ProjectManagerController::class, 'rejectQuote'])->name('projects.rejectQuote');
+    Route::post('/projects/quotes/suggest', [ProjectManagerController::class, 'suggestPrice'])->name('projects.suggestPrice');  
+    Route::get('/projects/{project}/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
+   
+
+
+    // Other project routes
     Route::get('/projects/{project}', [ProjectManagerController::class, 'showProject'])->name('projects.show');
-    Route::get('projects/{project}/edit', [ProjectManagerController::class, 'editProject'])->name('projects.edit');
-    Route::delete('projects/{project}', [ProjectManagerController::class, 'deleteProject'])->name('projects.delete');
-    Route::put('projects/{project}', [ProjectManagerController::class, 'updateProject'])->name('projects.update');
+    Route::get('/projects/{project}/edit', [ProjectManagerController::class, 'editProject'])->name('projects.edit');
+    Route::put('/projects/{project}', [ProjectManagerController::class, 'updateProject'])->name('projects.update');
+    Route::delete('/projects/{project}', [ProjectManagerController::class, 'deleteProject'])->name('projects.delete');
+    
+    // Profile routes
     Route::get('/profile', [ProjectManagerController::class, 'editProfile'])->name('profile');
     Route::put('/profile', [ProjectManagerController::class, 'updateProfile'])->name('profile.update');
+    
+    // Favorite and invitation routes
     Route::post('/projects/{project}/favorite', [ProjectManagerController::class, 'toggleFavorite'])->name('projects.toggleFavorite');
     Route::get('/projects/{project}/invite', [ProjectManagerController::class, 'inviteContractor'])->name('projects.invite');
     Route::post('/projects/{project}/invite', [ProjectManagerController::class, 'storeInvite'])->name('projects.storeInvite');
 });
 
+
+
 Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('contractor.')->group(function () {
 
     // Contractor Dashboard
     Route::get('/dashboard', [ContractorsController::class, 'dashboard'])->name('dashboard');
-
     Route::get('/projects', [ContractorsController::class, 'indexProjects'])->name('projects.index');
     Route::get('/projects/{project}', [ContractorsController::class, 'showProject'])->name('projects.show');
     Route::post('/projects/{project}/submit-quote', [ContractorsController::class, 'submitQuote'])->name('projects.submitQuote');
+    Route::post('/projects/{project}/respond-suggestion', [ContractorsController::class, 'respondToSuggestion'])->name('respondToSuggestion');
+
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');

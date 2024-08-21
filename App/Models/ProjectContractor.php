@@ -13,6 +13,7 @@ class ProjectContractor extends Model
         'project_id',
         'contractor_id',
         'quoted_price',
+        
     ];
 
     public function project()

@@ -38,6 +38,14 @@ class DatabaseSeeder extends Seeder
             'status' => 'approved', // Assuming admin accounts are auto-approved
         ]);
 
+        User::create([
+            'name' => 'Contractor',
+            'email' => 'contractor@example.com',
+            'password' => Hash::make('123456'), // Replace 'adminpassword' with your desired password
+            'role_id' => $contractorRoleId,
+            'status' => 'approved', // Assuming admin accounts are auto-approved
+        ]);
+
 
         // Create other users for testing
         /*User::factory()->count(5)->create([

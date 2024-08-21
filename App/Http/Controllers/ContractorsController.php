@@ -19,7 +19,7 @@ class ContractorsController extends Controller
         $projects = DB::table('projects')
             ->join('project_invitations', 'projects.id', '=', 'project_invitations.project_id')
             ->where('project_invitations.contractor_id', Auth::id())
-            ->where('project_invitations.status', 'pending')
+            ->whereIn('project_invitations.status', ['pending', 'submitted', 'approved', 'rejected', 'suggested'])
             ->select('projects.*', 'project_invitations.status as invitation_status')
             ->get();
 
@@ -33,18 +33,61 @@ class ContractorsController extends Controller
         if (!$project) {
             return redirect()->route('contractor.projects.index')->with('error', 'Project not found.');
         }
-
+    
         $invitation = DB::table('project_invitations')
             ->where('project_id', $projectId)
             ->where('contractor_id', Auth::id())
             ->first();
-
+    
         if (!$invitation) {
             return redirect()->route('contractor.projects.index')->with('error', 'You have not been invited to this project.');
         }
-
-        return view('contractor.projects.show', compact('project', 'invitation'));
+    
+        $quote = DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', Auth::id())
+            ->first();
+    
+        return view('contractor.projects.show', compact('project', 'invitation', 'quote'));
     }
+    
+    public function respondToSuggestion(Request $request, $projectId)
+    {
+        $action = $request->input('action');
+        $quoteId = $request->input('quote_id');
+        $contractorId = Auth::id();
+    
+        if ($action == 'accept') {
+            DB::table('project_contractor')
+                ->where('id', $quoteId)
+                ->update(['status' => 'approved']);
+        } elseif ($action == 'reject') {
+            DB::table('project_contractor')
+                ->where('id', $quoteId)
+                ->update(['status' => 'rejected']);
+        } elseif ($action == 'resubmit') {
+            $data = $request->validate([
+                'new_price' => 'required|numeric|min:0',
+                'new_pdf' => 'required|file|mimes:pdf|max:2048',
+            ]);
+    
+            // Save the uploaded PDF
+            $pdfPath = $request->file('new_pdf')->store('quotes', 'public');
+    
+            DB::table('project_contractor')
+                ->where('id', $quoteId)
+                ->update([
+                    'quoted_price' => $data['new_price'],
+                    'quote_pdf' => $pdfPath,
+                    'status' => 'submitted',
+                    'updated_at' => now(),
+                ]);
+        }
+    
+        return redirect()->route('contractor.projects.show', $projectId)->with('success', 'Your response has been submitted.');
+    }
+    
+
 
     public function submitQuote(Request $request, $projectId)
     {
@@ -70,6 +113,7 @@ class ContractorsController extends Controller
 
         return redirect()->route('contractor.projects.show', $projectId)->with('success', 'Quote submitted successfully!');
     }
+
 
     public function editProfile()
     {
