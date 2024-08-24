@@ -19,13 +19,13 @@
             <tbody>
                 @foreach ($quotes as $quote)
                     <tr>
+                        <!-- Update: Use the direct properties from the query -->
                         <td>{{ $quote->project_name }}</td>
                         <td>{{ $quote->contractor_name }}</td>
                         <td>${{ number_format($quote->quoted_price, 2) }}</td>
                         <td><a href="{{ Storage::url($quote->quote_pdf) }}" target="_blank">View Document</a></td>
                         <td>{{ ucfirst($quote->status) }}</td>
                         <td>
-                            <!-- View More Button -->
                             <button type="button" class="btn btn-link" data-toggle="modal" data-target="#actionModal"
                                 data-quote-id="{{ $quote->id }}" data-contractor-id="{{ $quote->contractor_id }}"
                                 data-project-id="{{ $quote->project_id }}" data-price="{{ $quote->quoted_price }}"
@@ -43,11 +43,10 @@
     <div class="modal fade" id="actionModal" tabindex="-1" role="dialog" aria-labelledby="actionModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
-            <form id="actionForm" method="POST">
+            <form id="actionForm" method="POST" action="{{ route('project_manager.projects.quotes.action') }}">
                 @csrf
+                <input type="hidden" name="action" id="quoteAction">
                 <input type="hidden" name="quote_id" id="quoteId">
-                <input type="hidden" name="contractor_id" id="contractorId">
-                <input type="hidden" name="project_id" id="projectId">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="actionModalLabel">Quote Details</h5>
@@ -75,11 +74,10 @@
     <div class="modal fade" id="suggestPriceModal" tabindex="-1" role="dialog" aria-labelledby="suggestPriceModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
-            <form id="suggestPriceForm" method="POST" enctype="multipart/form-data">
+            <form id="suggestPriceForm" method="POST" action="{{ route('project_manager.projects.quotes.action') }}" enctype="multipart/form-data">
                 @csrf
+                <input type="hidden" name="action" value="suggest">
                 <input type="hidden" name="quote_id" id="suggestQuoteId">
-                <input type="hidden" name="contractor_id" id="suggestContractorId">
-                <input type="hidden" name="project_id" id="suggestProjectId">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="suggestPriceModalLabel">Provide New Price and Quote</h5>
@@ -90,8 +88,7 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label for="new_price">New Price:</label>
-                            <input type="number" class="form-control" id="new_price" name="new_price" step="0.01"
-                                required>
+                            <input type="number" class="form-control" id="new_price" name="new_price" step="0.01" required>
                         </div>
                         <div class="form-group">
                             <label for="new_quote">New Quote Description:</label>
@@ -99,8 +96,7 @@
                         </div>
                         <div class="form-group">
                             <label for="new_pdf">Upload New Quote Document (PDF):</label>
-                            <input type="file" class="form-control-file" id="new_pdf" name="new_pdf"
-                                accept="application/pdf" required>
+                            <input type="file" class="form-control-file" id="new_pdf" name="new_pdf" accept="application/pdf" required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -116,47 +112,34 @@
         $('#actionModal').on('show.bs.modal', function(event) {
             var button = $(event.relatedTarget);
             var quoteId = button.data('quote-id');
-            var contractorId = button.data('contractor-id');
-            var projectId = button.data('project-id');
             var price = button.data('price');
             var status = button.data('status');
             var pdfLink = button.data('pdf-link');
 
             var modal = $(this);
             modal.find('#quoteId').val(quoteId);
-            modal.find('#contractorId').val(contractorId);
-            modal.find('#projectId').val(projectId);
             modal.find('#quotedPrice').text(price || 'N/A');
             modal.find('#quoteStatus').text(status || 'N/A');
             modal.find('#quotePdfLink').attr('href', pdfLink || '#');
 
-            // Set form actions for approve and reject
-            $('#approveLink').off('click').on('click', function() {
-                var action = '{{ url('project_manager/projects') }}/' + projectId + '/quotes/' +
-                    contractorId + '/approve';
-                $('#actionForm').attr('action', action);
+            $('#approveLink').off('click').on('click', function(e) {
+                e.preventDefault();
+                $('#quoteAction').val('approve');
                 $('#actionForm').submit();
             });
 
-            $('#rejectLink').off('click').on('click', function() {
-                var action = '{{ url('project_manager/projects') }}/' + projectId + '/quotes/' +
-                    contractorId + '/reject';
-                $('#actionForm').attr('action', action);
+            $('#rejectLink').off('click').on('click', function(e) {
+                e.preventDefault();
+                $('#quoteAction').val('reject');
                 $('#actionForm').submit();
             });
 
-            $('#suggestLink').off('click').on('click', function() {
+            $('#suggestLink').off('click').on('click', function(e) {
+                e.preventDefault();
                 $('#actionModal').modal('hide');
                 $('#suggestPriceModal').modal('show');
                 $('#suggestQuoteId').val(quoteId);
-                $('#suggestContractorId').val(contractorId);
-                $('#suggestProjectId').val(projectId);
-
-                // Set the correct action for the suggestion form
-                $('#suggestPriceForm').attr('action', '{{ url('project_manager/projects') }}/' +
-                    projectId + '/quotes/suggest');
             });
-
         });
     </script>
 

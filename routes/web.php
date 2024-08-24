@@ -62,6 +62,7 @@ Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->
     Route::get('/dashboard', [ProjectManagerController::class, 'dashboard'])->name('dashboard');
     
     // Project Management Routes
+    Route::get('/projects/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes.index');
     Route::get('/projects', [ProjectManagerController::class, 'indexProjects'])->name('projects.index');
     Route::get('/projects/create', [ProjectManagerController::class, 'createProject'])->name('projects.create');
     Route::post('/projects', [ProjectManagerController::class, 'storeProject'])->name('projects.store');
@@ -71,7 +72,8 @@ Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->
     Route::post('/projects/{project}/quotes/{contractor}/approve', [ProjectManagerController::class, 'approveQuote'])->name('projects.approveQuote');
     Route::post('/projects/{project}/quotes/{contractor}/reject', [ProjectManagerController::class, 'rejectQuote'])->name('projects.rejectQuote');
     Route::post('/projects/quotes/suggest', [ProjectManagerController::class, 'suggestPrice'])->name('projects.suggestPrice');  
-    Route::get('/projects/{project}/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
+    Route::get('/projects/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
+    Route::post('/projects/quotes/action', [ProjectManagerController::class, 'handleQuoteAction'])->name('projects.quotes.action');
    
 
 
