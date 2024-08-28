@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->decimal('quoted_price', 15, 2);  // Holds the latest price in negotiation
             $table->string('quote_pdf');  // Path to the quote PDF file
             $table->text('quote_suggestion')->nullable();  // Added for quote suggestion
-            $table->enum('status', ['pending', 'submitted', 'approved', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'submitted', 'approved', 'rejected', 'suggested'])->default('pending');  // Added 'suggested'
             $table->string('suggested_by')->nullable();  // Tracks who made the last suggestion (project_manager, contractor)
             $table->boolean('is_final')->default(false);  // Indicates if the negotiation is final
             $table->boolean('main_contractor')->default(false);  // Indicates if this contractor is the main contractor

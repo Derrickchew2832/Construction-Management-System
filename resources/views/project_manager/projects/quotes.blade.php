@@ -19,19 +19,22 @@
             <tbody>
                 @foreach ($quotes as $quote)
                     <tr>
-                        <!-- Update: Use the direct properties from the query -->
                         <td>{{ $quote->project_name }}</td>
                         <td>{{ $quote->contractor_name }}</td>
                         <td>${{ number_format($quote->quoted_price, 2) }}</td>
                         <td><a href="{{ Storage::url($quote->quote_pdf) }}" target="_blank">View Document</a></td>
                         <td>{{ ucfirst($quote->status) }}</td>
                         <td>
-                            <button type="button" class="btn btn-link" data-toggle="modal" data-target="#actionModal"
-                                data-quote-id="{{ $quote->id }}" data-contractor-id="{{ $quote->contractor_id }}"
-                                data-project-id="{{ $quote->project_id }}" data-price="{{ $quote->quoted_price }}"
-                                data-status="{{ $quote->status }}" data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
-                                View More
-                            </button>
+                            @if ($quote->status === 'rejected' || $quote->main_contractor)
+                                <span class="text-danger">Negotiation Closed</span>
+                            @else
+                                <button type="button" class="btn btn-link" data-toggle="modal" data-target="#actionModal"
+                                    data-quote-id="{{ $quote->id }}" data-contractor-id="{{ $quote->contractor_id }}"
+                                    data-project-id="{{ $quote->project_id }}" data-price="{{ $quote->quoted_price }}"
+                                    data-status="{{ $quote->status }}" data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
+                                    View More
+                                </button>
+                            @endif
                         </td>
                     </tr>
                 @endforeach
@@ -47,6 +50,7 @@
                 @csrf
                 <input type="hidden" name="action" id="quoteAction">
                 <input type="hidden" name="quote_id" id="quoteId">
+                <input type="hidden" name="contractor_id" id="contractorId">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="actionModalLabel">Quote Details</h5>
@@ -58,8 +62,7 @@
                         <p><strong>Quoted Price:</strong> $<span id="quotedPrice"></span></p>
                         <p><strong>Status:</strong> <span id="quoteStatus"></span></p>
                         <p><strong>Document:</strong> <a href="#" id="quotePdfLink" target="_blank">View PDF</a></p>
-                        <!-- Options -->
-                        <div class="mt-3">
+                        <div class="mt-3" id="actionLinks">
                             <a href="#" id="approveLink">Approve</a> |
                             <a href="#" id="rejectLink">Reject</a> |
                             <a href="#" id="suggestLink">Suggest a New Price</a>
@@ -78,6 +81,7 @@
                 @csrf
                 <input type="hidden" name="action" value="suggest">
                 <input type="hidden" name="quote_id" id="suggestQuoteId">
+                <input type="hidden" name="contractor_id" id="suggestContractorId">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="suggestPriceModalLabel">Provide New Price and Quote</h5>
@@ -109,38 +113,49 @@
     </div>
 
     <script>
-        $('#actionModal').on('show.bs.modal', function(event) {
-            var button = $(event.relatedTarget);
-            var quoteId = button.data('quote-id');
-            var price = button.data('price');
-            var status = button.data('status');
-            var pdfLink = button.data('pdf-link');
+        document.addEventListener('DOMContentLoaded', function () {
+            $('#actionModal').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var quoteId = button.data('quote-id');
+                var contractorId = button.data('contractor-id');
+                var price = button.data('price');
+                var status = button.data('status');
+                var pdfLink = button.data('pdf-link');
 
-            var modal = $(this);
-            modal.find('#quoteId').val(quoteId);
-            modal.find('#quotedPrice').text(price || 'N/A');
-            modal.find('#quoteStatus').text(status || 'N/A');
-            modal.find('#quotePdfLink').attr('href', pdfLink || '#');
+                var modal = $(this);
+                modal.find('#quoteId').val(quoteId);
+                modal.find('#contractorId').val(contractorId); // Pass the contractor ID
+                modal.find('#quotedPrice').text(price || 'N/A');
+                modal.find('#quoteStatus').text(status || 'N/A');
+                modal.find('#quotePdfLink').attr('href', pdfLink || '#');
 
-            $('#approveLink').off('click').on('click', function(e) {
-                e.preventDefault();
-                $('#quoteAction').val('approve');
-                $('#actionForm').submit();
-            });
+                // Correctly check for main_contractor status
+                if (status === 'rejected' || button.data('main-contractor')) {
+                    modal.find('#actionLinks').hide(); // Hide action links if rejected or main contractor assigned
+                } else {
+                    modal.find('#actionLinks').show(); // Show action links otherwise
+                }
 
-            $('#rejectLink').off('click').on('click', function(e) {
-                e.preventDefault();
-                $('#quoteAction').val('reject');
-                $('#actionForm').submit();
-            });
+                $('#approveLink').off('click').on('click', function(e) {
+                    e.preventDefault();
+                    $('#quoteAction').val('approve');
+                    $('#actionForm').submit();
+                });
 
-            $('#suggestLink').off('click').on('click', function(e) {
-                e.preventDefault();
-                $('#actionModal').modal('hide');
-                $('#suggestPriceModal').modal('show');
-                $('#suggestQuoteId').val(quoteId);
+                $('#rejectLink').off('click').on('click', function(e) {
+                    e.preventDefault();
+                    $('#quoteAction').val('reject');
+                    $('#actionForm').submit();
+                });
+
+                $('#suggestLink').off('click').on('click', function(e) {
+                    e.preventDefault();
+                    $('#actionModal').modal('hide');
+                    $('#suggestPriceModal').modal('show');
+                    $('#suggestQuoteId').val(quoteId);
+                    $('#suggestContractorId').val(contractorId); // Pass the contractor ID
+                });
             });
         });
     </script>
-
 @endsection

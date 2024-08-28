@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->decimal('total_budget', 15, 2);
             $table->decimal('budget_remaining', 15, 2);
             $table->string('location');
+            $table->string('status')->default('pending'); // Add this line to include the status column
             $table->unsignedBigInteger('main_contractor_id')->nullable();
             $table->timestamps();
             $table->boolean('is_favorite')->default(false);
@@ -29,12 +30,12 @@ return new class extends Migration {
     }
 
     public function down()
-{
-    Schema::disableForeignKeyConstraints();
-    
-    Schema::dropIfExists('project_contractor');
-    Schema::dropIfExists('projects');
+    {
+        Schema::disableForeignKeyConstraints();
+        
+        Schema::dropIfExists('project_contractor');
+        Schema::dropIfExists('projects');
 
-    Schema::enableForeignKeyConstraints();
-}
+        Schema::enableForeignKeyConstraints();
+    }
 };

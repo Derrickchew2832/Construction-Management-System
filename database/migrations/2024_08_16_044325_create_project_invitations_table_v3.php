@@ -11,7 +11,7 @@ class CreateProjectInvitationsTableV3 extends Migration
         Schema::create('project_invitations', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_id');
-            $table->unsignedBigInteger('contractor_id');  // Assuming you store contractor user ID
+            $table->unsignedBigInteger('contractor_id');  // Contractor user ID
             $table->unsignedBigInteger('invited_by');     // ID of the user who sent the invitation (likely project manager)
             $table->string('email');                      // Email of the contractor
             $table->string('token')->nullable();          // Token for verifying invitation (if applicable)

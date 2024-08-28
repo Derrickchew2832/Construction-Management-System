@@ -20,7 +20,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ $project->name }}</h5>
                             <p class="card-text">{{ $project->description }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
                                     <!-- Display the number of people in the project -->
                                     <span>{{ $project->members_count }}</span>
@@ -59,32 +59,17 @@
                                 </div>
                             </div>
 
-                            <!-- Check if contractors have been invited -->
-                            @if ($project->contractors_invited_count == 0)
-                                <div class="alert alert-warning mt-3">
-                                    No contractors invited yet.
-                                    <a href="{{ route('project_manager.projects.invite', $project->id) }}"
-                                        class="btn btn-sm btn-primary">Invite Contractors</a>
-                                </div>
-                            @else
-                                <!-- Show the list of invited contractors and their statuses -->
-                                <ul class="list-group mt-3">
-                                    @foreach ($project->contractors as $contractor)
-                                        <li class="list-group-item">
-                                            {{ $contractor->name }} -
-                                            <span
-                                                class="badge badge-{{ $contractor->status == 'submitted' ? 'success' : 'secondary' }}">
-                                                {{ ucfirst($contractor->status) }}
-                                            </span>
-                                            @if ($contractor->status == 'submitted')
-                                                <a href="{{ route('project_manager.projects.viewQuote', ['project' => $project->id, 'quote' => $contractor->quote_id]) }}"
-                                                    class="btn btn-sm btn-link">View Quote</a>
-                                            @endif
-
-                                        </li>
-                                    @endforeach
-                                </ul>
+                            <!-- Invite Contractor Button -->
+                            @if (!$project->contractors->contains('main_contractor', true))
+                                <a href="{{ route('project_manager.projects.invite', $project->id) }}" class="btn btn-outline-primary btn-block mb-3" style="font-size: 1.1rem;">
+                                    <i class="fas fa-user-plus"></i> Invite Contractor
+                                </a>
                             @endif
+
+                            <!-- View Project Details Button -->
+                            <a href="{{ route('project_manager.projects.show', $project->id) }}" class="btn btn-outline-success btn-block">
+                                View Project Details
+                            </a>
 
                         </div>
                     </div>

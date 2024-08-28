@@ -74,7 +74,8 @@ Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->
     Route::post('/projects/quotes/suggest', [ProjectManagerController::class, 'suggestPrice'])->name('projects.suggestPrice');  
     Route::get('/projects/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
     Route::post('/projects/quotes/action', [ProjectManagerController::class, 'handleQuoteAction'])->name('projects.quotes.action');
-   
+    
+
 
 
     // Other project routes
