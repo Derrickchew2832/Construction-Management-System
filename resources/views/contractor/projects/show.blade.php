@@ -18,13 +18,7 @@
 
     @if ($invitation)
         @if ($quote)
-            @if ($quote->status === 'rejected')
-                <div class="alert alert-danger mt-3">
-                    This negotiation has been rejected. No further actions can be taken.
-                </div>
-            @elseif ($quote->status === 'approved')
-                <div class="alert alert-success mt-3">Your quote has been approved. You are now the main contractor for this project.</div>
-            @elseif ($quote->status === 'pending')
+            @if ($quote->status === 'submitted')
                 <div class="alert alert-info mt-3">Your quote has been submitted and is awaiting approval.</div>
             @elseif ($quote->status === 'suggested' && $quote->suggested_by === 'project_manager')
                 <div class="alert alert-warning mt-3">The project manager has suggested a new price.</div>
@@ -34,7 +28,7 @@
                     <input type="hidden" name="quote_id" value="{{ $quote->id }}">
                     <div class="form-group">
                         <label for="new_price">New Price (if resubmitting)</label>
-                        <input type="number" name="new_price" class="form-control">
+                        <input type="number" name="new_price" class="form-control" step="0.01">
                     </div>
                     <div class="form-group">
                         <label for="new_pdf">Upload New Quote (PDF, if resubmitting)</label>
@@ -44,6 +38,10 @@
                     <button type="submit" name="action" value="reject" class="btn btn-danger">Reject</button>
                     <button type="submit" name="action" value="resubmit" class="btn btn-warning">Resubmit with New Quote</button>
                 </form>
+            @elseif ($quote->status === 'approved')
+                <div class="alert alert-success mt-3">Your quote has been approved. You are now the main contractor for this project.</div>
+            @elseif ($quote->status === 'rejected')
+                <div class="alert alert-danger mt-3">Your quote was rejected. Please contact the project manager for more details.</div>
             @endif
         @else
             @if ($invitation->status === 'pending')
@@ -51,7 +49,7 @@
                     @csrf
                     <div class="form-group">
                         <label for="quoted_price">Quote Price</label>
-                        <input type="number" name="quoted_price" class="form-control" required>
+                        <input type="number" name="quoted_price" class="form-control" required step="0.01">
                     </div>
                     <div class="form-group">
                         <label for="quote_pdf">Upload Quote (PDF)</label>
