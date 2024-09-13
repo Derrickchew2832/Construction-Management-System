@@ -16,8 +16,19 @@
         <div class="row" id="projectCards">
             @foreach ($projects as $project)
                 <div class="col-md-4 mb-4">
-                    <div class="card">
+                    <div class="card position-relative">
                         <div class="card-body">
+                            <!-- Ribbon based on project status -->
+                            @if ($project->status === 'completed')
+                                <div class="ribbon bg-success">Completed</div>
+                            @elseif ($project->tasks->where('status', '!=', 'completed')->isEmpty() && $project->status === 'started')
+                                <div class="ribbon bg-warning">In Progress</div>
+                            @elseif ($project->contractors->contains('main_contractor', true))
+                                <div class="ribbon bg-secondary">Main Contractor Assigned</div>
+                            @else
+                                <div class="ribbon bg-primary">Project Created</div>
+                            @endif
+
                             <h5 class="card-title">{{ $project->name }}</h5>
                             <p class="card-text">{{ $project->description }}</p>
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -67,16 +78,59 @@
                             @endif
 
                             <!-- View Project Details Button -->
-                            <a href="{{ route('project_manager.projects.show', $project->id) }}" class="btn btn-outline-success btn-block">
+                            <a href="{{ route('project_manager.projects.show', $project->id) }}" class="btn btn-outline-success btn-block mb-2">
                                 View Project Details
                             </a>
 
+                            <!-- Enter Project Button (Management Page) -->
+                            @if ($project->can_access_management)
+                                <a href="{{ route('project_manager.projects.manage', $project->id) }}" class="btn btn-outline-primary btn-block">
+                                    Enter Project
+                                </a>
+                            @else
+                                <!-- If the user is a contractor but not the main contractor -->
+                                @if (Auth::user()->hasRole('contractor') && !$project->contractors->contains('main_contractor', true))
+                                    <a href="{{ route('project_manager.projects.manage', $project->id) }}" class="btn btn-outline-info btn-block">
+                                        View Project (Limited Access)
+                                    </a>
+                                @endif
+                            @endif
                         </div>
                     </div>
                 </div>
             @endforeach
         </div>
     </div>
+
+    <style>
+        /* Ribbon CSS */
+        .ribbon {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            text-transform: uppercase;
+            border-radius: 3px;
+        }
+
+        .ribbon.bg-warning {
+            background-color: #f0ad4e;
+        }
+
+        .ribbon.bg-secondary {
+            background-color: #6c757d;
+        }
+
+        .ribbon.bg-success {
+            background-color: #28a745;
+        }
+
+        .ribbon.bg-primary {
+            background-color: #007bff;
+        }
+    </style>
 
     <script>
         document.getElementById('sortButton').addEventListener('click', function() {

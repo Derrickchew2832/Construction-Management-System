@@ -23,9 +23,13 @@
             @elseif ($quote->status === 'suggested' && $quote->suggested_by === 'project_manager')
                 <div class="alert alert-warning mt-3">The project manager has suggested a new price.</div>
                 <p><strong>Suggested Price:</strong> ${{ number_format($quote->quoted_price, 2) }}</p>
+                
+                <!-- Form to respond to the suggestion -->
                 <form action="{{ route('contractor.respondToSuggestion', $project->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="quote_id" value="{{ $quote->id }}">
+                    
+                    <!-- Field for the contractor to accept, reject, or resubmit the quote -->
                     <div class="form-group">
                         <label for="new_price">New Price (if resubmitting)</label>
                         <input type="number" name="new_price" class="form-control" step="0.01">
@@ -45,6 +49,7 @@
             @endif
         @else
             @if ($invitation->status === 'pending')
+                <!-- Form to submit a new quote -->
                 <form action="{{ route('contractor.projects.submitQuote', $project->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="form-group">

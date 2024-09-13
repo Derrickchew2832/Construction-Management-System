@@ -27,6 +27,7 @@ class CreateRolesTable extends Migration
             ['name' => 'project_manager'],
             ['name' => 'contractor'],
             ['name' => 'supplier'],
+            ['name' => 'main_contractor'],
         ]);
     }
 

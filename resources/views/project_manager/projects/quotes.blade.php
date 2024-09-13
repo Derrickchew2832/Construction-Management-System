@@ -23,15 +23,15 @@
                         <td>{{ $quote->contractor_name }}</td>
                         <td>${{ number_format($quote->quoted_price, 2) }}</td>
                         <td><a href="{{ Storage::url($quote->quote_pdf) }}" target="_blank">View Document</a></td>
-                        <td>{{ ucfirst($quote->status) }}</td>
+                        <td>{{ ucfirst($quote->quote_status) }}</td> <!-- Changed to match 'quote_status' in project_contractor -->
                         <td>
-                            @if ($quote->status === 'rejected' || $quote->main_contractor)
+                            @if ($quote->quote_status === 'rejected' || $quote->main_contractor)
                                 <span class="text-danger">Negotiation Closed</span>
                             @else
                                 <button type="button" class="btn btn-link" data-toggle="modal" data-target="#actionModal"
                                     data-quote-id="{{ $quote->id }}" data-contractor-id="{{ $quote->contractor_id }}"
                                     data-project-id="{{ $quote->project_id }}" data-price="{{ $quote->quoted_price }}"
-                                    data-status="{{ $quote->status }}" data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
+                                    data-status="{{ $quote->quote_status }}" data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
                                     View More
                                 </button>
                             @endif

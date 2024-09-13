@@ -10,15 +10,15 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
-        'project_manager_id',   // The ID of the project manager who created the project
+        'project_manager_id',   // The ID of the project manager
         'name',                 // The name of the project
-        'description',          // A description of the project
-        'start_date',           // The start date of the project
-        'end_date',             // The end date of the project
-        'total_budget',         // The total budget allocated for the project
-        'budget_remaining',     // The remaining budget for the project
-        'location',             // The physical location of the project
-        'main_contractor_id',   // The ID of the contractor selected as the main contractor
+        'description',          // Description of the project
+        'start_date',           // Start date of the project
+        'end_date',             // End date of the project
+        'total_budget',         // Total budget allocated for the project
+        'budget_remaining',     // Remaining budget for the project
+        'location',             // Location of the project
+        'main_contractor_id',   // The ID of the main contractor (if assigned)
     ];
 
     // Relationship to the User model, representing the project manager
@@ -33,11 +33,11 @@ class Project extends Model
         return $this->belongsTo(User::class, 'main_contractor_id');
     }
 
-    // Many-to-many relationship to the User model, representing contractors invited to the project
+    // Many-to-many relationship to User (contractors) through the project_contractor table
     public function contractors()
     {
         return $this->belongsToMany(User::class, 'project_contractor')
-                    ->withPivot('quoted_price', 'quote_document_path', 'status') // Additional fields on the pivot table
+                    ->withPivot('quoted_price', 'quote_pdf', 'status', 'suggested_by', 'is_final', 'main_contractor') // Fields on the pivot table
                     ->withTimestamps(); // Automatically manage created_at and updated_at on the pivot table
     }
 }

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ContractorsController;  // Updated
+use App\Http\Controllers\ContractorsController;  
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProjectManager\ProjectManagerController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
+use App\Http\Controllers\ProjectManagement\TaskController;
 
 // Redirect root URL to login
 Route::get('/', function () {
@@ -75,8 +76,8 @@ Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->
     Route::get('/projects/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
     Route::post('/projects/quotes/action', [ProjectManagerController::class, 'handleQuoteAction'])->name('projects.quotes.action');
     
-
-
+    
+    Route::get('projects/{projectId}/manage', [ProjectManagerController::class, 'managementBoard'])->name('projects.manage');
 
     // Other project routes
     Route::get('/projects/{project}', [ProjectManagerController::class, 'showProject'])->name('projects.show');
@@ -119,3 +120,16 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     // Contractor Logout
     Route::post('/logout', [ContractorsController::class, 'logout'])->name('logout');
 });
+
+Route::middleware(['auth', 'role:project_manager'])
+    ->prefix('projects/{projectId}')
+    ->name('tasks.')
+    ->group(function () {
+        Route::get('/tasks', [TaskController::class, 'index'])->name('index');
+        Route::get('/tasks/create', [TaskController::class, 'create'])->name('create');
+        Route::post('/tasks', [TaskController::class, 'store'])->name('store');
+        Route::get('/tasks/{taskId}/edit', [TaskController::class, 'edit'])->name('edit');
+        Route::put('/tasks/{taskId}', [TaskController::class, 'update'])->name('update');
+        Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
+    });
+

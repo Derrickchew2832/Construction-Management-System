@@ -18,24 +18,21 @@ return new class extends Migration {
             $table->decimal('total_budget', 15, 2);
             $table->decimal('budget_remaining', 15, 2);
             $table->string('location');
-            $table->string('status')->default('pending'); // Add this line to include the status column
-            $table->unsignedBigInteger('main_contractor_id')->nullable();
+            $table->string('status')->default('pending'); // Project status
+            $table->boolean('is_favorite')->default(false); // Track favorite status
+            $table->unsignedBigInteger('main_contractor_id')->nullable(); // Main contractor for the project
             $table->timestamps();
-            $table->boolean('is_favorite')->default(false);
 
             // Foreign keys
             $table->foreign('project_manager_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('main_contractor_id')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('main_contractor_id')->references('id')->on('users')->onDelete('set null'); // Set null if the contractor is deleted
         });
     }
 
     public function down()
     {
         Schema::disableForeignKeyConstraints();
-        
-        Schema::dropIfExists('project_contractor');
         Schema::dropIfExists('projects');
-
         Schema::enableForeignKeyConstraints();
     }
 };

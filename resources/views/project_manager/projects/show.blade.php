@@ -9,8 +9,8 @@
     <p><strong>Location:</strong> {{ $project->location }}</p>
     <p><strong>Start Date:</strong> {{ $project->start_date }}</p>
     <p><strong>End Date:</strong> {{ $project->end_date }}</p>
-    <p><strong>Total Budget:</strong> ${{ $project->total_budget }}</p>
-    <p><strong>Remaining Budget:</strong> ${{ $project->budget_remaining }}</p>
+    <p><strong>Total Budget:</strong> ${{ number_format($project->total_budget, 2) }}</p>
+    <p><strong>Remaining Budget:</strong> ${{ number_format($project->budget_remaining, 2) }}</p>
 
     <hr>
 

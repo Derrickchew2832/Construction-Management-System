@@ -50,6 +50,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role && $this->role->name === $roleName;
     }
 
+    public function roles()
+{
+    return $this->belongsToMany(Role::class);
+}
+
     // Defines the relationship where a user manages multiple projects
     public function managedProjects()
     {

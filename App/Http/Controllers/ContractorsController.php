@@ -63,7 +63,7 @@ class ContractorsController extends Controller
         // Save the uploaded PDF
         $pdfPath = $request->file('quote_pdf')->store('quotes', 'public');
 
-        // Update or insert the quote
+        // Update or insert the quote in the project_contractor table
         DB::table('project_contractor')->updateOrInsert(
             ['project_id' => $projectId, 'contractor_id' => Auth::id()],
             [
@@ -75,7 +75,7 @@ class ContractorsController extends Controller
             ]
         );
 
-        // Update the invitation status
+        // Update the invitation status in project_invitations
         DB::table('project_invitations')
             ->where('project_id', $projectId)
             ->where('contractor_id', Auth::id())
@@ -100,11 +100,11 @@ class ContractorsController extends Controller
                     'updated_at' => now(),
                 ]);
 
-            // Update the project status to 'started'
+            // Update the project to indicate the main contractor and start the project
             DB::table('projects')
                 ->where('id', $projectId)
                 ->update([
-                    'main_contractor_id' => $contractorId,
+                    'status' => 'started',
                     'updated_at' => now(),
                 ]);
 
