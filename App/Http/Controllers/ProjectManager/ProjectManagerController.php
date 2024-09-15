@@ -20,7 +20,6 @@ class ProjectManagerController extends Controller
             return redirect()->route('project_manager.projects.index')->with('error', 'No projects found.');
         }
 
-        // Check if the project has a main contractor in project_contractor table
         $mainContractorExists = DB::table('project_contractor')
             ->where('project_id', $project->id)
             ->where('main_contractor', true)
@@ -33,66 +32,53 @@ class ProjectManagerController extends Controller
         return view('project_manager.dashboard', compact('project'));
     }
 
-    public function indexProjects()
+    public function indexProjects(Request $request)
     {
+        $sortOrder = $request->query('sort', 'asc');
+
         $projects = DB::table('projects')
             ->where('project_manager_id', Auth::id())
-            ->orderBy('name')
+            ->orderBy('name', $sortOrder)
             ->get();
 
         foreach ($projects as $project) {
-            $project->contractors_invited_count = DB::table('project_invitations')
-                ->where('project_id', $project->id)
-                ->count();
-
-            // Calculate the number of members in the project
             $project->members_count = DB::table('project_user')
                 ->where('project_id', $project->id)
+                ->where(function ($query) {
+                    $query->where('role', 'project_manager')
+                          ->orWhere('role', 'contractor');
+                })
                 ->count();
 
-            // Check if the project is marked as favorite by the current user
+            $project->main_contractor = DB::table('project_contractor')
+                ->where('project_id', $project->id)
+                ->where('main_contractor', true)
+                ->exists();
+
+            if ($project->main_contractor) {
+                $project->members_count += 1; 
+            }
+
             $project->is_favorite = DB::table('project_user_favorites')
                 ->where('project_id', $project->id)
                 ->where('user_id', Auth::id())
                 ->exists();
 
-            // Fetch contractors and include quote_id from project_contractor
             $project->contractors = DB::table('project_invitations')
                 ->join('users', 'project_invitations.contractor_id', '=', 'users.id')
-                ->leftJoin('project_contractor', function ($join) use ($project) {
-                    $join->on('project_invitations.project_id', '=', 'project_contractor.project_id')
-                        ->on('project_invitations.contractor_id', '=', 'project_contractor.contractor_id');
-                })
                 ->where('project_invitations.project_id', $project->id)
-                ->select(
-                    'users.name',
-                    'project_invitations.status',
-                    'project_contractor.id as quote_id', // Include quote_id
-                    'project_contractor.main_contractor', // Check if they are main contractor
-                    'project_contractor.status as quote_status'
-                )
+                ->select('users.name', 'project_invitations.status')
                 ->get();
 
-            // Set the first contractor's quote as the first_quote property
-            if ($project->contractors->isNotEmpty()) {
-                $project->first_quote = $project->contractors->first();
-            }
-
-            // Fetch tasks for the project
-            $project->tasks = DB::table('tasks')->where('project_id', $project->id)->get();
-
-            // Add a flag to indicate whether the management board can be accessed
-            $mainContractorExists = DB::table('project_contractor')
+            $project->tasks = DB::table('tasks')
                 ->where('project_id', $project->id)
-                ->where('main_contractor', true)
-                ->exists();
+                ->get();
 
-            $project->can_access_management = $mainContractorExists;
+            $project->can_access_management = $project->main_contractor;
         }
 
-        return view('project_manager.projects.index', compact('projects'));
+        return view('project_manager.projects.index', compact('projects', 'sortOrder'));
     }
-
 
     public function createProject()
     {
@@ -107,19 +93,18 @@ class ProjectManagerController extends Controller
             return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
         }
 
-        // Fetch contractors related to the project and include their details
         $project->contractors = DB::table('project_invitations')
             ->join('users', 'project_invitations.contractor_id', '=', 'users.id')
             ->leftJoin('project_contractor', function ($join) use ($project) {
                 $join->on('project_invitations.project_id', '=', 'project_contractor.project_id')
-                    ->on('project_invitations.contractor_id', '=', 'project_contractor.contractor_id');
+                     ->on('project_invitations.contractor_id', '=', 'project_contractor.contractor_id');
             })
             ->where('project_invitations.project_id', $projectId)
             ->select(
                 'users.name',
-                'users.email',  // Include email for display
+                'users.email',  
                 'project_invitations.status',
-                'project_contractor.main_contractor', // Check if they are main contractor
+                'project_contractor.main_contractor', 
                 'project_contractor.status as quote_status'
             )
             ->get();
@@ -290,7 +275,7 @@ class ProjectManagerController extends Controller
                 'users.name as contractor_name', 
                 'projects.name as project_name', 
                 'projects.id as project_id',
-                'project_contractor.status as quote_status' // Ensure quote_status is selected
+                'project_contractor.status as quote_status' 
             )
             ->get();
 
@@ -304,7 +289,7 @@ class ProjectManagerController extends Controller
             ->where('contractor_id', $contractorId)
             ->update([
                 'status' => 'approved',
-                'main_contractor' => true, // Mark as main contractor
+                'main_contractor' => true, 
             ]);
 
         return redirect()->route('project_manager.projects.quotes', $projectId)->with('success', 'Quote approved and contractor promoted to main contractor.');
@@ -356,7 +341,6 @@ class ProjectManagerController extends Controller
                 Log::info('File uploaded successfully', ['file_path' => $filePath]);
             }
 
-            // Check if the negotiation has already been rejected
             $existingQuote = DB::table('project_contractor')
                 ->where('id', $quoteId)
                 ->where('contractor_id', $contractorId)
@@ -402,7 +386,6 @@ class ProjectManagerController extends Controller
         $quote = DB::table('project_contractor')->where('id', $quoteId)->first();
 
         if ($action === 'approve') {
-            // Mark this quote as approved and close the negotiation
             DB::table('project_contractor')->where('id', $quoteId)->update([
                 'status' => 'approved',
                 'is_final' => true,
@@ -410,14 +393,12 @@ class ProjectManagerController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Update the project to indicate it now has a main contractor
             DB::table('projects')->where('id', $quote->project_id)->update([
                 'status' => 'started',
                 'main_contractor_id' => $quote->contractor_id,
                 'updated_at' => now(),
             ]);
 
-            // Reject all other quotes for the project
             DB::table('project_contractor')
                 ->where('project_id', $quote->project_id)
                 ->where('id', '!=', $quoteId)
@@ -437,7 +418,6 @@ class ProjectManagerController extends Controller
 
             return redirect()->route('project_manager.projects.quotes')->with('success', 'Quote rejected and negotiation closed.');
         } elseif ($action === 'suggest') {
-            // Suggest a new price
             return $this->suggestPrice($request, $quote->project_id);
         }
 
@@ -458,6 +438,7 @@ class ProjectManagerController extends Controller
                 ->where('user_id', $user->id)
                 ->where('project_id', $projectId)
                 ->delete();
+
             $isFavorite = false;
         } else {
             DB::table('project_user_favorites')->insert([
@@ -466,6 +447,7 @@ class ProjectManagerController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
             $isFavorite = true;
         }
 
@@ -497,31 +479,30 @@ class ProjectManagerController extends Controller
     }
 
     public function managementBoard($projectId)
-{
-    $project = DB::table('projects')->where('id', $projectId)->first();
+    {
+        $project = DB::table('projects')->where('id', $projectId)->first();
 
-    if (!$project) {
-        return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
+        if (!$project) {
+            return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
+        }
+
+        $mainContractorExists = DB::table('project_contractor')
+            ->where('project_id', $project->id)
+            ->where('main_contractor', true)
+            ->exists();
+
+        if (!$mainContractorExists) {
+            return redirect()->route('project_manager.projects.index')->with('error', 'Management board is not available until a main contractor is assigned.');
+        }
+
+        $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
+        $contractors = DB::table('users')
+            ->join('project_user', 'users.id', '=', 'project_user.user_id')
+            ->where('project_user.project_id', $projectId)
+            ->where('project_user.role', 'contractor')
+            ->select('users.name', 'users.email', 'project_user.status')
+            ->get();
+
+        return view('project_manager.management_board', compact('project', 'tasks', 'contractors'));
     }
-
-    $mainContractorExists = DB::table('project_contractor')
-        ->where('project_id', $project->id)
-        ->where('main_contractor', true)
-        ->exists();
-
-    if (!$mainContractorExists) {
-        return redirect()->route('project_manager.projects.index')->with('error', 'Management board is not available until a main contractor is assigned.');
-    }
-
-    $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
-    $contractors = DB::table('users')
-        ->join('project_user', 'users.id', '=', 'project_user.user_id')
-        ->where('project_user.project_id', $projectId)
-        ->where('project_user.role', 'contractor')
-        ->select('users.name', 'users.email', 'project_user.status')
-        ->get();
-
-    return view('project_manager.management_board', compact('project', 'tasks', 'contractors'));
-}
-
 }

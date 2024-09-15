@@ -105,7 +105,10 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::get('/projects/{project}', [ContractorsController::class, 'showProject'])->name('projects.show');
     Route::post('/projects/{project}/submit-quote', [ContractorsController::class, 'submitQuote'])->name('projects.submitQuote');
     Route::post('/projects/{project}/respond-suggestion', [ContractorsController::class, 'respondToSuggestion'])->name('respondToSuggestion');
-
+    Route::post('/projects/{projectId}/favorite', [ContractorsController::class, 'toggleFavorite'])->name('projects.favorite');
+    Route::get('/projects/{projectId}/supply-order', [ContractorsController::class, 'supplyOrder'])->name('projects.supplyOrder');
+    Route::get('contractor/projects/{project}/manage', [ContractorsController::class, 'manageProject'])->name('contractor.projects.manage');
+    
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');

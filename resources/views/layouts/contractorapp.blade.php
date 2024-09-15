@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}"> <!-- CSRF Token -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') - Contractor</title>
     <!-- Bootstrap CSS -->
@@ -59,9 +59,23 @@
         @yield('content')
     </div>
 
-    <!-- jQuery and Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <!-- jQuery (with full version for AJAX support) and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- CSRF Token Setup for jQuery AJAX -->
+    <script>
+        $(document).ready(function() {
+            // Set up the CSRF token for all AJAX requests
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+        });
+    </script>
+
+    @yield('scripts') <!-- To allow page-specific scripts -->
 </body>
 </html>

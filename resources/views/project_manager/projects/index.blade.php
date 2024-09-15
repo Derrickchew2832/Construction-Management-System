@@ -7,25 +7,24 @@
         <h1>Projects</h1>
         <div class="d-flex justify-content-between align-items-center mb-3">
             <a href="{{ route('project_manager.projects.create') }}" class="btn btn-primary">+ New Project</a>
-            <div>
-                <button class="btn btn-outline-secondary" id="sortButton">Sort A-Z</button>
-                <input type="text" class="form-control d-inline-block w-auto" placeholder="Search projects" id="searchInput">
+            <div class="d-flex align-items-center">
+                <!-- Sort and Search Button with proper spacing and size -->
+                <button class="btn btn-outline-secondary me-3 w-auto" id="sortButton">Sort A-Z</button>
+                <input type="text" class="form-control w-auto" placeholder="Search projects" id="searchInput">
             </div>
         </div>
 
         <div class="row" id="projectCards">
             @foreach ($projects as $project)
-                <div class="col-md-4 mb-4">
-                    <div class="card position-relative">
+                <div class="col-md-4 mb-4 project-card">
+                    <div class="card position-relative same-height">
                         <div class="card-body">
                             <!-- Ribbon based on project status -->
                             @if ($project->status === 'completed')
                                 <div class="ribbon bg-success">Completed</div>
-                            @elseif ($project->tasks->where('status', '!=', 'completed')->isEmpty() && $project->status === 'started')
+                            @elseif ($project->status === 'started')
                                 <div class="ribbon bg-warning">In Progress</div>
-                            @elseif ($project->contractors->contains('main_contractor', true))
-                                <div class="ribbon bg-secondary">Main Contractor Assigned</div>
-                            @else
+                            @elseif (!$project->main_contractor)
                                 <div class="ribbon bg-primary">Project Created</div>
                             @endif
 
@@ -34,7 +33,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
                                     <!-- Display the number of people in the project -->
-                                    <span>{{ $project->members_count }}</span>
+                                    <span>{{ $project->members_count ?? 0 }}</span>
                                     <i class="fas fa-users"></i>
                                 </div>
                                 <div>
@@ -42,8 +41,7 @@
                                     @php
                                         $isFavorite = $project->is_favorite ? 'fas' : 'far';
                                     @endphp
-                                    <a href="#" class="btn btn-link favorite-btn"
-                                        data-project-id="{{ $project->id }}">
+                                    <a href="#" class="btn btn-link favorite-btn" data-project-id="{{ $project->id }}">
                                         <i class="{{ $isFavorite }} fa-star"></i>
                                     </a>
                                     <!-- Settings Dropdown -->
@@ -54,12 +52,9 @@
                                             <i class="fas fa-ellipsis-v"></i>
                                         </button>
                                         <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $project->id }}">
-                                            <li><a class="dropdown-item"
-                                                    href="{{ route('project_manager.projects.edit', $project->id) }}">Edit</a>
-                                            </li>
+                                            <li><a class="dropdown-item" href="{{ route('project_manager.projects.edit', $project->id) }}">Edit</a></li>
                                             <li>
-                                                <form action="{{ route('project_manager.projects.delete', $project->id) }}"
-                                                    method="POST">
+                                                <form action="{{ route('project_manager.projects.delete', $project->id) }}" method="POST">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="dropdown-item">Delete</button>
@@ -70,30 +65,20 @@
                                 </div>
                             </div>
 
-                            <!-- Invite Contractor Button -->
-                            @if (!$project->contractors->contains('main_contractor', true))
+                            <!-- Logic for showing buttons -->
+                            @if (!$project->main_contractor)
+                                <!-- Invite Contractor and View Project buttons -->
                                 <a href="{{ route('project_manager.projects.invite', $project->id) }}" class="btn btn-outline-primary btn-block mb-3" style="font-size: 1.1rem;">
                                     <i class="fas fa-user-plus"></i> Invite Contractor
                                 </a>
-                            @endif
-
-                            <!-- View Project Details Button -->
-                            <a href="{{ route('project_manager.projects.show', $project->id) }}" class="btn btn-outline-success btn-block mb-2">
-                                View Project Details
-                            </a>
-
-                            <!-- Enter Project Button (Management Page) -->
-                            @if ($project->can_access_management)
+                                <a href="{{ route('project_manager.projects.show', $project->id) }}" class="btn btn-outline-success btn-block mb-2">
+                                    View Project Details
+                                </a>
+                            @elseif ($project->can_access_management)
+                                <!-- Enter Project button once contractor is selected -->
                                 <a href="{{ route('project_manager.projects.manage', $project->id) }}" class="btn btn-outline-primary btn-block">
                                     Enter Project
                                 </a>
-                            @else
-                                <!-- If the user is a contractor but not the main contractor -->
-                                @if (Auth::user()->hasRole('contractor') && !$project->contractors->contains('main_contractor', true))
-                                    <a href="{{ route('project_manager.projects.manage', $project->id) }}" class="btn btn-outline-info btn-block">
-                                        View Project (Limited Access)
-                                    </a>
-                                @endif
                             @endif
                         </div>
                     </div>
@@ -119,10 +104,6 @@
             background-color: #f0ad4e;
         }
 
-        .ribbon.bg-secondary {
-            background-color: #6c757d;
-        }
-
         .ribbon.bg-success {
             background-color: #28a745;
         }
@@ -130,16 +111,36 @@
         .ribbon.bg-primary {
             background-color: #007bff;
         }
+
+        /* Ensure cards are sorted correctly */
+        .same-height {
+            height: 100%;
+        }
+
+        /* Adjust Sort Button and Search Box size and spacing */
+        .me-3 {
+            margin-right: 1rem;
+        }
+
+        .w-auto {
+            width: 150px; /* Matching size for both search and sort buttons */
+        }
     </style>
 
     <script>
+        // Sorting functionality
+        let isAscending = true; // Track the sorting order
         document.getElementById('sortButton').addEventListener('click', function() {
-            let projectCards = Array.from(document.querySelectorAll('#projectCards .col-md-4'));
+            let projectCards = Array.from(document.querySelectorAll('.project-card'));
             projectCards.sort(function(a, b) {
-                return a.querySelector('.card-title').textContent.trim().localeCompare(
-                    b.querySelector('.card-title').textContent.trim()
-                );
+                let titleA = a.querySelector('.card-title').textContent.trim().toLowerCase();
+                let titleB = b.querySelector('.card-title').textContent.trim().toLowerCase();
+                return isAscending ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA);
             });
+
+            isAscending = !isAscending; // Toggle the sorting order for next click
+            let sortButtonText = isAscending ? 'Sort A-Z' : 'Sort Z-A'; // Change button text based on order
+            document.getElementById('sortButton').textContent = sortButtonText;
 
             let projectContainer = document.getElementById('projectCards');
             projectContainer.innerHTML = '';
@@ -148,6 +149,23 @@
             });
         });
 
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            let searchValue = this.value.toLowerCase();
+            let projectCards = document.querySelectorAll('.project-card');
+
+            projectCards.forEach(function(card) {
+                let projectName = card.querySelector('.card-title').textContent.toLowerCase();
+                let projectDescription = card.querySelector('.card-text').textContent.toLowerCase();
+                if (projectName.includes(searchValue) || projectDescription.includes(searchValue)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Toggle favorite status
         document.querySelectorAll('.favorite-btn').forEach(function(button) {
             button.addEventListener('click', function(event) {
                 event.preventDefault();
@@ -161,35 +179,33 @@
 
                 // Send AJAX request to toggle favorite state
                 fetch(`/project_manager/projects/${projectId}/favorite`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                .getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            is_favorite: !isFavorite
-                        })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        is_favorite: !isFavorite
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Favorite status updated:', data);
-                        // Display success message
-                        if (data.is_favorite) {
-                            alert('Project added to favorites!');
-                        } else {
-                            alert('Project removed from favorites!');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while updating the favorite status.');
-                    });
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Favorite status updated:', data);
+                    if (data.is_favorite) {
+                        alert('Project added to favorites!');
+                    } else {
+                        alert('Project removed from favorites!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the favorite status.');
+                });
             });
         });
 
