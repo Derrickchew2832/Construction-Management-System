@@ -10,8 +10,6 @@
     <p><strong>Start Date:</strong> {{ $project->start_date }}</p>
     <p><strong>End Date:</strong> {{ $project->end_date }}</p>
     <p><strong>Total Budget:</strong> ${{ number_format($project->total_budget, 2) }}</p>
-    <p><strong>Remaining Budget:</strong> ${{ number_format($project->budget_remaining, 2) }}</p>
-
     <hr>
 
     <h2>Contractors</h2>

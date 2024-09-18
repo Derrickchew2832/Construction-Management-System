@@ -26,10 +26,6 @@
             <input type="number" name="total_budget" class="form-control" required>
         </div>
         <div class="form-group">
-            <label for="budget_remaining">Budget Remaining</label>
-            <input type="number" name="budget_remaining" class="form-control" required>
-        </div>
-        <div class="form-group">
             <label for="location">Location</label>
             <input type="text" name="location" class="form-control" required>
         </div>

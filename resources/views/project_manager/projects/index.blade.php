@@ -44,24 +44,26 @@
                                     <a href="#" class="btn btn-link favorite-btn" data-project-id="{{ $project->id }}">
                                         <i class="{{ $isFavorite }} fa-star"></i>
                                     </a>
-                                    <!-- Settings Dropdown -->
-                                    <div class="dropdown">
-                                        <button class="btn btn-link dropdown-toggle" type="button"
-                                            id="dropdownMenuButton{{ $project->id }}" data-bs-toggle="dropdown"
-                                            aria-expanded="false">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $project->id }}">
-                                            <li><a class="dropdown-item" href="{{ route('project_manager.projects.edit', $project->id) }}">Edit</a></li>
-                                            <li>
-                                                <form action="{{ route('project_manager.projects.delete', $project->id) }}" method="POST">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="dropdown-item">Delete</button>
-                                                </form>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                    <!-- Settings Dropdown, hidden if project is in progress -->
+                                    @if ($project->status !== 'started')
+                                        <div class="dropdown">
+                                            <button class="btn btn-link dropdown-toggle" type="button"
+                                                id="dropdownMenuButton{{ $project->id }}" data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $project->id }}">
+                                                <li><a class="dropdown-item" href="{{ route('project_manager.projects.edit', $project->id) }}">Edit</a></li>
+                                                <li>
+                                                    <form action="{{ route('project_manager.projects.delete', $project->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item">Delete</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 

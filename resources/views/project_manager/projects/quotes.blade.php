@@ -138,6 +138,7 @@
 
                 $('#approveLink').off('click').on('click', function(e) {
                     e.preventDefault();
+                    console.log('Approve button clicked'); 
                     $('#quoteAction').val('approve');
                     $('#actionForm').submit();
                 });
