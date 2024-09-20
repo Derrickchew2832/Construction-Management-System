@@ -43,10 +43,17 @@
                     <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#newTaskModal">+ New Task</button>
                 </div>
                 <div class="d-flex align-items-center">
+                    @php
+                        $roleName = strtolower(auth()->user()->role->name);
+                        if($roleName == 'project_manager'){
+                            $exiturl = route('project_manager.projects.manage', ['projectId' => $project->id]);
+                        }else if($roleName == 'contractor'){
+                            $exiturl = route('contractor.projects.index');
+                        }
+
+                    @endphp
                     <!-- Updated Exit button to redirect to the management page -->
-                    <button class="btn btn-danger btn-sm mr-2" onclick="window.location.href='{{ route('project_manager.projects.manage', ['projectId' => $project->id]) }}'">Exit</button>
-
-
+                    <button class="btn btn-danger btn-sm mr-2" onclick="window.location.href='{{ $exiturl }}'">Exit</button>
 
                 </div>
             </header>

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ContractorsController;  
+use App\Http\Controllers\ContractorsController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProjectManager\ProjectManagerController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -62,22 +62,22 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // Project Manager Routes
 Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->name('project_manager.')->group(function () {
     Route::get('/dashboard', [ProjectManagerController::class, 'dashboard'])->name('dashboard');
-    
+
     // Project Management Routes
     Route::get('/projects/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes.index');
     Route::get('/projects', [ProjectManagerController::class, 'indexProjects'])->name('projects.index');
     Route::get('/projects/create', [ProjectManagerController::class, 'createProject'])->name('projects.create');
     Route::post('/projects', [ProjectManagerController::class, 'storeProject'])->name('projects.store');
-    
+
     // Route for viewing and managing quotes (modified)
     Route::get('/projects/{project}/quotes/{quote}', [ProjectManagerController::class, 'viewQuote'])->name('projects.viewQuote');
     Route::post('/projects/{project}/quotes/{contractor}/approve', [ProjectManagerController::class, 'approveQuote'])->name('projects.approveQuote');
     Route::post('/projects/{project}/quotes/{contractor}/reject', [ProjectManagerController::class, 'rejectQuote'])->name('projects.rejectQuote');
-    Route::post('/projects/quotes/suggest', [ProjectManagerController::class, 'suggestPrice'])->name('projects.suggestPrice');  
+    Route::post('/projects/quotes/suggest', [ProjectManagerController::class, 'suggestPrice'])->name('projects.suggestPrice');
     Route::get('/projects/quotes', [ProjectManagerController::class, 'manageQuotes'])->name('projects.quotes');
     Route::post('/projects/quotes/action', [ProjectManagerController::class, 'handleQuoteAction'])->name('projects.quotes.action');
-    
-    
+
+
     Route::get('projects/{projectId}/manage', [ProjectManagerController::class, 'managementBoard'])->name('projects.manage');
 
     // Other project routes
@@ -85,11 +85,11 @@ Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->
     Route::get('/projects/{project}/edit', [ProjectManagerController::class, 'editProject'])->name('projects.edit');
     Route::put('/projects/{project}', [ProjectManagerController::class, 'updateProject'])->name('projects.update');
     Route::delete('/projects/{project}', [ProjectManagerController::class, 'deleteProject'])->name('projects.delete');
-    
+
     // Profile routes
     Route::get('/profile', [ProjectManagerController::class, 'editProfile'])->name('profile');
     Route::put('/profile', [ProjectManagerController::class, 'updateProfile'])->name('profile.update');
-    
+
     // Favorite and invitation routes
     Route::post('/projects/{project}/favorite', [ProjectManagerController::class, 'toggleFavorite'])->name('projects.toggleFavorite');
     Route::get('/projects/{project}/invite', [ProjectManagerController::class, 'inviteContractor'])->name('projects.invite');
@@ -109,7 +109,7 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::post('/projects/{projectId}/favorite', [ContractorsController::class, 'toggleFavorite'])->name('projects.favorite');
     Route::get('/projects/{projectId}/supply-order', [ContractorsController::class, 'supplyOrder'])->name('projects.supplyOrder');
     Route::get('contractor/projects/{project}/manage', [ContractorsController::class, 'manageProject'])->name('contractor.projects.manage');
-    
+
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');
@@ -125,16 +125,15 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::post('/logout', [ContractorsController::class, 'logout'])->name('logout');
 });
 
+
 Route::middleware(['auth', 'role:project_manager,contractor,client'])
-    ->prefix('projects/{projectId}')
-    ->name('tasks.')
-    ->group(function () {
+->prefix('projects/{projectId}')
+->name('tasks.')
+->group(function () {
         Route::get('/tasks', [TaskController::class, 'index'])->name('index');
         Route::get('/tasks/create', [TaskController::class, 'create'])->name('create');
         Route::post('/tasks', [TaskController::class, 'store'])->name('store');
         Route::get('/tasks/{taskId}/edit', [TaskController::class, 'edit'])->name('edit');
         Route::put('/tasks/{taskId}', [TaskController::class, 'update'])->name('update');
         Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
-    });
-
-    
+});
