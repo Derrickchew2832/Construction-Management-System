@@ -22,7 +22,7 @@
 
                     <!-- Moved Task Management Button below the details -->
                     <a href="{{ route('tasks.index', $project->id) }}" class="btn btn-success mb-3">Enter Task Management Page</a>
-
+                    
                     @if ($project->status !== 'started')
                         <a href="{{ route('project_manager.projects.edit', $project->id) }}" class="btn btn-primary mb-3">Edit Project</a>
                     @endif

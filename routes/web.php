@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\ProjectManagement\TaskController;
+use Illuminate\Support\Facades\Log;
 
 // Redirect root URL to login
 Route::get('/', function () {
@@ -124,7 +125,7 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::post('/logout', [ContractorsController::class, 'logout'])->name('logout');
 });
 
-Route::middleware(['auth', 'role:project_manager'])
+Route::middleware(['auth', 'role:project_manager,contractor,client'])
     ->prefix('projects/{projectId}')
     ->name('tasks.')
     ->group(function () {
@@ -136,3 +137,4 @@ Route::middleware(['auth', 'role:project_manager'])
         Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
     });
 
+    

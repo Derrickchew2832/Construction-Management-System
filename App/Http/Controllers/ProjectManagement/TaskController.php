@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ProjectManagement;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
@@ -18,11 +19,49 @@ class TaskController extends Controller
             return redirect()->route('projects.index')->with('error', 'Project not found.');
         }
 
+        // Fetch the logged-in user and their role
+        $user = Auth::user();
+        $userRole = $user->role_id;  // Assuming role_id is being used
+
+        // Check if the user is the Main Contractor for this project
+        $isMainContractor = $this->isMainContractor($projectId, $user->id);
+
         // Fetch all tasks for the project
         $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
 
         // Categorize tasks
-        $categorizedTasks = [
+        $categorizedTasks = $this->categorizeTasks($tasks);
+
+        // Count the tasks for each category
+        $taskCounts = $this->countTasks($categorizedTasks);
+
+        // Pass data to the view, including the user's role and whether they are a Main Contractor
+        return view('tasks.index', [
+            'categorizedTasks' => $categorizedTasks,
+            'taskCounts' => $taskCounts,  // Send task counts to the view
+            'project' => $project,  // Pass the project object to the view
+            'userRole' => $userRole,  // Send the user's role to the view
+            'isMainContractor' => $isMainContractor  // Send the Main Contractor flag to the view
+        ]);
+    }
+
+    // Function to check if the user is a Main Contractor for this project
+    private function isMainContractor($projectId, $userId)
+    {
+        // Check if the user is marked as the Main Contractor in the project_contractor table
+        $mainContractor = DB::table('project_contractor')
+                            ->where('project_id', $projectId)
+                            ->where('contractor_id', $userId)
+                            ->where('main_contractor', true)  // Check if the user is the main contractor
+                            ->first();
+
+        return $mainContractor !== null;
+    }
+
+    // Helper function to categorize tasks
+    private function categorizeTasks($tasks)
+    {
+        return [
             'due_today' => $tasks->filter(function ($task) {
                 return $task->due_date == now()->toDateString();
             }),
@@ -42,9 +81,12 @@ class TaskController extends Controller
                 return $task->status == 'verified';
             }),
         ];
+    }
 
-        // Count the tasks for each category
-        $taskCounts = [
+    // Helper function to count tasks in each category
+    private function countTasks($categorizedTasks)
+    {
+        return [
             'due_today' => $categorizedTasks['due_today']->count(),
             'priority_1' => $categorizedTasks['priority_1']->count(),
             'priority_2' => $categorizedTasks['priority_2']->count(),
@@ -52,13 +94,6 @@ class TaskController extends Controller
             'completed' => $categorizedTasks['completed']->count(),
             'verified' => $categorizedTasks['verified']->count(),
         ];
-
-        // Pass data to the view
-        return view('tasks.index', [
-            'categorizedTasks' => $categorizedTasks,
-            'taskCounts' => $taskCounts,  // Send task counts to the view
-            'project' => $project  // Pass the project object to the view
-        ]);
     }
 
     public function create($projectId)

@@ -57,7 +57,7 @@
 
                             <!-- Enter Project Button (Only when project is started and contractor is main) -->
                             @if ($project->can_access_management)
-                                <a href="{{ route('contractor.contractor.projects.manage', $project->id) }}"
+                                <a href="{{ route('tasks.index', $project->id) }}"
                                     class="btn btn-outline-primary btn-block">
                                     Enter Project
                                 </a>
