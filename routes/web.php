@@ -11,6 +11,8 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\ProjectManagement\TaskController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Log;
 
 // Redirect root URL to login
@@ -123,6 +125,26 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
 
     // Contractor Logout
     Route::post('/logout', [ContractorsController::class, 'logout'])->name('logout');
+});
+
+
+// Supplier Routes
+Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+    Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard'); 
+    Route::get('/quotes/dashboard', [SupplierController::class, 'quotes'])->name('quotes.index'); 
+    Route::get('/delivery', [SupplierController::class, 'delivery'])->name('delivery');
+    Route::get('/profile', [SupplierController::class, 'editProfile'])->name('profile');
+    Route::put('/profile', [SupplierController::class, 'updateProfile'])->name('profile.update');
+});
+
+
+// Client Routes
+Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->group(function () {
+    Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
+    Route::get('/projects/dashboard', [ClientController::class, 'projects'])->name('projects.dashboard');
+    Route::get('/invitations', [ClientController::class, 'invitations'])->name('invitations');
+    Route::get('/profile', [ClientController::class, 'editProfile'])->name('profile');
+    Route::put('/profile', [ClientController::class, 'updateProfile'])->name('profile.update');
 });
 
 

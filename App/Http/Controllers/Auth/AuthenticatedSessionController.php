@@ -28,19 +28,20 @@ class AuthenticatedSessionController extends Controller
         $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
         $projectManagerRoleId = DB::table('roles')->where('name', 'project_manager')->value('id');
         $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
-
-        // error_log('User Role ID: ' . $user->role_id);
-        // error_log('Admin Role ID: ' . $adminRoleId);
-        // error_log('Project Manager Role ID: ' . $projectManagerRoleId);
-        // error_log('Contractor Role ID: ' . $contractorRoleId);
-
+        $supplierRoleId = DB::table('roles')->where('name', 'supplier')->value('id');
+        $clientRoleId = DB::table('roles')->where('name', 'client')->value('id');
+        
         if ($user->role_id == $adminRoleId) {
             return redirect()->intended(route('admin.dashboard', absolute: false));
         } elseif ($user->role_id == $projectManagerRoleId) {
             return redirect()->intended(route('project_manager.dashboard', absolute: false));
         } elseif ($user->role_id == $contractorRoleId) {
             return redirect()->intended(route('contractor.dashboard', absolute: false));
-        }
+        } elseif ($user->role_id == $supplierRoleId) {
+            return redirect()->intended(route('supplier.dashboard', absolute: false));
+        } elseif ($user->role_id == $clientRoleId) {
+            return redirect()->intended(route('client.dashboard', absolute: false));
+        }   
 
         return redirect()->route('dashboard');
     }

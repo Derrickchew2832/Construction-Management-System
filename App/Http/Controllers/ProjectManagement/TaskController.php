@@ -13,7 +13,7 @@ class TaskController extends Controller
     {
         // Fetch the project by its ID
         $project = DB::table('projects')->where('id', $projectId)->first();
-        
+
         // Check if the project exists
         if (!$project) {
             return redirect()->route('projects.index')->with('error', 'Project not found.');
@@ -21,7 +21,7 @@ class TaskController extends Controller
 
         // Fetch the logged-in user and their role
         $user = Auth::user();
-        $userRole = $user->role_id;  // Assuming role_id is being used
+        $userRole = $user->role->name; // Assuming role_id is being used
 
         // Check if the user is the Main Contractor for this project
         $isMainContractor = $this->isMainContractor($projectId, $user->id);

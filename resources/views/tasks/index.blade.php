@@ -9,9 +9,11 @@
         @if($userRole == 'project_manager' || $isMainContractor)
             <!-- Full control for Project Manager and Main Contractor -->
             @include('tasks.partials.task_full_control', ['categorizedTasks' => $categorizedTasks])
+
         @elseif($userRole == 'contractor')
             <!-- Limited control for Contractors -->
             @include('tasks.partials.task_limited_control', ['categorizedTasks' => $categorizedTasks])
+            
         @elseif($userRole == 'client')
             <!-- View-only for Clients -->
             @include('tasks.partials.task_view_only', ['categorizedTasks' => $categorizedTasks])

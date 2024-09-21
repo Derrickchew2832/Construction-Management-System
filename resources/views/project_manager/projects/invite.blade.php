@@ -6,19 +6,6 @@
 <div class="container mt-4">
     <h1>Invite Contractor for Project: {{ $project->name }}</h1>
     
-    <!-- Display Success Message -->
-    @if (session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <!-- Display Error Message -->
-    @if (session('error'))
-        <div class="alert alert-danger">
-            {{ session('error') }}
-        </div>
-    @endif
     
     <form action="{{ route('project_manager.projects.storeInvite', $project->id) }}" method="POST">
         @csrf
@@ -35,7 +22,7 @@
             <li class="list-group-item">
                 {{ $contractor->name }} ({{ $contractor->email }}) - 
                 <span class="badge badge-{{ $contractor->status == 'submitted' ? 'success' : 'secondary' }}">
-                    {{ ucfirst($contractor->status) }}
+                    {{ ucfirst($contractor->status) }}                                    
                 </span>
             </li>
         @endforeach

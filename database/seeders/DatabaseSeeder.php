@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'password' => Hash::make('adminpassword'),
+            'password' => Hash::make('123'),
             'role_id' => $adminRoleId,
             'status' => 'approved',
         ]);
@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
         $projectManager = User::create([
             'name' => 'Project Manager',
             'email' => 'project@example.com',
-            'password' => Hash::make('123456'),
+            'password' => Hash::make('123'),
             'role_id' => $projectManagerRoleId,
             'status' => 'approved',
         ]);
@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Contractor',
             'email' => 'contractor@example.com',
-            'password' => Hash::make('123456'),
+            'password' => Hash::make('123'),
             'role_id' => $contractorRoleId,
             'status' => 'approved',
         ]);
@@ -53,7 +53,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Supplier',
             'email' => 'supplier@example.com',
-            'password' => Hash::make('supplierpassword'),
+            'password' => Hash::make('123'),
             'role_id' => $supplierRoleId,
             'status' => 'approved',
         ]);
@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Client',
             'email' => 'client@example.com',
-            'password' => Hash::make('clientpassword'),
+            'password' => Hash::make('123'),
             'role_id' => $clientRoleId,
             'status' => 'approved',
         ]);

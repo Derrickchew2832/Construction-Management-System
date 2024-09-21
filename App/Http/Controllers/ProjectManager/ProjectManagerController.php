@@ -363,7 +363,6 @@ public function updateProject(Request $request, $projectId)
 }
 
 
-
     public function rejectQuote($projectId, $contractorId)
     {
         DB::table('project_contractor')
