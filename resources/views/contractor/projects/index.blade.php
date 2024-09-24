@@ -23,12 +23,6 @@
                                 <div class="ribbon bg-success">Completed</div>
                             @elseif ($project->ribbon === 'In Progress')
                                 <div class="ribbon bg-warning">In Progress</div>
-                            @elseif ($project->ribbon === 'Declined')
-                                <div class="ribbon bg-danger">Declined</div>
-                            @elseif ($project->ribbon === 'Quote Submitted')
-                                <div class="ribbon bg-info">Quote Submitted</div>
-                            @else
-                                <div class="ribbon bg-primary">Quote Required</div>
                             @endif
 
                             <h5 class="card-title">{{ $project->name }}</h5>
@@ -50,10 +44,6 @@
                                     </a>
                                 </div>
                             </div>
-
-                            <!-- View Project Details Button -->
-                            <a href="{{ route('contractor.projects.show', $project->id) }}"
-                                class="btn btn-outline-success btn-block mb-2">View Project Details</a>
 
                             <!-- Enter Project Button (Only when project is started and contractor is main) -->
                             @if ($project->can_access_management)
@@ -86,20 +76,8 @@
             background-color: #f0ad4e; /* Orange color for In Progress */
         }
 
-        .ribbon.bg-danger {
-            background-color: #dc3545; /* Red for Declined */
-        }
-
-        .ribbon.bg-info {
-            background-color: #17a2b8; /* Light blue for Quote Submitted */
-        }
-
         .ribbon.bg-success {
             background-color: #28a745; /* Green for Completed */
-        }
-
-        .ribbon.bg-primary {
-            background-color: #007bff; /* Blue for Quote Required */
         }
 
         /* Sort Button and Search Input Alignment */

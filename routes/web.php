@@ -105,13 +105,15 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     // Contractor Dashboard
     Route::get('/dashboard', [ContractorsController::class, 'dashboard'])->name('dashboard');
     Route::get('/projects', [ContractorsController::class, 'indexProjects'])->name('projects.index');
-    Route::get('/projects/{project}', [ContractorsController::class, 'showProject'])->name('projects.show');
     Route::post('/projects/{project}/submit-quote', [ContractorsController::class, 'submitQuote'])->name('projects.submitQuote');
-    Route::post('/projects/{project}/respond-suggestion', [ContractorsController::class, 'respondToSuggestion'])->name('respondToSuggestion');
-    Route::post('/projects/{projectId}/favorite', [ContractorsController::class, 'toggleFavorite'])->name('projects.favorite');
-    Route::get('/projects/{projectId}/supply-order', [ContractorsController::class, 'supplyOrder'])->name('projects.supplyOrder');
-    Route::get('contractor/projects/{project}/manage', [ContractorsController::class, 'manageProject'])->name('contractor.projects.manage');
+    
+    Route::post('/projects/{project}/accept-quote', [ContractorsController::class, 'respondToSuggestion'])->name('acceptQuote');
+    Route::post('/projects/{project}/reject-quote', [ContractorsController::class, 'respondToSuggestion'])->name('rejectQuote');
+    Route::post('/projects/{project}/suggest-quote', [ContractorsController::class, 'respondToSuggestion'])->name('suggestQuote');
 
+    Route::post('/projects/{projectId}/favorite', [ContractorsController::class, 'toggleFavorite'])->name('projects.favorite');
+    Route::get('contractor/projects/{project}/manage', [ContractorsController::class, 'manageProject'])->name('contractor.projects.manage');
+    Route::get('/projects/quotes', [ContractorsController::class, 'showQuotes'])->name('projects.quotes');
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');
@@ -120,8 +122,6 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::get('/change-password', [ContractorsController::class, 'changePassword'])->name('change_password');
     Route::post('/change-password', [ContractorsController::class, 'updatePassword'])->name('update_password');
 
-    // Contractor Supply Order
-    Route::get('/supply-order', [ContractorsController::class, 'supplyOrder'])->name('supply_order');
 
     // Contractor Logout
     Route::post('/logout', [ContractorsController::class, 'logout'])->name('logout');
@@ -149,13 +149,15 @@ Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->g
 
 
 Route::middleware(['auth', 'role:project_manager,contractor,client'])
-->prefix('projects/{projectId}')
-->name('tasks.')
-->group(function () {
+    ->prefix('projects/{projectId}')
+    ->name('tasks.')
+    ->group(function () {
         Route::get('/tasks', [TaskController::class, 'index'])->name('index');
         Route::get('/tasks/create', [TaskController::class, 'create'])->name('create');
         Route::post('/tasks', [TaskController::class, 'store'])->name('store');
         Route::get('/tasks/{taskId}/edit', [TaskController::class, 'edit'])->name('edit');
         Route::put('/tasks/{taskId}', [TaskController::class, 'update'])->name('update');
         Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
-});
+        Route::post('/tasks/validate-contractor', [TaskController::class, 'validateContractor'])->name('validateContractor');
+        Route::post('/tasks/{taskId}/assign-contractor', [TaskController::class, 'assignContractor'])->name('assignContractor');
+    });
