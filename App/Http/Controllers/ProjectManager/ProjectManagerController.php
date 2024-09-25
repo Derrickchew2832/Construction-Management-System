@@ -103,6 +103,11 @@ class ProjectManagerController extends Controller
             return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
         }
 
+        // Fetch project documents
+        $documents = DB::table('project_documents')
+            ->where('project_id', $projectId)
+            ->get();
+
         $project->contractors = DB::table('project_invitations')
             ->join('users', 'project_invitations.contractor_id', '=', 'users.id')
             ->leftJoin('project_contractor', function ($join) use ($project) {
@@ -119,8 +124,9 @@ class ProjectManagerController extends Controller
             )
             ->get();
 
-        return view('project_manager.projects.show', compact('project'));
+        return view('project_manager.projects.show', compact('project', 'documents'));
     }
+
 
     public function storeProject(Request $request)
 {
@@ -132,6 +138,10 @@ class ProjectManagerController extends Controller
         'end_date' => 'required|date',
         'total_budget' => 'required|numeric',
         'location' => 'required|string|max:255',
+        'documents' => 'required|array', // Ensure at least one document is uploaded
+        'documents.*' => 'mimes:pdf,doc,docx|max:2048' // Validate file types and size for each file
+    ], [
+        'documents.required' => 'At least one document is required.' // Custom error message
     ]);
 
     // Insert the new project
@@ -148,6 +158,23 @@ class ProjectManagerController extends Controller
         'updated_at' => now(),
     ]);
 
+    // Handle multiple file uploads
+    if ($request->hasFile('documents')) {
+        foreach ($request->file('documents') as $file) {
+            $filePath = $file->store('project_documents', 'public'); // Save file to public storage
+            $originalFileName = $file->getClientOriginalName(); // Get the original file name
+
+            // Insert the document path and original file name into the project_documents table
+            DB::table('project_documents')->insert([
+                'project_id' => $projectId,
+                'document_path' => $filePath,
+                'original_name' => $originalFileName,  // Save the original file name
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
     // Insert the project manager as a project user
     DB::table('project_user')->insert([
         'project_id' => $projectId,
@@ -159,8 +186,11 @@ class ProjectManagerController extends Controller
     ]);
 
     // Redirect to the project details page with a success message
-    return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project created successfully!');
+    return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project created successfully');
 }
+
+
+
 
 
     public function editProject($projectId)

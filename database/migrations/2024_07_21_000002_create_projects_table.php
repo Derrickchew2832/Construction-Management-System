@@ -1,7 +1,4 @@
 <?php
-// database/migrations/2024_07_21_000002_create_projects_table.php
-
-// database/migrations/2024_07_21_000002_create_projects_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -30,12 +27,31 @@ return new class extends Migration {
             $table->foreign('project_manager_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('main_contractor_id')->references('id')->on('users')->onDelete('set null');
         });
+
+        // Create the project_documents table to store file paths for uploaded project documents
+        Schema::create('project_documents', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('project_id');
+            $table->string('document_path');  // Store the document file path
+            $table->string('original_name');  // Store the original file name
+            $table->timestamps();
+        
+            // Foreign key linking to the projects table
+            $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
+        });
+        
     }
 
     public function down()
     {
+        // Disable foreign key constraints to safely drop tables
         Schema::disableForeignKeyConstraints();
+
+        // Drop both projects and project_documents tables
+        Schema::dropIfExists('project_documents');
         Schema::dropIfExists('projects');
+
+        // Re-enable foreign key constraints
         Schema::enableForeignKeyConstraints();
     }
 };
