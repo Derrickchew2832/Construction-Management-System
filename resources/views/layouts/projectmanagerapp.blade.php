@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 </head>
 <body>
     <div>
@@ -76,6 +75,7 @@
 
     <!-- Your custom script -->
     <script>
+        // Modal Setup for Project Action (Approve, Reject, Suggest)
         $('#actionModal').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget);
             var quoteId = button.data('quote-id');
@@ -117,7 +117,46 @@
                 $('#suggestContractorId').val(contractorId);
             });
         });
+
+       // Delete Project with Confirmation
+       document.querySelectorAll('.delete-project-btn').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();  // Ensure the default action is stopped
+
+                let projectId = this.getAttribute('data-project-id');
+
+                // Confirm before deleting
+                if (confirm('Are you sure you want to delete this project?')) {
+                    // Send AJAX request to delete the project
+                    fetch(`/contractor/projects/${projectId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            alert('Project deleted successfully!');
+                            // Remove the project card from the DOM
+                            this.closest('.col-md-4').remove();
+                        } else {
+                            alert('Failed to delete the project.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the project.');
+                    });
+                }
+            });
+        });
     </script>
-    
 </body>
 </html>

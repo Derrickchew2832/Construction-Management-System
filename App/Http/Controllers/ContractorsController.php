@@ -15,96 +15,123 @@ class ContractorsController extends Controller
     }
 
     public function indexProjects(Request $request)
-    {
-        // Fetch projects with invitations related to the contractor
-        $projects = DB::table('projects')
-            ->join('project_invitations', 'projects.id', '=', 'project_invitations.project_id')
-            ->leftJoin('project_user', 'projects.id', '=', 'project_user.project_id') // Join to count members
-            ->where('project_invitations.contractor_id', Auth::id())
-            ->where('project_invitations.status', 'submitted') // Only show submitted projects
-            ->select(
-                'projects.id',
-                'projects.name',
-                'projects.description',
-                'projects.start_date',
-                'projects.end_date',
-                'projects.total_budget',
-                'projects.budget_remaining',
-                'projects.location',
-                'projects.status',
-                'projects.is_favorite',
-                'projects.main_contractor_id',
-                DB::raw('COUNT(DISTINCT project_user.user_id) as members_count') // Count members (project manager, contractors)
-            )
-            ->groupBy(
-                'projects.id',
-                'projects.name',
-                'projects.description',
-                'projects.start_date',
-                'projects.end_date',
-                'projects.total_budget',
-                'projects.budget_remaining',
-                'projects.location',
-                'projects.status',
-                'projects.is_favorite',
-                'projects.main_contractor_id'
-            )
-            ->orderBy('projects.is_favorite', 'desc') // Sort favorited projects on top
-            ->get();
+{
+    $contractorId = Auth::id(); // Get the logged-in contractor's ID
 
-        // Loop through projects to handle project-specific logic
-        foreach ($projects as $project) {
-            // Check if main contractor exists for the project
-            $mainContractorExists = DB::table('project_contractor')
-                ->where('project_id', $project->id)
-                ->where('main_contractor', true)
-                ->exists();
+    // Fetch projects with invitations related to the contractor
+    $projects = DB::table('projects')
+        ->join('project_invitations', 'projects.id', '=', 'project_invitations.project_id')
+        ->leftJoin('project_user', 'projects.id', '=', 'project_user.project_id') // Join to count members
+        ->where('project_invitations.contractor_id', $contractorId)
+        ->where('project_invitations.status', 'submitted') // Only show submitted projects
+        ->select(
+            'projects.id',
+            'projects.name',
+            'projects.description',
+            'projects.start_date',
+            'projects.end_date',
+            'projects.total_budget',
+            'projects.budget_remaining',
+            'projects.location',
+            'projects.status',
+            'projects.is_favorite',
+            'projects.main_contractor_id',
+            DB::raw('COUNT(DISTINCT project_user.user_id) as members_count'), // Count members (project manager, contractors)
+            DB::raw("IF(projects.main_contractor_id = {$contractorId}, true, false) as can_access_management") // Check if contractor is the main contractor
+        )
+        ->groupBy(
+            'projects.id',
+            'projects.name',
+            'projects.description',
+            'projects.start_date',
+            'projects.end_date',
+            'projects.total_budget',
+            'projects.budget_remaining',
+            'projects.location',
+            'projects.status',
+            'projects.is_favorite',
+            'projects.main_contractor_id'
+        )
+        ->orderBy('projects.is_favorite', 'desc') // Sort favorited projects on top
+        ->get();
 
-            // Count Project Manager and Main Contractor if main contractor exists
-            if ($mainContractorExists) {
-                $project->members_count += 2; // Count Project Manager and Main Contractor
-            }
-
-            // Define ribbon status based on project status
-            if ($project->status === 'completed') {
-                $project->ribbon = 'Completed';
-            } elseif ($project->status === 'started') {
-                $project->ribbon = 'In Progress';
-            }
-
-            // Manage access rights for the project based on project status
-            $project->can_access_management = ($project->status === 'started' && $mainContractorExists);
+    // Loop through projects to assign the ribbon property based on project status
+    foreach ($projects as $project) {
+        if ($project->status === 'completed') {
+            $project->ribbon = 'Completed';
+        } elseif ($project->status === 'started') {
+            $project->ribbon = 'In Progress';
+        } else {
+            $project->ribbon = 'Pending'; // Default ribbon if no specific status
         }
 
-        return view('contractor.projects.index', compact('projects'));
+        // Check if the project has a main contractor and add a ribbon
+        $mainContractorExists = DB::table('project_contractor')
+            ->where('project_id', $project->id)
+            ->where('main_contractor', true)
+            ->exists();
+
+        // Optionally, you can set another ribbon based on the presence of a main contractor
+        if ($mainContractorExists) {
+            $project->ribbon = 'Has Main Contractor';
+        }
     }
+
+    return view('contractor.projects.index', compact('projects'));
+}
+
+    
 
     public function showQuotes()
-    {
-        // Get the authenticated contractor ID
-        $contractorId = Auth::id();
+{
+    $contractorId = Auth::id();
 
-        // Fetch submitted quotes for the contractor
-        $quotes = DB::table('project_contractor')
-            ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
-            ->where('project_contractor.contractor_id', $contractorId)
-            ->select('project_contractor.*', 'projects.name as project_name')
-            ->get();
+    // Fetch submitted quotes for the contractor
+    $quotes = DB::table('project_contractor')
+        ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
+        ->where('project_contractor.contractor_id', $contractorId)
+        ->select('project_contractor.*', 'projects.name as project_name')
+        ->get();
 
-        // Fetch pending invitations where contractor hasn't submitted a quote yet
-        $pendingInvitations = DB::table('project_invitations')
-            ->join('projects', 'project_invitations.project_id', '=', 'projects.id')
-            ->where('project_invitations.contractor_id', $contractorId)
-            ->whereNotIn('project_invitations.project_id', function($query) use ($contractorId) {
-                $query->select('project_id')
-                    ->from('project_contractor')
-                    ->where('contractor_id', $contractorId);
-            })
-            ->select('projects.*', 'project_invitations.status as invitation_status')
-            ->get();
+    // Fetch pending invitations where contractor hasn't submitted a quote yet
+    $pendingInvitations = DB::table('project_invitations')
+        ->join('projects', 'project_invitations.project_id', '=', 'projects.id')
+        ->leftJoin('project_documents', 'projects.id', '=', 'project_documents.project_id')
+        ->where('project_invitations.contractor_id', $contractorId)
+        ->whereNotIn('project_invitations.project_id', function($query) use ($contractorId) {
+            $query->select('project_id')
+                ->from('project_contractor')
+                ->where('contractor_id', $contractorId);
+        })
+        ->select(
+            'projects.id', 
+            'projects.name', 
+            'projects.description', 
+            'projects.start_date', 
+            'projects.end_date', 
+            'projects.location', 
+            'project_invitations.status as invitation_status',
+            DB::raw('GROUP_CONCAT(project_documents.original_name, "::", project_documents.document_path) as documents')
+        )
+        ->groupBy('projects.id', 'projects.name', 'projects.description', 'projects.start_date', 'projects.end_date', 'projects.location', 'project_invitations.status')
+        ->get();
 
-        return view('contractor.projects.quotes', compact('quotes', 'pendingInvitations'));
+    // Format documents for each invitation
+    foreach ($pendingInvitations as $invitation) {
+        $invitation->documents = collect(explode(',', $invitation->documents))->map(function($doc) {
+            $parts = explode('::', $doc);
+            if (count($parts) === 2) {
+                return ['original_name' => $parts[0], 'document_path' => $parts[1]];
+            }
+            return null;  // Return null for invalid entries
+        })->filter()->all();  // Filter out null values
     }
+
+    return view('contractor.projects.quotes', compact('quotes', 'pendingInvitations'));
+}
+
+
+
 
     public function submitQuote(Request $request, $projectId)
     {

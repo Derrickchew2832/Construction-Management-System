@@ -12,6 +12,24 @@
     <p><strong>Total Budget:</strong> ${{ number_format($project->total_budget, 2) }}</p>
     <hr>
 
+    <!-- Documents Section (now below the total budget) -->
+    <h2>Project Documents</h2>
+    @if ($documents->isEmpty())
+        <p>No documents have been uploaded yet.</p>
+    @else
+        <ul class="list-group">
+            @foreach ($documents as $document)
+                <li class="list-group-item">
+                    <a href="{{ asset('storage/' . $document->document_path) }}" target="_blank">
+                        {{ $document->original_name }} <!-- Display the original file name -->
+                    </a>
+                </li>
+            @endforeach
+        </ul>
+    @endif
+
+    <hr>
+
     <h2>Contractors</h2>
     @if ($project->contractors->isEmpty())
         <p>No contractors have been invited yet.</p>

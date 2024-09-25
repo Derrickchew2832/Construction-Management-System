@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="container mt-4">
-        <h1>Projects</h1>
+        <h1 class="mb-4">Projects</h1>
         <div class="d-flex justify-content-end align-items-center mb-3">
             <!-- Sort and Search Input -->
             <div class="d-flex align-items-center">
@@ -15,46 +15,47 @@
 
         <div class="row" id="projectCards">
             @foreach ($projects as $project)
-                <div class="col-md-4 mb-4">
-                    <div class="card position-relative h-100">
-                        <div class="card-body">
-                            <!-- Ribbon based on project status -->
-                            @if ($project->ribbon === 'Completed')
-                                <div class="ribbon bg-success">Completed</div>
-                            @elseif ($project->ribbon === 'In Progress')
-                                <div class="ribbon bg-warning">In Progress</div>
-                            @endif
+                @if ($project->can_access_management) <!-- Only show the project if contractor is main -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card position-relative h-100">
+                            <div class="card-body">
+                                <!-- Ribbon based on project status -->
+                                @if ($project->ribbon === 'Completed')
+                                    <div class="ribbon bg-success">Completed</div>
+                                @elseif ($project->ribbon === 'In Progress')
+                                    <div class="ribbon bg-warning">In Progress</div>
+                                @endif
 
-                            <h5 class="card-title">{{ $project->name }}</h5>
-                            <p class="card-text">{{ $project->description }}</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div>
-                                    <!-- Display the number of people in the project -->
-                                    <span>{{ $project->members_count ?? 0 }}</span>
-                                    <i class="fas fa-users"></i>
+                                <!-- Adjusted Font Size for Project Title -->
+                                <h5 class="card-title project-title">{{ $project->name }}</h5>
+                                <p class="card-text">{{ $project->description }}</p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <!-- Display the number of people in the project -->
+                                        <span>{{ $project->members_count ?? 0 }}</span>
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div>
+                                        <!-- Favorite Button -->
+                                        @php
+                                            $isFavorite = $project->is_favorite ? 'fas' : 'far';
+                                        @endphp
+                                        <a href="#" class="btn btn-link favorite-btn"
+                                            data-project-id="{{ $project->id }}">
+                                            <i class="{{ $isFavorite }} fa-star"></i>
+                                        </a>
+                                    </div>
                                 </div>
-                                <div>
-                                    <!-- Favorite Button -->
-                                    @php
-                                        $isFavorite = $project->is_favorite ? 'fas' : 'far';
-                                    @endphp
-                                    <a href="#" class="btn btn-link favorite-btn"
-                                        data-project-id="{{ $project->id }}">
-                                        <i class="{{ $isFavorite }} fa-star"></i>
-                                    </a>
-                                </div>
-                            </div>
 
-                            <!-- Enter Project Button (Only when project is started and contractor is main) -->
-                            @if ($project->can_access_management)
+                                <!-- Enter Project Button (Only when project is started and contractor is main) -->
                                 <a href="{{ route('tasks.index', $project->id) }}"
                                     class="btn btn-outline-primary btn-block">
                                     Enter Project
                                 </a>
-                            @endif
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endif
             @endforeach
         </div>
     </div>
@@ -78,6 +79,11 @@
 
         .ribbon.bg-success {
             background-color: #28a745; /* Green for Completed */
+        }
+
+        /* Adjusted Font Size for Project Title */
+        .project-title {
+            font-size: 1.1rem; /* Make the project title smaller */
         }
 
         /* Sort Button and Search Input Alignment */
