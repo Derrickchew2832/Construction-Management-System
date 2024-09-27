@@ -18,14 +18,14 @@
                 @if ($project->can_access_management) <!-- Only show the project if contractor is main -->
                     <div class="col-md-4 mb-4">
                         <div class="card position-relative h-100">
+                            <!-- Ribbon based on project status -->
+                            @if ($project->ribbon === 'Completed')
+                                <div class="ribbon bg-success">Completed</div>
+                            @elseif ($project->ribbon === 'In Progress')
+                                <div class="ribbon bg-warning">In Progress</div>
+                            @endif
+        
                             <div class="card-body">
-                                <!-- Ribbon based on project status -->
-                                @if ($project->ribbon === 'Completed')
-                                    <div class="ribbon bg-success">Completed</div>
-                                @elseif ($project->ribbon === 'In Progress')
-                                    <div class="ribbon bg-warning">In Progress</div>
-                                @endif
-
                                 <!-- Adjusted Font Size for Project Title -->
                                 <h5 class="card-title project-title">{{ $project->name }}</h5>
                                 <p class="card-text">{{ $project->description }}</p>
@@ -46,7 +46,7 @@
                                         </a>
                                     </div>
                                 </div>
-
+        
                                 <!-- Enter Project Button (Only when project is started and contractor is main) -->
                                 <a href="{{ route('tasks.index', $project->id) }}"
                                     class="btn btn-outline-primary btn-block">
@@ -58,7 +58,7 @@
                 @endif
             @endforeach
         </div>
-    </div>
+        
 
     <style>
         /* Ribbon CSS */
@@ -71,6 +71,7 @@
             color: white;
             text-transform: uppercase;
             border-radius: 3px;
+            z-index: 10; /* Ensure the ribbon is displayed above other elements */
         }
 
         .ribbon.bg-warning {
@@ -79,6 +80,14 @@
 
         .ribbon.bg-success {
             background-color: #28a745; /* Green for Completed */
+        }
+
+        .ribbon.bg-secondary {
+            background-color: #6c757d; /* Grey color for Pending */
+        }
+
+        .ribbon.bg-info {
+            background-color: #17a2b8; /* Blue color for Has Main Contractor */
         }
 
         /* Adjusted Font Size for Project Title */

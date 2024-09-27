@@ -10,26 +10,111 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <!-- Custom CSS for the management board -->
-    <link rel="stylesheet" href="{{ asset('resources/css/management.css') }}">
+    <!-- Custom CSS applied directly in the layout -->
+    <style>
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: #fff;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            padding: 15px;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar .nav-link {
+            color: #ffffff;
+            font-size: 0.95rem;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #495057;
+        }
+
+        .sidebar .sidebar-header h5 {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar .active {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+
+        /* Main Content Styling */
+        .main-content {
+            margin-left: 270px; /* Adjust based on the width of the sidebar */
+            padding: 20px;
+            background-color: #f5f6fa;
+            min-height: 100vh;
+        }
+
+        /* Header Styling */
+        .top-bar {
+            background-color: #ffffff;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Standardized Button Styles */
+        .btn-danger {
+            font-size: 12px;
+            padding: 5px 15px;
+        }
+
+        /* Project Status Styling */
+        #project-status {
+            font-weight: bold;
+        }
+
+        /* General Layout Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f6fa;
+        }
+
+        /* Scrollbar for Sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: #6c757d;
+            border-radius: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background-color: #343a40;
+        }
+    </style>
 </head>
-<body style="background-color: #f5f6fa;">
+<body>
+
     <div class="wrapper d-flex">
         <!-- Sidebar -->
-        <aside class="sidebar bg-dark text-light p-3 vh-100">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+        <aside class="sidebar">
+            <div class="sidebar-header d-flex justify-content-between align-items-center mb-4">
                 <h5>{{ $project->name }} <i class="fas fa-caret-down"></i></h5>
             </div>
             <ul class="nav flex-column">
-                <!-- Show these options to all users -->
-                <li class="nav-item mb-2"> 
-                    <a href="#" class="nav-link text-light" style="font-size: 0.9rem;">Tasks</a>
+                <!-- Common options -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-light">Tasks</a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a href="#" class="nav-link text-light" style="font-size: 0.9rem;">Photos</a>
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-light">Photos</a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a href="#" class="nav-link text-light" style="font-size: 0.9rem;">Files</a>
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-light">Files</a>
                 </li>
 
                 <!-- Role-specific options -->
@@ -44,23 +129,22 @@
 
                 <!-- Show 'Supply' only to Contractors -->
                 @if($roleName == 'contractor' && !$isMainContractor)
-                    <li class="nav-item mb-2">
-                        <a href="#" class="nav-link text-light" style="font-size: 0.9rem;">Supply</a>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-light">Supply</a>
                     </li>
                 @endif
 
                 <!-- Show 'Quote' option only to Main Contractors -->
                 @if($isMainContractor)
-                    <li class="nav-item mb-2">
-                        <a href="#" class="nav-link text-light" style="font-size: 0.9rem;">Quote</a>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-light">Quote</a>
                     </li>
                 @endif
-
             </ul>
         </aside>
 
         <!-- Main Content -->
-        <div class="main-content flex-grow-1 p-4">
+        <div class="main-content">
             <header class="d-flex justify-content-between align-items-center mb-3">
                 <!-- Left side: Project details -->
                 <div>
@@ -68,9 +152,7 @@
                     <small>Managed by: {{ $projectManagerName }} | Main Contractor: {{ $mainContractorName }}</small>
                     <small> | 
                         Project Status: 
-                        <span id="project-status">
-                            <!-- Placeholder for countdown or project status -->
-                        </span>
+                        <span id="project-status"></span>
                     </small>
                 </div>
 
@@ -123,5 +205,8 @@
             statusElement.innerHTML = 'Project has already ended';
         }
     </script>
+
+   
+
 </body>
 </html>

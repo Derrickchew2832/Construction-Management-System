@@ -1,6 +1,4 @@
-<div class="task-card">
-    <h5>{{ $task->title }} ({{ $task->priority }})</h5>
-    <p>{{ $task->description }}</p>
-    <span>Status: {{ $task->status }}</span>
-    <a href="{{ route('tasks.edit', [$project->id, $task->id]) }}" class="btn btn-sm btn-primary">Edit</a>
+<div class="task-card" style="min-height: 80px; max-height: 100px;">
+    <h5 style="font-size: 1rem;">{{ $task->title }}</h5>
+    <p style="font-size: 0.9rem;">{{ $task->description }}</p>
 </div>

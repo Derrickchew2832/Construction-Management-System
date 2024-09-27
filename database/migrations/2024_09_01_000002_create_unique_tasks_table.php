@@ -4,8 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateUniqueTasksTable extends Migration
-{
+return new class extends Migration {
+
     public function up()
     {
         Schema::create('tasks', function (Blueprint $table) {
@@ -16,8 +16,15 @@ class CreateUniqueTasksTable extends Migration
             $table->text('description');
             $table->date('start_date');
             $table->date('due_date');
-            $table->enum('priority', ['negotiation', '1', '2'])->default('negotiation');
-            $table->enum('status', ['pending', 'in_progress', 'completed', 'verified'])->default('pending');
+            $table->enum('status', [
+                'under_negotiation',
+                'due_date',
+                'priority_1',
+                'priority_2',
+                'completed',
+                'verified'
+            ])->default('under_negotiation'); // Status options
+            $table->string('task_pdf')->nullable(); // Optional task document
             $table->timestamps();
         });
     }
@@ -26,4 +33,4 @@ class CreateUniqueTasksTable extends Migration
     {
         Schema::dropIfExists('tasks');
     }
-}
+};

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 class TaskController extends Controller
 {
@@ -26,19 +25,27 @@ class TaskController extends Controller
 
         // Fetch the logged-in user and their role
         $user = Auth::user();
-        $userRole = $user->role->name;
+        $userRole = DB::table('roles')->where('id', $user->role_id)->value('name'); // Fetch role name
 
         // Check if the user is the Main Contractor for this project
-        $isMainContractor = $this->isMainContractor($projectId, $user->id);
+        $isMainContractor = ($user->id == $project->main_contractor_id);  // Simplified check directly with the project's main_contractor_id
 
-        // Fetch all tasks for the project using DB facade
-        $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
+        // Fetch all tasks for the project and join with contractor emails
+        $tasks = DB::table('tasks')
+            ->join('task_invitations', 'tasks.id', '=', 'task_invitations.task_id')
+            ->join('users', 'task_invitations.contractor_id', '=', 'users.id')
+            ->where('tasks.project_id', $projectId)
+            ->select('tasks.*', 'users.email as contractor_email') // Select contractor's email
+            ->get();
 
+        // Ensure that the due_date category is properly handled even if no tasks have a due date
         $categorizedTasks = [
             'under_negotiation' => $tasks->where('status', 'under_negotiation'),
-            'due_date' => $tasks->where('due_date', '!=', null), // Filter tasks with a due date
-            'priority_1' => $tasks->where('priority', 1),
-            'priority_2' => $tasks->where('priority', 2),
+            'due_date' => $tasks->filter(function ($task) {
+                return !is_null($task->due_date); // Only include tasks with a due date
+            }),
+            'priority_1' => $tasks->where('status', 'priority_1'),
+            'priority_2' => $tasks->where('status', 'priority_2'),
             'completed' => $tasks->where('status', 'completed'),
             'verified' => $tasks->where('status', 'verified')
         ];
@@ -48,10 +55,10 @@ class TaskController extends Controller
 
         // Fetch contractors related to the project
         $contractors = DB::table('users')
-                        ->join('project_contractor', 'users.id', '=', 'project_contractor.contractor_id')
-                        ->where('project_contractor.project_id', $projectId)
-                        ->select('users.id', 'users.name')
-                        ->get();
+            ->join('project_contractor', 'users.id', '=', 'project_contractor.contractor_id')
+            ->where('project_contractor.project_id', $projectId)
+            ->select('users.id', 'users.name')
+            ->get();
 
         // Calculate the project due date countdown
         $dueDateCountdown = $this->calculateDueDate($project->end_date);
@@ -91,19 +98,6 @@ class TaskController extends Controller
             ->get();
     }
 
-    // Function to check if the user is a Main Contractor for this project
-    private function isMainContractor($projectId, $userId)
-    {
-        // Check if the user is marked as the Main Contractor in the project_contractor table
-        $mainContractor = DB::table('project_contractor')
-                            ->where('project_id', $projectId)
-                            ->where('contractor_id', $userId)
-                            ->where('main_contractor', true)  // Check if the user is the main contractor
-                            ->first();
-
-        return $mainContractor !== null;
-    }
-
     // Helper function to categorize tasks
     private function categorizeTasks($tasks)
     {
@@ -115,10 +109,10 @@ class TaskController extends Controller
                 return $task->due_date == now()->toDateString();
             }),
             'priority_1' => $tasks->filter(function ($task) {
-                return $task->priority == '1';
+                return $task->status == 'priority_1';
             }),
             'priority_2' => $tasks->filter(function ($task) {
-                return $task->priority == '2';
+                return $task->status == 'priority_2';
             }),
             'completed' => $tasks->filter(function ($task) {
                 return $task->status == 'completed';
@@ -133,7 +127,7 @@ class TaskController extends Controller
     {
         return [
             'negotiation' => isset($categorizedTasks['under_negotiation']) ? $categorizedTasks['under_negotiation']->count() : 0,
-            'due_today' => isset($categorizedTasks['due_today']) ? $categorizedTasks['due_today']->count() : 0,
+            'due_today' => isset($categorizedTasks['due_date']) ? $categorizedTasks['due_date']->count() : 0,
             'priority_1' => isset($categorizedTasks['priority_1']) ? $categorizedTasks['priority_1']->count() : 0,
             'priority_2' => isset($categorizedTasks['priority_2']) ? $categorizedTasks['priority_2']->count() : 0,
             'completed' => isset($categorizedTasks['completed']) ? $categorizedTasks['completed']->count() : 0,
@@ -145,45 +139,91 @@ class TaskController extends Controller
     {
         // Fetch contractors for assigning tasks
         $contractors = DB::table('project_contractor')
-                        ->join('users', 'project_contractor.contractor_id', '=', 'users.id')
-                        ->where('project_contractor.project_id', $projectId)
-                        ->select('users.id', 'users.name')
-                        ->get();
+            ->join('users', 'project_contractor.contractor_id', '=', 'users.id')
+            ->where('project_contractor.project_id', $projectId)
+            ->select('users.id', 'users.name')
+            ->get();
 
         return view('tasks.partials.create', compact('projectId', 'contractors')); // Pass contractors to view
     }
 
     public function store(Request $request, $projectId)
-    {
-        // Validate input
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'start_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:start_date', // Ensure date range is valid
-            'invite_contractor' => 'nullable|email',
-        ]);
+{
+    // Validate the input
+    $data = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'required|string',
+        'start_date' => 'required|date|before_or_equal:due_date',
+        'due_date' => 'required|date|after_or_equal:start_date',
+        'contractor_email' => 'required|email',
+        'status' => 'required|string|in:under_negotiation,due_date,priority_1,priority_2,completed,verified',
+        'task_pdf' => 'nullable|file|mimes:pdf|max:2048',
+    ]);
 
-        // Count existing tasks for project and create task reference
-        $taskCount = DB::table('tasks')->where('project_id', $projectId)->count();
-        $taskReference = '#' . ($taskCount + 1);
+    \Log::info("Validating Contractor Email: {$data['contractor_email']}");
 
-        // Insert task into database
-        DB::table('tasks')->insert([
-            'project_id' => $projectId,
-            'title' => $taskReference . ' ' . $data['title'],
-            'description' => $data['description'],
-            'start_date' => $data['start_date'],
-            'due_date' => $data['due_date'],
-            'status' => 'under_negotiation', // All tasks start here
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+    $contractor = DB::table('users')->where('email', $data['contractor_email'])->first();
 
-        // Send email invite to contractor (optional)
-
-        return redirect()->route('tasks.index', $projectId)->with('success', 'Task created successfully!');
+    if (!$contractor) {
+        \Log::error("Contractor with email {$data['contractor_email']} not found.");
+        return response()->json(['success' => false, 'message' => 'Contractor not found.']);
     }
+
+    \Log::info("Fetched Contractor Details: " . json_encode($contractor));
+
+    $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
+    
+    if ($contractor->role_id != $contractorRoleId) {
+        \Log::error("The user with email {$data['contractor_email']} is not a contractor.");
+        return response()->json(['success' => false, 'message' => 'This user is not a contractor.']);
+    }
+
+    $isMainContractor = DB::table('project_contractor')
+        ->where('project_id', $projectId)
+        ->where('contractor_id', $contractor->id)
+        ->where('main_contractor', 1)
+        ->exists();
+
+    \Log::info("Is Contractor ID: {$contractor->id} the main contractor for Project ID: {$projectId}? " . ($isMainContractor ? 'Yes' : 'No'));
+
+    if ($isMainContractor) {
+        \Log::error("Contractor ID: {$contractor->id} is the main contractor for Project ID: {$projectId}. Task assignment rejected.");
+        return response()->json(['success' => false, 'message' => 'The main contractor cannot be assigned to this task.']);
+    }
+
+    $taskPdfPath = null;
+    if ($request->hasFile('task_pdf')) {
+        $taskPdfPath = $request->file('task_pdf')->store('tasks/pdf', 'public');
+    }
+
+    $taskId = DB::table('tasks')->insertGetId([
+        'project_id' => $projectId,
+        'title' => $data['title'],
+        'description' => $data['description'],
+        'start_date' => $data['start_date'],
+        'due_date' => $data['due_date'],
+        'status' => $data['status'],
+        'task_pdf' => $taskPdfPath,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    \Log::info("Task created with ID: {$taskId}");
+
+    DB::table('task_invitations')->insert([
+        'task_id' => $taskId,
+        'contractor_id' => $contractor->id,
+        'invited_by' => Auth::user()->id,
+        'email' => $data['contractor_email'],
+        'status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    \Log::info("Task invitation sent to Contractor ID: {$contractor->id} for Task ID: {$taskId}");
+
+    return response()->json(['success' => true, 'message' => 'Task created and contractor invited successfully.']);
+}
 
     public function updateTaskStatus(Request $request, $taskId)
     {
@@ -196,18 +236,5 @@ class TaskController extends Controller
         DB::table('tasks')->where('id', $taskId)->update(['status' => $newStatus['status']]);
 
         return response()->json(['success' => true]);
-    }
-
-    public function validateContractor(Request $request)
-    {
-        $email = $request->input('email');
-
-        // Check if the contractor exists in the 'users' table and their role is 'contractor'
-        $contractor = DB::table('users')->where('email', $email)->where('role', 'contractor')->first();
-
-        // Return JSON response indicating if the contractor is valid
-        return response()->json([
-            'valid' => $contractor ? true : false,
-        ]);
     }
 }

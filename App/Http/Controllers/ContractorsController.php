@@ -57,30 +57,17 @@ class ContractorsController extends Controller
 
     // Loop through projects to assign the ribbon property based on project status
     foreach ($projects as $project) {
+        // Only include "In Progress" and "Completed" statuses
         if ($project->status === 'completed') {
             $project->ribbon = 'Completed';
         } elseif ($project->status === 'started') {
             $project->ribbon = 'In Progress';
-        } else {
-            $project->ribbon = 'Pending'; // Default ribbon if no specific status
-        }
-
-        // Check if the project has a main contractor and add a ribbon
-        $mainContractorExists = DB::table('project_contractor')
-            ->where('project_id', $project->id)
-            ->where('main_contractor', true)
-            ->exists();
-
-        // Optionally, you can set another ribbon based on the presence of a main contractor
-        if ($mainContractorExists) {
-            $project->ribbon = 'Has Main Contractor';
         }
     }
 
     return view('contractor.projects.index', compact('projects'));
 }
 
-    
 
     public function showQuotes()
 {
@@ -129,9 +116,6 @@ class ContractorsController extends Controller
 
     return view('contractor.projects.quotes', compact('quotes', 'pendingInvitations'));
 }
-
-
-
 
     public function submitQuote(Request $request, $projectId)
     {

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Contractor\ContractorTaskController;
 use App\Http\Controllers\ContractorsController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProjectManager\ProjectManagerController;
@@ -114,6 +115,13 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::post('/projects/{projectId}/favorite', [ContractorsController::class, 'toggleFavorite'])->name('projects.favorite');
     Route::get('contractor/projects/{project}/manage', [ContractorsController::class, 'manageProject'])->name('contractor.projects.manage');
     Route::get('/projects/quotes', [ContractorsController::class, 'showQuotes'])->name('projects.quotes');
+
+    // Routes for task quotes
+    Route::get('/contractor/tasks/{taskId}/quotes', [ContractorTaskController::class, 'indexTasks']);
+    Route::post('/contractor/tasks/{taskId}/submit-quote', [ContractorTaskController::class, 'submitTaskQuote']);
+    Route::post('/contractor/tasks/{taskId}/accept-quote', [ContractorTaskController::class, 'acceptTaskQuote']);
+    Route::post('/contractor/tasks/{taskId}/reject-quote', [ContractorTaskController::class, 'rejectTaskQuote']);
+    Route::post('/contractor/tasks/{taskId}/suggest-quote', [ContractorTaskController::class, 'suggestTaskQuote']);
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');
@@ -148,6 +156,7 @@ Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->g
 });
 
 
+
 Route::middleware(['auth', 'role:project_manager,contractor,client'])
     ->prefix('projects/{projectId}')
     ->name('tasks.')
@@ -159,5 +168,4 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::put('/tasks/{taskId}', [TaskController::class, 'update'])->name('update');
         Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
         Route::post('/tasks/validate-contractor', [TaskController::class, 'validateContractor'])->name('validateContractor');
-        Route::post('/tasks/{taskId}/assign-contractor', [TaskController::class, 'assignContractor'])->name('assignContractor');
     });

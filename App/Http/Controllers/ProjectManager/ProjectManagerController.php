@@ -189,10 +189,6 @@ class ProjectManagerController extends Controller
     return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project created successfully');
 }
 
-
-
-
-
     public function editProject($projectId)
 {
     $project = DB::table('projects')->where('id', $projectId)->first();
