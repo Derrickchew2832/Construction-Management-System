@@ -59,10 +59,12 @@
 
         /* Main Content Styling */
         .main-content {
-            margin-left: 290px;
+            margin-left: 270px; /* Align with the sidebar width */
             padding: 20px;
             background-color: #f5f6fa;
             min-height: 100vh;
+            width: calc(100% - 270px); /* Ensure it fills the remaining space */
+            box-sizing: border-box; /* Ensure padding does not overflow */
         }
 
         /* Standardized Button Styles */
@@ -115,6 +117,17 @@
         .stats-box i {
             margin-right: 5px;
         }
+
+        /* Button Panel Styling */
+        .button-panel {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .button-panel .btn {
+            margin-right: 10px;
+        }
     </style>
 </head>
 
@@ -163,20 +176,13 @@
                     </li>
                 @endif
 
-                <!-- Show 'Quote' option only to Main Contractors -->
                 @if ($isMainContractor)
                     <li class="nav-item">
-                        @foreach ($tasks as $task)
-                            <a href="{{ route('tasks.quote', ['projectId' => $projectId, 'taskId' => $task->id]) }}"
-                                class="nav-link">
-                                <i class="fas fa-file-invoice"></i>Quotes
-                            </a>
-                        @endforeach
+                        <a href="{{ route('tasks.quote', ['projectId' => $projectId]) }}" class="nav-link">
+                            <i class="fas fa-file-invoice"></i> Quotes
+                        </a>
                     </li>
                 @endif
-
-
-
 
                 <!-- Invite Button for Project Manager -->
                 @if ($roleName == 'project_manager')
@@ -189,8 +195,8 @@
 
                 <!-- Statistics -->
                 <li class="nav-item">
-                    <a href="{{ route('tasks.statistics', ['projectId' => $projectId]) }}" class="btn btn-primary mt-4">
-                        <i class="fas fa-user-plus"></i> Invite
+                    <a href="{{ route('tasks.statistics', ['projectId' => $projectId]) }}" class="nav-link">
+                        <i class="fas fa-chart-bar"></i> Statistics
                     </a>
                 </li>
             </ul>
@@ -225,6 +231,8 @@
                         onclick="window.location.href='{{ $exiturl }}'">Exit</button>
                 </div>
             </header>
+
+          
 
             <!-- Yield content from specific views -->
             @yield('content')

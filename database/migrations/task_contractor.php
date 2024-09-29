@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->decimal('quoted_price', 15, 2)->nullable(); // Latest quoted price
             $table->string('quote_pdf')->nullable(); // Path to quote document
             $table->text('quote_suggestion')->nullable(); // Suggested improvements for the quote
-            $table->enum('status', ['pending', 'approved', 'rejected', 'suggested'])->default('pending'); // Status of the quote
+            $table->enum('status', ['pending', 'approved', 'rejected', 'suggested','submitted'])->default('pending'); // Status of the quote
             $table->string('suggested_by')->nullable(); // Who suggested: 'contractor' or 'project_manager'
             $table->boolean('is_final')->default(false); // Whether the quote is finalized
             $table->boolean('is_sub_contractor')->default(false); // Indicate if this contractor is the sub-contractor for the task

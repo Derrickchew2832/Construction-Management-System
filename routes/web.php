@@ -172,7 +172,11 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         
 
         // Route to show the task quote
-        Route::get('/projects/{projectId}/tasks/{taskId}/quote', [TaskController::class, 'showQuote'])->name('tasks.quote');
+        Route::get('/quote', [TaskController::class, 'showQuote'])->name('quote');
         Route::post('/tasks/{taskId}/quote/respond', [TaskController::class, 'respondToTaskQuote'])->name('quote.respond');
+
         
+        // Add this to your routes/web.php
+
+
     });

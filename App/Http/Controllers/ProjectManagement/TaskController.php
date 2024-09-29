@@ -234,91 +234,99 @@ class TaskController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function showQuote($projectId, $taskId)
-{
-    // Fetch the project by its ID
-    $project = DB::table('projects')->where('id', $projectId)->first();
+    public function showQuote($projectId)
+    {
+        // Fetch the project by its ID
+        $project = DB::table('projects')->where('id', $projectId)->first();
 
-    if (!$project) {
-        return redirect()->route('projects.index')->with('error', 'Project not found.');
+        if (!$project) {
+            return redirect()->route('projects.index')->with('error', 'Project not found.');
+        }
+
+        // Fetch all tasks for the current project
+        $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
+
+        if ($tasks->isEmpty()) {
+            return redirect()->back()->with('error', 'No tasks found for this project.');
+        }
+
+        // Fetch all quotes for tasks in the current project
+        foreach ($tasks as $task) {
+            $task->quote = DB::table('task_contractor')->where('task_id', $task->id)->first();
+        }
+
+        // Fetch the project manager and main contractor
+        $projectUsers = DB::table('users')
+            ->whereIn('id', [$project->project_manager_id, $project->main_contractor_id])
+            ->get()
+            ->keyBy('id');
+
+        $projectManager = $projectUsers->get($project->project_manager_id);
+        $mainContractor = $projectUsers->get($project->main_contractor_id);
+
+        // Determine if the current user is the main contractor
+        $isMainContractor = auth()->user()->id == $project->main_contractor_id;
+
+        // Pass all necessary data to the view
+        return view('tasks.quote', [
+            'project' => $project,
+            'tasks' => $tasks,
+            'projectId' => $projectId,
+            'projectManagerName' => $projectManager ? $projectManager->name : 'N/A',
+            'mainContractorName' => $mainContractor ? $mainContractor->name : 'N/A',
+            'isMainContractor' => $isMainContractor
+        ]);
     }
-
-    // Fetch the task and the related quote
-    $task = DB::table('tasks')->where('id', $taskId)->first();
-    $quote = DB::table('task_contractor')->where('task_id', $taskId)->first();
-
-    if (!$quote) {
-        return redirect()->back()->with('error', 'No quote found for this task.');
-    }
-
-    // Fetch the project manager and main contractor
-    $projectManager = DB::table('users')->where('id', $project->project_manager_id)->first();
-    $mainContractor = DB::table('users')->where('id', $project->main_contractor_id)->first();
-
-    // Fetch all tasks for the project
-    $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
-
-    // Passing $projectId, $taskId, and additional information to the view
-    return view('tasks.quote', [
-        'task' => $task,
-        'quote' => $quote,
-        'tasks' => $tasks,  // Pass the tasks to the view
-        'project' => $project,  // Pass the project data to the view
-        'projectId' => $projectId,  // Pass the projectId to the view
-        'taskId' => $taskId,        // Pass the taskId to the view
-        'projectManagerName' => $projectManager ? $projectManager->name : 'N/A',  // Pass project manager name
-        'mainContractorName' => $mainContractor ? $mainContractor->name : 'N/A',  // Pass main contractor name
-        'isMainContractor' => auth()->user()->id == DB::table('projects')->where('id', $projectId)->value('main_contractor_id'),
-    ]);
-}
 
     public function respondToTaskQuote(Request $request, $projectId, $taskId)
     {
-        $action = $request->input('action');
-        $quoteId = $request->input('quote_id');
+        // Fetch the current quote
+        $quote = DB::table('task_contractor')->where('task_id', $taskId)->first();
 
-        if ($action == 'accept') {
-            DB::table('task_contractor')
-                ->where('id', $quoteId)
-                ->update([
-                    'status' => 'approved',
-                    'is_final' => true,
-                    'updated_at' => now(),
-                ]);
+        // Get the logged-in user
+        $currentUser = Auth::user();
 
-            return response()->json(['success' => true, 'message' => 'You have accepted the quote, and the task quote has been updated.']);
-        } elseif ($action == 'reject') {
-            DB::table('task_contractor')
-                ->where('id', $quoteId)
-                ->update([
-                    'status' => 'rejected',
-                    'is_final' => true,
-                    'updated_at' => now(),
-                ]);
-
-            return response()->json(['success' => true, 'message' => 'You have rejected the task quote.']);
-        } elseif ($action == 'suggest') {
-            $data = $request->validate([
-                'new_price' => 'required|numeric|min:0',
-                'new_pdf' => 'required|file|mimes:pdf|max:2048',
-            ]);
-
-            $pdfPath = $request->file('new_pdf')->store('task_quotes', 'public');
-
-            DB::table('task_contractor')
-                ->where('id', $quoteId)
-                ->update([
-                    'quoted_price' => $data['new_price'],
-                    'quote_pdf' => $pdfPath,
-                    'status' => 'suggested',
-                    'suggested_by' => 'contractor',
-                    'updated_at' => now(),
-                ]);
-
-            return response()->json(['success' => true, 'message' => 'Your new task quote has been submitted for review.']);
+        // Check if the current user is allowed to respond (based on `suggested_by`)
+        if ($quote->suggested_by == $currentUser->id) {
+            return response()->json(['success' => false, 'message' => 'You cannot respond at this time. Wait for the other party to respond.'], 403);
         }
 
-        return response()->json(['success' => false, 'message' => 'Invalid action.']);
+        // Handle actions (accept, reject, suggest)
+        if ($request->action == 'accept') {
+            DB::table('task_contractor')
+                ->where('task_id', $taskId)
+                ->update([
+                    'status' => 'approved', // Approve the quote
+                    'is_final' => 1, // Mark as final
+                    'updated_at' => now()
+                ]);
+
+            return response()->json(['success' => true, 'message' => 'Quote accepted successfully.']);
+        } elseif ($request->action == 'reject') {
+            DB::table('task_contractor')
+                ->where('task_id', $taskId)
+                ->update([
+                    'status' => 'rejected', // Reject the quote
+                    'is_final' => 1, // Mark as final
+                    'updated_at' => now()
+                ]);
+
+            return response()->json(['success' => true, 'message' => 'Quote rejected successfully.']);
+        } else {
+            // Main Contractor suggests a new price
+            DB::table('task_contractor')
+                ->where('task_id', $taskId)
+                ->update([
+                    'quote_suggestion' => $request->input('new_price'),
+                    'quote_pdf' => $request->file('new_pdf')->store('task_quotes', 'public'),
+                    'suggested_by' => $currentUser->id,
+                    'status' => 'suggested', // Status becomes suggested for Contractor to act next
+                    'is_final' => 0,
+                    'updated_at' => now()
+                ]);
+
+            return response()->json(['success' => true, 'message' => 'Quote suggestion submitted successfully.']);
+        }
     }
 
     public function invite($projectId)
@@ -341,5 +349,4 @@ class TaskController extends Controller
         // Pass the data to the view
         return view('tasks.statistics', compact('projectId', 'contractorCount', 'completedTasksCount', 'mainContractorName'));
     }
-    }
-
+}
