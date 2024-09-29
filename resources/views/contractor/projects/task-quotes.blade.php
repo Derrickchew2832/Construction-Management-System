@@ -13,7 +13,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($pendingInvitations as $taskInvitation)
+                @foreach ($pendingTaskInvitations as $taskInvitation)
                     <tr>
                         <td>{{ $taskInvitation->title }}</td>
                         <td>{{ ucfirst($taskInvitation->invitation_status) }}</td>

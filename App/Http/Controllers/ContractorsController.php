@@ -84,40 +84,42 @@ class ContractorsController extends Controller
 
 
     public function showQuotes(Request $request)
-    {
-        // Get the authenticated contractor ID
-        $contractorId = Auth::id();
+{
+    // Get the authenticated contractor ID
+    $contractorId = Auth::id();
+
+    // Fetch submitted quotes for the contractor
+    $submittedQuotes = DB::table('project_contractor')
+        ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
+        ->where('project_contractor.contractor_id', $contractorId)
+        ->select('project_contractor.*', 'projects.name as project_name','project_contractor.quote_pdf', 'project_contractor.quote_suggestion')
+        ->get();
+
+    // Fetch pending invitations where contractor hasn't submitted a quote yet
+    $pendingInvitations = DB::table('project_invitations')
+        ->join('projects', 'project_invitations.project_id', '=', 'projects.id')
+        ->leftJoin('project_documents', 'project_invitations.project_id', '=', 'project_documents.project_id')
+        ->where('project_invitations.contractor_id', $contractorId)
+        ->whereNotIn('project_invitations.project_id', function($query) use ($contractorId) {
+            $query->select('project_id')
+                  ->from('project_contractor')
+                  ->where('contractor_id', $contractorId);
+        })
+        ->select(
+            'projects.*', 
+            'project_invitations.status as invitation_status', 
+            'project_documents.document_path as documents'
+        )
+        ->get();
     
-        // Fetch submitted quotes for the contractor
-        $quotes = DB::table('project_contractor')
-            ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
-            ->where('project_contractor.contractor_id', $contractorId)
-            ->select('project_contractor.*', 'projects.name as project_name')
-            ->get();
+    // Get task-related data from ContractorTaskController
+    $taskController = new ContractorTaskController();
+    $taskData = $taskController->indexTasks($request);
     
-        // Fetch pending invitations where contractor hasn't submitted a quote yet
-        $pendingInvitations = DB::table('project_invitations')
-            ->join('projects', 'project_invitations.project_id', '=', 'projects.id')
-            ->leftJoin('project_documents', 'project_invitations.project_id', '=', 'project_documents.project_id') 
-            ->where('project_invitations.contractor_id', $contractorId)
-            ->whereNotIn('project_invitations.project_id', function($query) use ($contractorId) {
-                $query->select('project_id')
-                      ->from('project_contractor')
-                      ->where('contractor_id', $contractorId);
-            })
-            ->select(
-                'projects.*', 
-                'project_invitations.status as invitation_status', 
-                'project_documents.document_path as documents'
-            )
-            ->get();
-            
-            // Get task-related data from ContractorTaskController
-            $taskController = new ContractorTaskController();
-            $taskData = $taskController->indexTasks($request);         
-            // Merge the project data with task data and pass to the view
-            return view('contractor.projects.quotes', array_merge(compact('quotes', 'pendingInvitations'), $taskData));
-        }
+    // Merge the project data with task data and pass to the view
+    return view('contractor.projects.quotes', array_merge(compact('submittedQuotes', 'pendingInvitations'), $taskData));
+}
+
 
     public function submitQuote(Request $request, $projectId)
     {
@@ -191,6 +193,7 @@ class ContractorsController extends Controller
         return response()->json(['success' => true, 'message' => 'You have rejected the quote.']);
     } elseif ($action == 'suggest') {
         // Resubmit the quote with new data
+        \Log::info('Suggesting quote');
         $data = $request->validate([
             'new_price' => 'required|numeric|min:0',
             'new_pdf' => 'required|file|mimes:pdf|max:2048',
