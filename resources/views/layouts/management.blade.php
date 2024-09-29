@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -14,13 +15,13 @@
     <style>
         /* Sidebar Styling */
         .sidebar {
-            width: 250px;
+            width: 270px;
             background-color: #343a40;
             color: #fff;
             position: fixed;
             top: 0;
             bottom: 0;
-            padding: 15px;
+            padding: 20px;
             z-index: 1000;
             overflow-y: auto;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -28,11 +29,17 @@
 
         .sidebar .nav-link {
             color: #ffffff;
-            font-size: 0.95rem;
-            padding: 10px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            transition: background-color 0.2s ease-in-out;
+            font-size: 1rem;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
         }
 
         .sidebar .nav-link:hover {
@@ -52,17 +59,10 @@
 
         /* Main Content Styling */
         .main-content {
-            margin-left: 270px; /* Adjust based on the width of the sidebar */
+            margin-left: 290px;
             padding: 20px;
             background-color: #f5f6fa;
             min-height: 100vh;
-        }
-
-        /* Header Styling */
-        .top-bar {
-            background-color: #ffffff;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
         }
 
         /* Standardized Button Styles */
@@ -74,12 +74,6 @@
         /* Project Status Styling */
         #project-status {
             font-weight: bold;
-        }
-
-        /* General Layout Styling */
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f5f6fa;
         }
 
         /* Scrollbar for Sidebar */
@@ -95,8 +89,35 @@
         .sidebar::-webkit-scrollbar-track {
             background-color: #343a40;
         }
+
+        /* Statistics Box Styling */
+        .stats-box {
+            background-color: #495057;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            color: #fff;
+        }
+
+        .stats-box h6 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .stats-box p {
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stats-box i {
+            margin-right: 5px;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="wrapper d-flex">
@@ -108,13 +129,19 @@
             <ul class="nav flex-column">
                 <!-- Common options -->
                 <li class="nav-item">
-                    <a href="#" class="nav-link text-light">Tasks</a>
+                    <a href="{{ route('tasks.index', ['projectId' => $projectId]) }}" class="nav-link">
+                        <i class="fas fa-tasks"></i> Tasks
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link text-light">Photos</a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-image"></i> Photos
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link text-light">Files</a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-file-alt"></i> Files
+                    </a>
                 </li>
 
                 <!-- Role-specific options -->
@@ -128,18 +155,44 @@
                 @endphp
 
                 <!-- Show 'Supply' only to Contractors -->
-                @if($roleName == 'contractor' && !$isMainContractor)
+                @if ($roleName == 'contractor' && !$isMainContractor)
                     <li class="nav-item">
-                        <a href="#" class="nav-link text-light">Supply</a>
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-box"></i> Supply
+                        </a>
                     </li>
                 @endif
 
                 <!-- Show 'Quote' option only to Main Contractors -->
-                @if($isMainContractor)
+                @if ($isMainContractor)
                     <li class="nav-item">
-                        <a href="#" class="nav-link text-light">Quote</a>
+                        @foreach ($tasks as $task)
+                            <a href="{{ route('tasks.quote', ['projectId' => $projectId, 'taskId' => $task->id]) }}"
+                                class="nav-link">
+                                <i class="fas fa-file-invoice"></i>Quotes
+                            </a>
+                        @endforeach
                     </li>
                 @endif
+
+
+
+
+                <!-- Invite Button for Project Manager -->
+                @if ($roleName == 'project_manager')
+                    <li class="nav-item">
+                        <a href="{{ route('tasks.invite', ['projectId' => $projectId]) }}" class="btn btn-primary mt-4">
+                            <i class="fas fa-user-plus"></i> Invite
+                        </a>
+                    </li>
+                @endif
+
+                <!-- Statistics -->
+                <li class="nav-item">
+                    <a href="{{ route('tasks.statistics', ['projectId' => $projectId]) }}" class="btn btn-primary mt-4">
+                        <i class="fas fa-user-plus"></i> Invite
+                    </a>
+                </li>
             </ul>
         </aside>
 
@@ -150,8 +203,8 @@
                 <div>
                     <h4 class="text-muted mb-0">{{ $project->name }}</h4>
                     <small>Managed by: {{ $projectManagerName }} | Main Contractor: {{ $mainContractorName }}</small>
-                    <small> | 
-                        Project Status: 
+                    <small> |
+                        Project Status:
                         <span id="project-status"></span>
                     </small>
                 </div>
@@ -160,15 +213,16 @@
                 <div class="d-flex align-items-center">
                     @php
                         $exiturl = '';
-                        if($roleName == 'project_manager'){
+                        if ($roleName == 'project_manager') {
                             $exiturl = route('project_manager.projects.manage', ['projectId' => $project->id]);
-                        } elseif($roleName == 'contractor'){
+                        } elseif ($roleName == 'contractor') {
                             $exiturl = route('contractor.projects.index');
-                        } elseif($roleName == 'client'){
+                        } elseif ($roleName == 'client') {
                             $exiturl = route('client.projects.index');
                         }
                     @endphp
-                    <button class="btn btn-danger btn-sm" onclick="window.location.href='{{ $exiturl }}'">Exit</button>
+                    <button class="btn btn-danger btn-sm"
+                        onclick="window.location.href='{{ $exiturl }}'">Exit</button>
                 </div>
             </header>
 
@@ -205,8 +259,6 @@
             statusElement.innerHTML = 'Project has already ended';
         }
     </script>
-
-   
-
 </body>
+
 </html>

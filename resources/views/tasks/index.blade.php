@@ -1,4 +1,4 @@
-@extends('layouts.management')
+@extends('layouts.management', ['projectId' => $projectId])
 
 @section('content')
 <div class="container-fluid">

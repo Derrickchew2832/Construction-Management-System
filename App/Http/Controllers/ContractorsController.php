@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Http\Controllers\Contractor\ContractorTaskController;
+
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,107 +17,107 @@ class ContractorsController extends Controller
     }
 
     public function indexProjects(Request $request)
-{
-    $contractorId = Auth::id(); // Get the logged-in contractor's ID
+    {
+        $contractorId = Auth::id(); // Get the logged-in contractor's ID
 
-    // Fetch projects with invitations related to the contractor
+    // Fetch projects where the contractor is the main contractor and status is 'started'
     $projects = DB::table('projects')
-        ->join('project_invitations', 'projects.id', '=', 'project_invitations.project_id')
-        ->leftJoin('project_user', 'projects.id', '=', 'project_user.project_id') // Join to count members
-        ->where('project_invitations.contractor_id', $contractorId)
-        ->where('project_invitations.status', 'submitted') // Only show submitted projects
+    ->leftJoin('project_user', 'projects.id', '=', 'project_user.project_id') // Join to count members (project manager, contractors)
+        ->where('main_contractor_id', $contractorId)
+        ->where('projects.status', 'started') // Only show projects with 'started' status
         ->select(
-            'projects.id',
-            'projects.name',
-            'projects.description',
-            'projects.start_date',
-            'projects.end_date',
-            'projects.total_budget',
-            'projects.budget_remaining',
-            'projects.location',
-            'projects.status',
-            'projects.is_favorite',
-            'projects.main_contractor_id',
-            DB::raw('COUNT(DISTINCT project_user.user_id) as members_count'), // Count members (project manager, contractors)
-            DB::raw("IF(projects.main_contractor_id = {$contractorId}, true, false) as can_access_management") // Check if contractor is the main contractor
-        )
-        ->groupBy(
-            'projects.id',
-            'projects.name',
-            'projects.description',
-            'projects.start_date',
-            'projects.end_date',
-            'projects.total_budget',
-            'projects.budget_remaining',
-            'projects.location',
-            'projects.status',
-            'projects.is_favorite',
-            'projects.main_contractor_id'
-        )
-        ->orderBy('projects.is_favorite', 'desc') // Sort favorited projects on top
-        ->get();
+                'projects.id',
+                'projects.name',
+                'projects.description',
+                'projects.start_date',
+                'projects.end_date',
+                'projects.total_budget',
+                'projects.budget_remaining',
+                'projects.location',
+                'projects.status',
+                'projects.is_favorite',
+                'projects.main_contractor_id',
+                DB::raw('COUNT(DISTINCT project_user.user_id) as members_count') // Count members (project manager, contractors)
+            )
+            ->groupBy(
+                'projects.id',
+                'projects.name',
+                'projects.description',
+                'projects.start_date',
+                'projects.end_date',
+                'projects.total_budget',
+                'projects.budget_remaining',
+                'projects.location',
+                'projects.status',
+                'projects.is_favorite',
+                'projects.main_contractor_id'
+            )
+            ->orderBy('projects.is_favorite', 'desc') // Sort favorited projects on top
+            ->get();
 
-    // Loop through projects to assign the ribbon property based on project status
-    foreach ($projects as $project) {
-        // Only include "In Progress" and "Completed" statuses
-        if ($project->status === 'completed') {
-            $project->ribbon = 'Completed';
-        } elseif ($project->status === 'started') {
-            $project->ribbon = 'In Progress';
-        }
-    }
+        // Loop through projects to handle project-specific logic
+        foreach ($projects as $project) {
+            // Check if main contractor exists for the project
+            $mainContractorExists = DB::table('project_contractor')
+                ->where('project_id', $project->id)
+                ->where('main_contractor', true)
+                ->exists();
 
-    return view('contractor.projects.index', compact('projects'));
-}
-
-
-    public function showQuotes()
-{
-    $contractorId = Auth::id();
-
-    // Fetch submitted quotes for the contractor
-    $quotes = DB::table('project_contractor')
-        ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
-        ->where('project_contractor.contractor_id', $contractorId)
-        ->select('project_contractor.*', 'projects.name as project_name')
-        ->get();
-
-    // Fetch pending invitations where contractor hasn't submitted a quote yet
-    $pendingInvitations = DB::table('project_invitations')
-        ->join('projects', 'project_invitations.project_id', '=', 'projects.id')
-        ->leftJoin('project_documents', 'projects.id', '=', 'project_documents.project_id')
-        ->where('project_invitations.contractor_id', $contractorId)
-        ->whereNotIn('project_invitations.project_id', function($query) use ($contractorId) {
-            $query->select('project_id')
-                ->from('project_contractor')
-                ->where('contractor_id', $contractorId);
-        })
-        ->select(
-            'projects.id', 
-            'projects.name', 
-            'projects.description', 
-            'projects.start_date', 
-            'projects.end_date', 
-            'projects.location', 
-            'project_invitations.status as invitation_status',
-            DB::raw('GROUP_CONCAT(project_documents.original_name, "::", project_documents.document_path) as documents')
-        )
-        ->groupBy('projects.id', 'projects.name', 'projects.description', 'projects.start_date', 'projects.end_date', 'projects.location', 'project_invitations.status')
-        ->get();
-
-    // Format documents for each invitation
-    foreach ($pendingInvitations as $invitation) {
-        $invitation->documents = collect(explode(',', $invitation->documents))->map(function($doc) {
-            $parts = explode('::', $doc);
-            if (count($parts) === 2) {
-                return ['original_name' => $parts[0], 'document_path' => $parts[1]];
+            // Count Project Manager and Main Contractor if main contractor exists
+            if ($mainContractorExists) {
+                $project->members_count += 2; // Count Project Manager and Main Contractor
             }
-            return null;  // Return null for invalid entries
-        })->filter()->all();  // Filter out null values
+
+            // Define ribbon status based on project status
+            if ($project->status === 'completed') {
+                $project->ribbon = 'Completed';
+            } elseif ($project->status === 'started') {
+                $project->ribbon = 'In Progress';
+            }
+
+            // Manage access rights for the project based on project status
+            $project->can_access_management = ($project->status === 'started' && $mainContractorExists);
+        }
+
+        return view('contractor.projects.index', compact('projects'));
     }
 
-    return view('contractor.projects.quotes', compact('quotes', 'pendingInvitations'));
-}
+
+    public function showQuotes(Request $request)
+    {
+        // Get the authenticated contractor ID
+        $contractorId = Auth::id();
+    
+        // Fetch submitted quotes for the contractor
+        $quotes = DB::table('project_contractor')
+            ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
+            ->where('project_contractor.contractor_id', $contractorId)
+            ->select('project_contractor.*', 'projects.name as project_name')
+            ->get();
+    
+        // Fetch pending invitations where contractor hasn't submitted a quote yet
+        $pendingInvitations = DB::table('project_invitations')
+            ->join('projects', 'project_invitations.project_id', '=', 'projects.id')
+            ->leftJoin('project_documents', 'project_invitations.project_id', '=', 'project_documents.project_id') 
+            ->where('project_invitations.contractor_id', $contractorId)
+            ->whereNotIn('project_invitations.project_id', function($query) use ($contractorId) {
+                $query->select('project_id')
+                      ->from('project_contractor')
+                      ->where('contractor_id', $contractorId);
+            })
+            ->select(
+                'projects.*', 
+                'project_invitations.status as invitation_status', 
+                'project_documents.document_path as documents'
+            )
+            ->get();
+            
+            // Get task-related data from ContractorTaskController
+            $taskController = new ContractorTaskController();
+            $taskData = $taskController->indexTasks($request);         
+            // Merge the project data with task data and pass to the view
+            return view('contractor.projects.quotes', array_merge(compact('quotes', 'pendingInvitations'), $taskData));
+        }
 
     public function submitQuote(Request $request, $projectId)
     {
@@ -146,71 +148,75 @@ class ContractorsController extends Controller
             ->where('contractor_id', Auth::id())
             ->update(['status' => 'submitted', 'updated_at' => now()]);
 
-        return redirect()->route('contractor.projects.quotes')->with('success', 'Quote submitted successfully!');
+        return redirect()->route('contractor.projects.index')->with('success', 'Quote submitted successfully!');
     }
 
     public function respondToSuggestion(Request $request, $projectId)
-    {
-        $action = $request->input('action');
-        $quoteId = $request->input('quote_id');
-        $contractorId = DB::table('project_contractor')->where('id', $quoteId)->value('contractor_id');
+{
+    $action = $request->input('action');
+    $quoteId = $request->input('quote_id');
+    $contractorId = Auth::id(); // Get the authenticated contractor's user ID
 
-        if ($action == 'accept') {
-            // Accept the suggestion and set contractor as the main contractor
-            DB::table('project_invitations')
-                ->where('project_id', $projectId)
-                ->where('contractor_id', $contractorId)
-                ->update([
-                    'status' => 'submitted', // Since you mentioned there's no 'accepted', we use 'submitted'
-                    'updated_at' => now(),
-                ]);
-
-            // Update project status to 'started' and assign the main contractor
-            DB::table('projects')
-                ->where('id', $projectId)
-                ->update([
-                    'status' => 'started',
-                    'main_contractor_id' => $contractorId,
-                    'updated_at' => now(),
-                ]);
-
-            return response()->json(['success' => true, 'message' => 'You have accepted the quote.']);
-        } elseif ($action == 'reject') {
-            // Reject the suggestion and mark it as final
-            DB::table('project_contractor')
-                ->where('id', $quoteId)
-                ->update([
-                    'status' => 'rejected',
-                    'is_final' => true,
-                    'updated_at' => now(),
-                ]);
-
-            return response()->json(['success' => true, 'message' => 'You have rejected the quote.']);
-        } elseif ($action == 'suggest') {
-            // Resubmit the quote with new data
-            $data = $request->validate([
-                'new_price' => 'required|numeric|min:0',
-                'new_pdf' => 'required|file|mimes:pdf|max:2048',
+    if ($action == 'accept') {
+        // Accept the quote and set the contractor as the main contractor
+        DB::table('project_contractor')
+            ->where('id', $quoteId)
+            ->update([
+                'status' => 'approved',
+                'is_final' => true,
+                'main_contractor' => true,
+                'updated_at' => now(),
             ]);
 
-            // Save the new PDF file
-            $pdfPath = $request->file('new_pdf')->store('quotes', 'public');
+        // Update the project status to 'started' and assign the main contractor
+        DB::table('projects')
+            ->where('id', $projectId)
+            ->update([
+                'status' => 'started', // Change project status to 'started'
+                'main_contractor_id' => $contractorId, // Set contractor as main contractor
+                'updated_at' => now(),
+            ]);
 
-            DB::table('project_contractor')
-                ->where('id', $quoteId)
-                ->update([
-                    'quoted_price' => $data['new_price'],
-                    'quote_pdf' => $pdfPath,
-                    'status' => 'submitted',
-                    'suggested_by' => 'contractor',
-                    'updated_at' => now(),
-                ]);
+        return response()->json(['success' => true, 'message' => 'You have accepted the quote, and the project has been updated.']);
+    } elseif ($action == 'reject') {
+        // Reject the suggestion and mark it as final
+        DB::table('project_contractor')
+            ->where('id', $quoteId)
+            ->update([
+                'status' => 'rejected',
+                'is_final' => true,
+                'updated_at' => now(),
+            ]);
 
-            return response()->json(['success' => true, 'message' => 'Your new quote has been submitted for review.']);
-        }
+        return response()->json(['success' => true, 'message' => 'You have rejected the quote.']);
+    } elseif ($action == 'suggest') {
+        // Resubmit the quote with new data
+        $data = $request->validate([
+            'new_price' => 'required|numeric|min:0',
+            'new_pdf' => 'required|file|mimes:pdf|max:2048',
+        ]);
 
-        return response()->json(['success' => false, 'message' => 'Invalid action.']);
+        // Save the new PDF file
+        $pdfPath = $request->file('new_pdf')->store('quotes', 'public');
+
+        DB::table('project_contractor')
+            ->where('id', $quoteId)
+            ->update([
+                'quoted_price' => $data['new_price'],
+                'quote_pdf' => $pdfPath,
+                'status' => 'submitted',
+                'suggested_by' => 'contractor',
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Your new quote has been submitted for review.']);
     }
+
+    return response()->json(['success' => false, 'message' => 'Invalid action.']);
+}
+
+
+
 
     public function toggleFavorite(Request $request, $projectId)
     {

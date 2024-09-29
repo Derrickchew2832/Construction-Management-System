@@ -117,11 +117,11 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
     Route::get('/projects/quotes', [ContractorsController::class, 'showQuotes'])->name('projects.quotes');
 
     // Routes for task quotes
-    Route::get('/contractor/tasks/{taskId}/quotes', [ContractorTaskController::class, 'indexTasks']);
-    Route::post('/contractor/tasks/{taskId}/submit-quote', [ContractorTaskController::class, 'submitTaskQuote']);
-    Route::post('/contractor/tasks/{taskId}/accept-quote', [ContractorTaskController::class, 'acceptTaskQuote']);
-    Route::post('/contractor/tasks/{taskId}/reject-quote', [ContractorTaskController::class, 'rejectTaskQuote']);
-    Route::post('/contractor/tasks/{taskId}/suggest-quote', [ContractorTaskController::class, 'suggestTaskQuote']);
+    Route::get('contractor/tasks', [ContractorTaskController::class, 'indexTasks'])->name('contractor.tasks.index');
+    Route::post('tasks/{taskId}/submit-quote', [ContractorTaskController::class, 'submitTaskQuote'])->name('contractor.tasks.submitQuote');
+    Route::post('tasks/{taskId}/accept-quote', [ContractorTaskController::class, 'acceptTaskQuote'])->name('contractor.tasks.acceptQuote');
+    Route::post('tasks/{taskId}/reject-quote', [ContractorTaskController::class, 'rejectTaskQuote'])->name('contractor.tasks.rejectQuote');
+    Route::post('tasks/{taskId}/suggest-quote', [ContractorTaskController::class, 'suggestTaskQuote'])->name('contractor.tasks.suggestQuote');
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');
@@ -167,5 +167,12 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::get('/tasks/{taskId}/edit', [TaskController::class, 'edit'])->name('edit');
         Route::put('/tasks/{taskId}', [TaskController::class, 'update'])->name('update');
         Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
-        Route::post('/tasks/validate-contractor', [TaskController::class, 'validateContractor'])->name('validateContractor');
+        Route::get('/invite', [TaskController::class, 'invite'])->name('invite');
+        Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
+        
+
+        // Route to show the task quote
+        Route::get('/projects/{projectId}/tasks/{taskId}/quote', [TaskController::class, 'showQuote'])->name('tasks.quote');
+        Route::post('/tasks/{taskId}/quote/respond', [TaskController::class, 'respondToTaskQuote'])->name('quote.respond');
+        
     });

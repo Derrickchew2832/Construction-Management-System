@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('contractor_id')->nullable(); // Invited contractor
             $table->unsignedBigInteger('invited_by'); // ID of the user who sent the invitation
             $table->string('email'); // Email for the contractor invitation
-            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending'); // Status of the invitation
+            $table->enum('status', ['pending', 'accepted', 'rejected','submitted'])->default('pending'); // Status of the invitation
             $table->timestamps();
 
             // Foreign key constraints

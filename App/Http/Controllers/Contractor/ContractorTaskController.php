@@ -2,49 +2,66 @@
 
 namespace App\Http\Controllers\Contractor;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class ContractorTaskController extends Controller
 {
-    // Display the tasks related to the contractor (task invitations and submitted task quotes)
+    // Display tasks related to the contractor (task invitations and submitted task quotes)
     public function indexTasks(Request $request)
-    {
-        $contractorId = Auth::id();
+{
+    $contractorId = Auth::id(); // Get the logged-in contractor ID
+    
+   // Fetch submitted task quotes
+$submittedTaskQuotes = DB::table('task_contractor')
+->join('tasks', 'task_contractor.task_id', '=', 'tasks.id')
+->where('task_contractor.contractor_id', $contractorId)
+->select(
+    'task_contractor.*', 
+    'tasks.title as task_title', 
+    'tasks.description', 
+    'tasks.start_date', 
+    'tasks.due_date', 
+    'tasks.task_pdf'  // Include task_pdf
+)
+->get();
 
-        // Fetch submitted quotes for tasks
-        $quotes = DB::table('task_contractor')
-            ->join('tasks', 'task_contractor.task_id', '=', 'tasks.id')
-            ->where('task_contractor.contractor_id', $contractorId)
-            ->select('task_contractor.*', 'tasks.title as task_title')
-            ->get();
+// Fetch pending task invitations where the contractor hasn't submitted a quote yet
+$pendingTaskInvitations = DB::table('task_invitations')
+->join('tasks', 'task_invitations.task_id', '=', 'tasks.id')
+->where('task_invitations.contractor_id', $contractorId)
+->where('task_invitations.status', 'pending')
+->select(
+    'tasks.id', 
+    'tasks.title', 
+    'tasks.description', 
+    'tasks.start_date', 
+    'tasks.due_date', 
+    'tasks.task_pdf',  // Include task_pdf
+    'task_invitations.status as invitation_status'
+)
+->get();
 
-        // Fetch pending task invitations where the contractor hasn't submitted a quote yet
-        $pendingInvitations = DB::table('task_invitations')
-            ->join('tasks', 'task_invitations.task_id', '=', 'tasks.id')
-            ->where('task_invitations.contractor_id', $contractorId)
-            ->where('task_invitations.status', 'pending') // Only pending invitations
-            ->select(
-                'tasks.id', 
-                'tasks.title', 
-                'tasks.description', 
-                'tasks.start_date', 
-                'tasks.due_date', 
-                'task_invitations.status as invitation_status'
-            )
-            ->get();
 
-        return view('contractor.tasks.index', compact('quotes', 'pendingInvitations'));
-    }
+    // If collections are empty, initialize them as empty collections
+    $pendingTaskInvitations = $pendingTaskInvitations->isEmpty() ? collect([]) : $pendingTaskInvitations;
+    $submittedTaskQuotes = $submittedTaskQuotes->isEmpty() ? collect([]) : $submittedTaskQuotes;
+    
+    // Return data as an array to use in the view
+    return [
+        'pendingTaskInvitations' => $pendingTaskInvitations,
+        'submittedTaskQuotes' => $submittedTaskQuotes,
+    ];
+}
 
     // Function to handle submission of a task quote
     public function submitTaskQuote(Request $request, $taskId)
     {
-        // Validate the input data
         $data = $request->validate([
             'quoted_price' => 'required|numeric|min:0',
-            'quote_pdf' => 'required|file|mimes:pdf|max:2048', // Accepts only PDF files
+            'quote_pdf' => 'required|file|mimes:pdf|max:2048', // Accept only PDF files
         ]);
 
         // Save the uploaded PDF file
@@ -56,16 +73,12 @@ class ContractorTaskController extends Controller
             [
                 'quoted_price' => $data['quoted_price'],
                 'quote_pdf' => $pdfPath,
-                'status' => 'submitted',
+                'status' => 'pending',
+                'created_at' => now(),
                 'updated_at' => now(),
             ]
         );
 
-        // Update the task invitation status to submitted
-        DB::table('task_invitations')
-            ->where('task_id', $taskId)
-            ->where('contractor_id', Auth::id())
-            ->update(['status' => 'submitted', 'updated_at' => now()]);
 
         return redirect()->route('contractor.tasks.index')->with('success', 'Task quote submitted successfully!');
     }
@@ -82,8 +95,6 @@ class ContractorTaskController extends Controller
                 'status' => 'approved',
                 'updated_at' => now(),
             ]);
-
-        // Optionally, you can perform additional logic for the project state here (e.g., updating the task status)
 
         return response()->json(['success' => true, 'message' => 'Task quote has been accepted.']);
     }
@@ -112,7 +123,7 @@ class ContractorTaskController extends Controller
         // Validate the input data
         $data = $request->validate([
             'new_price' => 'required|numeric|min:0',
-            'new_pdf' => 'required|file|mimes:pdf|max:2048', // Accepts only PDF files
+            'new_pdf' => 'required|file|mimes:pdf|max:2048', // Accept only PDF files
         ]);
 
         // Save the uploaded new PDF file
