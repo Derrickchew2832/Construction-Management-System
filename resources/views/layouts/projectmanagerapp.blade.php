@@ -73,47 +73,7 @@
     <!-- Your custom script -->
     <script>
         // Modal Setup for Project Action (Approve, Reject, Suggest)
-        $('#actionModal').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget);
-            var quoteId = button.data('quote-id');
-            var contractorId = button.data('contractor-id');
-            var projectId = button.data('project-id');
-            var price = button.data('price');
-            var status = button.data('status');
-            var pdfLink = button.data('pdf-link');
-    
-            var modal = $(this);
-            modal.find('#quoteId').val(quoteId);
-            modal.find('#contractorId').val(contractorId);
-            modal.find('#projectId').val(projectId);
-            modal.find('#quotedPrice').text(price || 'N/A');
-            modal.find('#quoteStatus').text(status || 'N/A');
-            modal.find('#quotePdfLink').attr('href', pdfLink || '#');
-    
-            // Set form actions for approve and reject
-            $('#approveLink').off('click').on('click', function() {
-                var action = '{{ route('project_manager.projects.approveQuote', ['project' => '__project_id__', 'contractor' => '__contractor_id__']) }}'
-                    .replace('__project_id__', projectId)
-                    .replace('__contractor_id__', contractorId);
-                $('#actionForm').attr('action', action);
-                $('#actionForm').submit();
-            });
-    
-            $('#rejectLink').off('click').on('click', function() {
-                var action = '{{ route('project_manager.projects.rejectQuote', ['project' => '__project_id__', 'contractor' => '__contractor_id__']) }}'
-                    .replace('__project_id__', projectId)
-                    .replace('__contractor_id__', contractorId);
-                $('#actionForm').attr('action', action);
-                $('#actionForm').submit();
-            });
-    
-            $('#suggestLink').off('click').on('click', function() {
-                $('#actionModal').modal('hide');
-                $('#suggestPriceModal').modal('show');
-                $('#suggestQuoteId').val(quoteId);
-                $('#suggestContractorId').val(contractorId);
-            });
-        });
+        
 
        // Delete Project with Confirmation
        document.querySelectorAll('.delete-project-btn').forEach(function(button) {

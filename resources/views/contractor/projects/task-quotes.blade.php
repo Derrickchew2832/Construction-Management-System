@@ -57,37 +57,49 @@
                         <td>{{ ucfirst($quote->status) }}</td>
                         <td>
                             @if ($quote->status === 'submitted')
+                                <!-- For Submitted Status -->
                                 <span class="text-info">Awaiting Approval</span>
-                            @elseif ($quote->status === 'suggested' && $quote->suggested_by !== Auth::id())
-                                <!-- Only show the buttons if the current user did not suggest the last quote -->
+                        
+                            @elseif ($quote->status === 'suggested')
+                                <!-- For Suggested Status -->
                                 <button type="button" class="btn btn-warning btn-sm" data-toggle="modal"
-                                        data-target="#taskSuggestionModal" data-quote-id="{{ $quote->id }}"
-                                        data-task-id="{{ $quote->task_id }}" data-price="{{ $quote->quoted_price }}"
-                                        data-pdf-link="{{ Storage::url($quote->quote_pdf) }}"
-                                        data-suggestion-pdf="{{ Storage::url($quote->quote_pdf) }}"
-                                        data-suggestion-notes="{{ $quote->quote_suggestion }}">
+                                    data-target="#taskSuggestionModal" data-quote-id="{{ $quote->id }}"
+                                    data-task-id="{{ $quote->task_id }}" data-price="{{ $quote->quoted_price }}"
+                                    data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
                                     View Suggestion
                                 </button>
-                                <button type="button" class="btn btn-success btn-sm accept-task-quote"
-                                        data-task-id="{{ $quote->task_id }}" data-quote-id="{{ $quote->id }}">
-                                    Accept
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm reject-task-quote"
-                                        data-task-id="{{ $quote->task_id }}" data-quote-id="{{ $quote->id }}">
-                                    Reject
-                                </button>
+                        
+                                <form method="POST" action="{{ route('contractor.tasks.quotes.action', $quote->id) }}" class="d-inline">
+                                    @csrf
+                                    <input type="hidden" name="action" value="approve">
+                                    <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                                </form>
+                        
+                                <form method="POST" action="{{ route('contractor.tasks.quotes.action', $quote->id) }}" class="d-inline">
+                                    @csrf
+                                    <input type="hidden" name="action" value="reject">
+                                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                        
                             @elseif ($quote->status === 'approved')
+                                <!-- For Approved Status -->
                                 <span class="text-success">Quote Approved</span>
+                        
                             @elseif ($quote->status === 'rejected')
+                                <!-- For Rejected Status -->
                                 <span class="text-danger">Quote Rejected</span>
+                        
                             @else
+                                <!-- Default case for other statuses (if needed) -->
                                 <button type="button" class="btn btn-link btn-sm" data-toggle="modal"
-                                        data-target="#taskActionModal" data-quote-id="{{ $quote->id }}"
-                                        data-task-id="{{ $quote->task_id }}" data-price="{{ $quote->quoted_price }}">
+                                    data-target="#taskActionModal" data-quote-id="{{ $quote->id }}"
+                                    data-task-id="{{ $quote->task_id }}" data-price="{{ $quote->quoted_price }}">
                                     View More
                                 </button>
                             @endif
                         </td>
+                        
+                        
                     </tr>
                 @endforeach
             </tbody>

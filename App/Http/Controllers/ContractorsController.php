@@ -154,69 +154,71 @@ class ContractorsController extends Controller
     }
 
     public function respondToSuggestion(Request $request, $projectId)
-{
-    $action = $request->input('action');
-    $quoteId = $request->input('quote_id');
-    $contractorId = Auth::id(); // Get the authenticated contractor's user ID
-
-    if ($action == 'accept') {
-        // Accept the quote and set the contractor as the main contractor
-        DB::table('project_contractor')
-            ->where('id', $quoteId)
-            ->update([
-                'status' => 'approved',
-                'is_final' => true,
-                'main_contractor' => true,
-                'updated_at' => now(),
+    {
+        $action = $request->input('action');
+        $quoteId = $request->input('quote_id');
+        $contractorId = Auth::id(); // Get the authenticated contractor's user ID
+    
+        if ($action == 'accept') {
+            // Accept the quote and set the contractor as the main contractor
+            DB::table('project_contractor')
+                ->where('id', $quoteId)
+                ->update([
+                    'status' => 'approved',
+                    'is_final' => true,
+                    'main_contractor' => true,
+                    'updated_at' => now(),
+                ]);
+    
+            // Update the project status to 'started' and assign the main contractor
+            DB::table('projects')
+                ->where('id', $projectId)
+                ->update([
+                    'status' => 'started', // Change project status to 'started'
+                    'main_contractor_id' => $contractorId, // Set contractor as main contractor
+                    'updated_at' => now(),
+                ]);
+    
+            return response()->json(['success' => true, 'message' => 'You have accepted the quote, and the project has been updated.']);
+        } elseif ($action == 'reject') {
+            // Reject the suggestion and mark it as final
+            DB::table('project_contractor')
+                ->where('id', $quoteId)
+                ->update([
+                    'status' => 'rejected',
+                    'is_final' => true,
+                    'updated_at' => now(),
+                ]);
+    
+            return response()->json(['success' => true, 'message' => 'You have rejected the quote.']);
+        } elseif ($action == 'suggest') {
+            // Resubmit the quote with new data
+            $data = $request->validate([
+                'new_price' => 'required|numeric|min:0',
+                'new_pdf' => 'required|file|mimes:pdf|max:2048',
             ]);
-
-        // Update the project status to 'started' and assign the main contractor
-        DB::table('projects')
-            ->where('id', $projectId)
-            ->update([
-                'status' => 'started', // Change project status to 'started'
-                'main_contractor_id' => $contractorId, // Set contractor as main contractor
-                'updated_at' => now(),
-            ]);
-
-        return response()->json(['success' => true, 'message' => 'You have accepted the quote, and the project has been updated.']);
-    } elseif ($action == 'reject') {
-        // Reject the suggestion and mark it as final
-        DB::table('project_contractor')
-            ->where('id', $quoteId)
-            ->update([
-                'status' => 'rejected',
-                'is_final' => true,
-                'updated_at' => now(),
-            ]);
-
-        return response()->json(['success' => true, 'message' => 'You have rejected the quote.']);
-    } elseif ($action == 'suggest') {
-        // Resubmit the quote with new data
-        \Log::info('Suggesting quote');
-        $data = $request->validate([
-            'new_price' => 'required|numeric|min:0',
-            'new_pdf' => 'required|file|mimes:pdf|max:2048',
-        ]);
-
-        // Save the new PDF file
-        $pdfPath = $request->file('new_pdf')->store('quotes', 'public');
-
-        DB::table('project_contractor')
-            ->where('id', $quoteId)
-            ->update([
-                'quoted_price' => $data['new_price'],
-                'quote_pdf' => $pdfPath,
-                'status' => 'submitted',
-                'suggested_by' => 'contractor',
-                'updated_at' => now(),
-            ]);
-
-        return response()->json(['success' => true, 'message' => 'Your new quote has been submitted for review.']);
+    
+            // Save the new PDF file
+            $pdfPath = $request->file('new_pdf')->store('quotes', 'public');
+    
+            // Update the status to 'submitted' after suggesting a new price
+            DB::table('project_contractor')
+                ->where('id', $quoteId)
+                ->update([
+                    'quoted_price' => $data['new_price'],
+                    'quote_pdf' => $pdfPath,
+                    'status' => 'submitted', // Change status to 'submitted' after suggesting a new price
+                    'suggested_by' => 'contractor', // The logged-in user who suggested the new quote
+                    'updated_at' => now(),
+                ]);
+    
+            return response()->json(['success' => true, 'message' => 'Your new quote has been submitted for review.']);
+        }
+    
+        return response()->json(['success' => false, 'message' => 'Invalid action.']);
     }
+    
 
-    return response()->json(['success' => false, 'message' => 'Invalid action.']);
-}
 
 
 

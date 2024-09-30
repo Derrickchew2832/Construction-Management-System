@@ -61,13 +61,12 @@
                         <td>
                             @if ($quote->status === 'submitted')
                                 <span class="text-info">Awaiting Approval</span>
-                            @elseif ($quote->status === 'suggested' && $quote->suggested_by === 'project_manager')
+                            @elseif ($quote->status === 'suggested' && $quote->suggested_by !== Auth::id())
+                                <!-- Show action buttons only if the current user didn't suggest the last quote -->
                                 <button type="button" class="btn btn-warning btn-sm" data-toggle="modal"
                                     data-target="#suggestionModal" data-quote-id="{{ $quote->id }}"
                                     data-project-id="{{ $quote->project_id }}" data-price="{{ $quote->quoted_price }}"
-                                    data-pdf-link="{{ Storage::url($quote->quote_pdf) }}"
-                                    data-suggestion-pdf="{{ Storage::url($quote->quote_pdf) }}"
-                                    data-suggestion-notes="{{ $quote->quote_suggestion }}">
+                                    data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
                                     View Suggestion
                                 </button>
                                 <button type="button" class="btn btn-success btn-sm accept-quote"
@@ -91,6 +90,7 @@
                                 </button>
                             @endif
                         </td>
+
                     </tr>
                 @endforeach
             </tbody>
@@ -167,7 +167,8 @@
 <div class="modal fade" id="suggestionModal" tabindex="-1" role="dialog" aria-labelledby="suggestionModalLabel"
     aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <form id="suggestionForm" method="POST" action="/contractor/projects/{project}/suggest-quote" enctype="multipart/form-data">
+        <form id="suggestionForm" method="POST" action="/contractor/projects/{project}/suggest-quote"
+            enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="quote_id" id="suggestQuoteId">
             <input type="hidden" name="project_id" id="suggestProjectId">
@@ -242,7 +243,8 @@
             modal.find('#suggestQuoteId').val(quoteId);
             modal.find('#suggestProjectId').val(projectId);
             modal.find('#suggestedPrice').text(currentPrice);
-            modal.find('#currentPdf').attr('href', currentPdf).text('View PDF'); // Fixed the syntax error
+            modal.find('#currentPdf').attr('href', currentPdf).text(
+                'View PDF'); // Fixed the syntax error
 
             if (opponentSuggestionPdf) {
                 modal.find('#suggestedPdf').attr('href', opponentSuggestionPdf).show();
@@ -319,7 +321,9 @@
                         location.reload();
                     },
                     error: function(xhr) {
-                        alert('An error occurred while accepting the quote. Please try again.');
+                        alert(
+                            'An error occurred while accepting the quote. Please try again.'
+                            );
                     }
                 });
             }
@@ -344,12 +348,12 @@
                         location.reload();
                     },
                     error: function(xhr) {
-                        alert('An error occurred while rejecting the quote. Please try again.');
+                        alert(
+                            'An error occurred while rejecting the quote. Please try again.'
+                            );
                     }
                 });
             }
         });
     });
 </script>
-
-
