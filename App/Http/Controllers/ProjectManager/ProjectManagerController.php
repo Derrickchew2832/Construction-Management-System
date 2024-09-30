@@ -231,48 +231,60 @@ public function updateProject(Request $request, $projectId)
     }
 
     public function inviteContractor($projectId)
-    {
-        $project = DB::table('projects')->where('id', $projectId)->first();
+{
+    $project = DB::table('projects')->where('id', $projectId)->first();
 
-        $invitedContractors = DB::table('project_invitations')
-            ->join('users', 'project_invitations.contractor_id', '=', 'users.id')
-            ->where('project_invitations.project_id', $projectId)
-            ->select('users.name', 'users.email', 'project_invitations.status')
-            ->get();
+    // Fetch contractors who have been invited to the project
+    $invitedContractors = DB::table('project_invitations')
+        ->join('users', 'project_invitations.contractor_id', '=', 'users.id')
+        ->leftJoin('project_contractor', function($join) use ($projectId) {
+            $join->on('project_invitations.contractor_id', '=', 'project_contractor.contractor_id')
+                ->where('project_contractor.project_id', '=', $projectId);
+        })
+        ->where('project_invitations.project_id', $projectId)
+        ->select(
+            'users.name', 
+            'users.email', 
+            'project_invitations.status as invitation_status',
+            'project_contractor.status as quote_status'
+        )
+        ->get();
 
-        return view('project_manager.projects.invite', compact('project', 'invitedContractors'));
+    return view('project_manager.projects.invite', compact('project', 'invitedContractors'));
+}
+
+
+public function storeInvite(Request $request, $projectId)
+{
+    $request->validate([
+        'contractor_email' => 'required|email',
+    ]);
+
+    // Get contractor based on the provided email
+    $contractor = DB::table('users')->where('email', $request->contractor_email)->first();
+
+    if (!$contractor) {
+        return redirect()->route('project_manager.projects.invite', $projectId)
+            ->with('error', 'The email provided does not exist in the system.');
     }
 
-    public function storeInvite(Request $request, $projectId)
-    {
-        $request->validate([
-            'contractor_email' => 'required|email',
-        ]);
+    // Get the contractor role ID to validate they are indeed a contractor
+    $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
 
-        $contractor = DB::table('users')->where('email', $request->contractor_email)->first();
+    if ($contractor->role_id != $contractorRoleId) {
+        return redirect()->route('project_manager.projects.invite', $projectId)
+            ->with('error', 'The provided email does not belong to a contractor.');
+    }
 
-        if (!$contractor) {
-            return redirect()->route('project_manager.projects.invite', $projectId)
-                ->with('error', 'The email provided does not exist in the system.');
-        }
+    // Check if the contractor has an entry in the project_contractor table for this project
+    $contractorStatus = DB::table('project_contractor')
+        ->where('project_id', $projectId)
+        ->where('contractor_id', $contractor->id)
+        ->value('status'); // Fetch only the status
 
-        $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
-
-        if ($contractor->role_id != $contractorRoleId) {
-            return redirect()->route('project_manager.projects.invite', $projectId)
-                ->with('error', 'The provided email does not belong to a contractor.');
-        }
-
-        $existingInvitation = DB::table('project_invitations')
-            ->where('project_id', $projectId)
-            ->where('contractor_id', $contractor->id)
-            ->exists();
-
-        if ($existingInvitation) {
-            return redirect()->route('project_manager.projects.invite', $projectId)
-                ->with('error', 'This contractor has already been invited to the project.');
-        }
-
+    // If there is no record (null status), this is a new invite, so proceed with invitation
+    if (is_null($contractorStatus)) {
+        // Insert the invitation into the project_invitations table
         DB::table('project_invitations')->insert([
             'project_id' => $projectId,
             'contractor_id' => $contractor->id,
@@ -286,6 +298,44 @@ public function updateProject(Request $request, $projectId)
         return redirect()->route('project_manager.projects.invite', $projectId)
             ->with('success', 'Contractor invited successfully!');
     }
+
+    // Prevent re-invitation if the status is 'pending' or 'submitted'
+    if ($contractorStatus === 'pending' || $contractorStatus === 'submitted') {
+        return redirect()->route('project_manager.projects.invite', $projectId)
+            ->with('error', 'This contractor has already been invited and is awaiting a response.');
+    }
+
+    // Only allow re-invitation if the status is 'rejected'
+    if ($contractorStatus === 'rejected') {
+        // Delete the contractor's existing record from project_contractor when reinviting
+        DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractor->id)
+            ->delete();
+
+        // Insert or update the invitation in the project_invitations table
+        DB::table('project_invitations')->updateOrInsert(
+            ['project_id' => $projectId, 'contractor_id' => $contractor->id],
+            [
+                'invited_by' => Auth::id(),
+                'email' => $request->contractor_email,
+                'status' => 'pending', // Set status to pending after reinvitation
+                'updated_at' => now(),
+            ]
+        );
+
+        return redirect()->route('project_manager.projects.invite', $projectId)
+            ->with('success', 'Contractor re-invited successfully!');
+    }
+
+    // If the contractor is neither rejected nor a new invite, prevent re-invitation
+    return redirect()->route('project_manager.projects.invite', $projectId)
+        ->with('error', 'This contractor has already been invited.');
+}
+
+
+
+
 
     public function viewQuote($projectId, $quoteId)
     {

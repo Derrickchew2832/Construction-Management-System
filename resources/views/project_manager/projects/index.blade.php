@@ -41,7 +41,8 @@
                                     @php
                                         $isFavorite = $project->is_favorite ? 'fas' : 'far';
                                     @endphp
-                                    <a href="#" class="btn btn-link favorite-btn" data-project-id="{{ $project->id }}">
+                                    <a href="#" class="btn btn-link favorite-btn"
+                                        data-project-id="{{ $project->id }}">
                                         <i class="{{ $isFavorite }} fa-star"></i>
                                     </a>
                                     <!-- Settings Dropdown, hidden if project is in progress -->
@@ -52,10 +53,15 @@
                                                 aria-expanded="false">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
-                                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $project->id }}">
-                                                <li><a class="dropdown-item" href="{{ route('project_manager.projects.edit', $project->id) }}">Edit</a></li>
+                                            <ul class="dropdown-menu"
+                                                aria-labelledby="dropdownMenuButton{{ $project->id }}">
+                                                <li><a class="dropdown-item"
+                                                        href="{{ route('project_manager.projects.edit', $project->id) }}">Edit</a>
+                                                </li>
                                                 <li>
-                                                    <form action="{{ route('project_manager.projects.delete', $project->id) }}" method="POST">
+                                                    <form
+                                                        action="{{ route('project_manager.projects.delete', $project->id) }}"
+                                                        method="POST">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="dropdown-item">Delete</button>
@@ -68,17 +74,20 @@
                             </div>
 
                             <!-- Logic for showing buttons -->
-                            @if (!$project->main_contractor)
+                            @if (!$project->main_contractor || $project->status === 'rejected')
                                 <!-- Invite Contractor and View Project buttons -->
-                                <a href="{{ route('project_manager.projects.invite', $project->id) }}" class="btn btn-outline-primary btn-block mb-3" style="font-size: 1.1rem;">
+                                <a href="{{ route('project_manager.projects.invite', $project->id) }}"
+                                    class="btn btn-outline-primary btn-block mb-3" style="font-size: 1.1rem;">
                                     <i class="fas fa-user-plus"></i> Invite Contractor
                                 </a>
-                                <a href="{{ route('project_manager.projects.show', $project->id) }}" class="btn btn-outline-success btn-block mb-2">
+                                <a href="{{ route('project_manager.projects.show', $project->id) }}"
+                                    class="btn btn-outline-success btn-block mb-2">
                                     View Project Details
                                 </a>
                             @elseif ($project->can_access_management)
-                                <!-- Enter Project button once contractor is selected -->
-                                <a href="{{ route('project_manager.projects.manage', $project->id) }}" class="btn btn-outline-primary btn-block">
+                                <!-- Enter Project button once a quote is accepted -->
+                                <a href="{{ route('project_manager.projects.manage', $project->id) }}"
+                                    class="btn btn-outline-primary btn-block">
                                     Enter Project
                                 </a>
                             @endif
@@ -125,7 +134,8 @@
         }
 
         .w-auto {
-            width: 150px; /* Matching size for both search and sort buttons */
+            width: 150px;
+            /* Matching size for both search and sort buttons */
         }
     </style>
 
@@ -181,33 +191,34 @@
 
                 // Send AJAX request to toggle favorite state
                 fetch(`/project_manager/projects/${projectId}/favorite`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        is_favorite: !isFavorite
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            is_favorite: !isFavorite
+                        })
                     })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Favorite status updated:', data);
-                    if (data.is_favorite) {
-                        alert('Project added to favorites!');
-                    } else {
-                        alert('Project removed from favorites!');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while updating the favorite status.');
-                });
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Favorite status updated:', data);
+                        if (data.is_favorite) {
+                            alert('Project added to favorites!');
+                        } else {
+                            alert('Project removed from favorites!');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while updating the favorite status.');
+                    });
             });
         });
 
