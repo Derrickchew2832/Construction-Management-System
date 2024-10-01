@@ -105,12 +105,22 @@ class ContractorTaskController extends Controller
         // Get the quote ID from the request
         $quoteId = $request->input('quote_id');
         
+        // Log the quote ID to verify it's correct
+        \Log::info('Quote ID received', [
+            'quote_id' => $quoteId
+        ]);
+
         // Fetch the contractor_id from the task_contractor table (this is the contractor who was invited)
         $taskQuote = DB::table('task_contractor')->where('id', $quoteId)->first();
 
         if (!$taskQuote) {
             return response()->json(['success' => false, 'message' => 'Quote not found.'], 404);
         }
+
+        // Log the task quote details, including contractor_id
+        \Log::info('Task Quote Details', [
+            'taskQuote' => $taskQuote
+        ]);
 
         // 1. Update the task_contractor table to mark the quote as approved
         DB::table('task_contractor')
@@ -121,6 +131,12 @@ class ContractorTaskController extends Controller
                 'is_sub_contractor' => 1, // Mark this contractor as the one handling the task
                 'updated_at' => now(),   // Update the timestamp
             ]);
+
+        // Log before updating the task to ensure the right contractor ID is being assigned
+        \Log::info('Assigning contractor to task', [
+            'task_id' => $taskId,
+            'assigned_contractor_id' => $taskQuote->contractor_id
+        ]);
 
         // 2. Update the tasks table to assign the contractor who was invited (contractor_id from task_contractor)
         DB::table('tasks')

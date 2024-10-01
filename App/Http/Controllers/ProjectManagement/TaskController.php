@@ -310,15 +310,15 @@ public function updateTaskStatus(Request $request, $taskId)
 
         // Handle actions (accept, reject, suggest)
         if ($request->action == 'accept') {
-            // Update the task with the assigned contractor ID
+            // Update the task with the contractor who submitted the quote
             DB::table('tasks')
                 ->where('id', $taskId)
                 ->update([
-                    'assigned_contractor_id' => $currentUser->id, // Update to the contractor who accepted the quote
+                    'assigned_contractor_id' => $quote->contractor_id, // Update to the contractor who submitted the quote
                     'status' => 'approved', // Mark the task status as accepted
                     'updated_at' => now(),
                 ]);
-
+    
             // Update the task_contractor table to mark this contractor as a subcontractor
             DB::table('task_contractor')
                 ->where('id', $quoteId)  // Update by quoteId
