@@ -10,7 +10,7 @@
         <div class="col-md-2">
             <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Under Negotiation
                 ({{ $categorizedTasks['under_negotiation']->count() }})</h6>
-            <div class="task-category p-2" style="background-color: transparent; border: none;">
+            <div class="task-category p-2 category-negotiation">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -20,12 +20,16 @@
                 @else
                     @foreach ($categorizedTasks['under_negotiation'] as $task)
                         @if (!in_array($task->id, $renderedTasks))
-                            <!-- Ensure no duplicates -->
                             @php
                                 $renderedTasks[] = $task->id;
                             @endphp
-                            <div class="task-card mb-2" style="background-color: #f9d3d3; border: none;">
-                                @include('tasks.partials.task_card', ['task' => $task])
+                            <div class="task-card mb-2" data-task-id="{{ $task->id ?? 'undefined' }}"
+                                data-project-id="{{ $projectId ?? 'undefined' }}">
+                                <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}"
+                                    class="text-decoration-none">
+                                    <h6>{{ $task->title }}</h6>
+                                    <p>{{ $task->description }}</p>
+                                </a>
                             </div>
                         @endif
                     @endforeach
@@ -37,7 +41,7 @@
         <div class="col-md-2">
             <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Due Date
                 ({{ $categorizedTasks['due_date']->count() }})</h6>
-            <div class="task-category p-2" style="background-color: transparent; border: none;">
+            <div class="task-category p-2 category-due-date">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -64,7 +68,7 @@
         <div class="col-md-2">
             <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Priority 1
                 ({{ $categorizedTasks['priority_1']->count() }})</h6>
-            <div class="task-category p-2" style="background-color: transparent; border: none;">
+            <div class="task-category p-2 category-priority-1">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -91,7 +95,7 @@
         <div class="col-md-2">
             <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Priority 2
                 ({{ $categorizedTasks['priority_2']->count() }})</h6>
-            <div class="task-category p-2" style="background-color: transparent; border: none;">
+            <div class="task-category p-2 category-priority-2">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -118,7 +122,7 @@
         <div class="col-md-2">
             <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Completed
                 ({{ $categorizedTasks['completed']->count() }})</h6>
-            <div class="task-category p-2" style="background-color: transparent; border: none;">
+            <div class="task-category p-2 category-completed">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -145,7 +149,7 @@
         <div class="col-md-2">
             <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Verified
                 ({{ $categorizedTasks['verified']->count() }})</h6>
-            <div class="task-category p-2" style="background-color: transparent; border: none;">
+            <div class="task-category p-2 category-verified">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -170,11 +174,34 @@
     </div>
 </div>
 
+<!-- Task Details Modal -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" role="dialog" aria-labelledby="taskDetailsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Task details content will be loaded here dynamically -->
+                <div id="task-details-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal for creating a new task -->
 <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="taskForm" action="{{ route('tasks.store', ['projectId' => $project->id]) }}" method="POST" enctype="multipart/form-data">
+            <form id="taskForm" action="{{ route('tasks.store', ['projectId' => $project->id]) }}" method="POST"
+                enctype="multipart/form-data" data-project-id="{{ $project->id }}">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="createTaskModalLabel">Create New Task</h5>
@@ -186,7 +213,8 @@
                     <!-- Task Title -->
                     <div class="form-group">
                         <label for="title">Task Title</label>
-                        <input type="text" name="title" id="title" class="form-control form-control-sm" required>
+                        <input type="text" name="title" id="title" class="form-control form-control-sm"
+                            required>
                     </div>
 
                     <!-- Task Description -->
@@ -198,17 +226,20 @@
                     <!-- Start Date and Due Date -->
                     <div class="form-group">
                         <label for="start_date">Start Date</label>
-                        <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" required>
+                        <input type="date" name="start_date" id="start_date" class="form-control form-control-sm"
+                            required>
                     </div>
                     <div class="form-group">
                         <label for="due_date">Due Date</label>
-                        <input type="date" name="due_date" id="due_date" class="form-control form-control-sm" required>
+                        <input type="date" name="due_date" id="due_date" class="form-control form-control-sm"
+                            required>
                     </div>
 
                     <!-- Contractor Invitation -->
                     <div class="form-group">
                         <label for="contractor_email">Search Contractor</label>
-                        <input type="email" name="contractor_email" id="contractor_email" class="form-control form-control-sm" placeholder="Search contractor by email" required>
+                        <input type="email" name="contractor_email" id="contractor_email"
+                            class="form-control form-control-sm" placeholder="Search contractor by email" required>
                         @if ($errors->has('contractor_email'))
                             <p class="text-danger" style="font-size: 0.75rem;">
                                 {{ $errors->first('contractor_email') }}</p>
@@ -216,18 +247,20 @@
                         <p id="invitation_status" class="text-muted mt-2" style="font-size: 0.75rem;"></p>
                     </div>
 
-                    <!-- Status Selection -->
+                    <!-- Category Selection -->
                     <div class="form-group">
-                        <label for="status">Task Status</label>
-                        <select name="status" id="status" class="form-control form-control-sm" required>
+                        <label for="category">Task Category</label>
+                        <select name="category" id="category" class="form-control form-control-sm" required>
                             <option value="under_negotiation">Under Negotiation</option>
                         </select>
                     </div>
 
+
                     <!-- Task PDF Upload -->
                     <div class="form-group">
                         <label for="task_pdf">Upload Task PDF</label>
-                        <input type="file" name="task_pdf" id="task_pdf" class="form-control form-control-sm" accept=".pdf">
+                        <input type="file" name="task_pdf" id="task_pdf" class="form-control form-control-sm"
+                            accept=".pdf">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -242,59 +275,172 @@
 <!-- Include necessary scripts for modal and Bootstrap -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script>
-   $('#taskForm').on('submit', function(e) {
-    e.preventDefault(); // Prevent default form submission
+<script src="{{ asset('js/app.js') }}"></script>
 
-    $.ajax({
-        url: '{{ route('tasks.store', ['projectId' => $project->id]) }}',
-        method: 'POST',
-        data: new FormData($('#taskForm')[0]), // Include files in form data
-        contentType: false,
-        processData: false,
-        success: function(response) {
-            // Check if the backend returned success or failure
-            if (response.success) {
-                alert(response.message); // Display success message
-                $('#taskForm')[0].reset(); // Clear the form fields after success
-                location.reload(); // Reload the page after successful creation
+<script>
+    $(document).ready(function() {
+        // Use event delegation to handle dynamically added task-card elements
+        $(document).on('click', '.task-card', function(event) {
+            event.preventDefault();
+
+            // Get the task and project IDs from the clicked task card
+            var taskId = $(this).data('task-id');
+            var projectId = $(this).data('project-id');
+
+            // Logging the values for debugging
+            console.log("Task ID:", taskId);
+            console.log("Project ID:", projectId);
+
+            // Check if taskId and projectId are valid before making the AJAX request
+            if (taskId && projectId) {
+                $.ajax({
+                    url: '/projects/' + projectId + '/tasks/' + taskId + '/details',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response) {
+                            // If response is valid, show the task details in the modal
+                            $('#task-details-content').html(response);
+                            $('#taskDetailsModal').modal('show');
+                        } else {
+                            // Handle case where the server returns an empty or invalid response
+                            alert('Task details could not be loaded. Please try again.');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // Log detailed error to the console for debugging
+                        console.error('Error fetching task details:', xhr.responseText);
+                        alert('Error fetching task details. Please try again.');
+                    }
+                });
             } else {
-                alert(response.message); // Display error message from backend
+                // Handle case where taskId or projectId is missing or undefined
+                if (!taskId) {
+                    console.error('Task ID is missing.');
+                    alert('Task ID is not defined. Please try again.');
+                }
+                if (!projectId) {
+                    console.error('Project ID is missing.');
+                    alert('Project ID is not defined. Please try again.');
+                }
             }
-        },
-        error: function(xhr) {
-            alert('An unexpected error occurred. Please try again.');
-        }
+        });
     });
-});
+
+    $(document).ready(function() {
+        // Handle task form submission with AJAX
+        $('#taskForm').on('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+
+            // CSRF token is necessary for secure form submission in Laravel
+            let csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+            // Ensure that projectId is being passed correctly in the form
+            var projectId = $(this).data('project-id');
+            var url = '{{ route('tasks.store', ':projectId') }}';
+            url = url.replace(':projectId', projectId);
+
+            // Submit the form via AJAX
+            $.ajax({
+                url: url,
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                data: new FormData($('#taskForm')[0]), // Include files in form data
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    // Check if the backend returned success or failure
+                    if (response.success) {
+                        alert(response.message); // Display success message
+                        $('#taskForm')[0].reset(); // Clear the form fields after success
+                        location.reload(); // Reload the page after successful creation
+                    } else {
+                        alert(response.message); // Display error message from backend
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error during task submission:', xhr.responseText);
+                    alert('An unexpected error occurred. Please try again.');
+                }
+            });
+        });
+    });
 </script>
 
 <!-- Task Card Inline CSS -->
 <style>
     .task-card {
-        background-color: #ffffff;
-        padding: 8px;
-        /* Reduce padding */
+        background-color: transparent;
+        /* Keep background transparent to inherit category color */
+        padding: 5px;
         border-radius: 5px;
-        border: none;
-        /* Remove borders */
-        margin-bottom: 10px;
-        font-size: 11px;
+        margin-bottom: 8px;
+        font-size: 9px;
         /* Smaller font size */
-        height: 130px;
-        /* Standardize the height */
+        height: 80px;
+        /* Standardize height */
+        width: 150px;
+        /* Standardize width */
         overflow: hidden;
         word-wrap: break-word;
-        /* Ensure long words break within the card */
+        text-align: left;
+        /* Align text to the left */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
-    /* Task Category Styling */
+    /* Link text styling */
+    .task-card a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    /* Category background colors and outer border */
     .task-category {
-        background-color: transparent;
-        /* Ensure background blends with page */
         padding: 8px;
         border-radius: 5px;
         margin-bottom: 15px;
         height: auto;
+        border: 1px solid #ccc;
+        /* Apply border around the entire category section */
+    }
+
+    /* Category background colors */
+    .category-negotiation {
+        background-color: #e8eaf6;
+        /* Light blue for Under Negotiation */
+    }
+
+    .category-due-date {
+        background-color: #fbe9e7;
+        /* Light orange for Due Date */
+    }
+
+    .category-priority-1 {
+        background-color: #fff9c4;
+        /* Light yellow for Priority 1 */
+    }
+
+    .category-priority-2 {
+        background-color: #c8e6c9;
+        /* Light green for Priority 2 */
+    }
+
+    .category-completed {
+        background-color: #cfd8dc;
+        /* Light grey for Completed */
+    }
+
+    .category-verified {
+        background-color: #d1c4e9;
+        /* Light purple for Verified */
+    }
+
+    /* Hover effect for the outer category layer */
+    .task-category:hover {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        /* Add subtle shadow when hovering over the category */
     }
 </style>

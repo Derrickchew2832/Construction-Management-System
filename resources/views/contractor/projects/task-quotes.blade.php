@@ -19,11 +19,12 @@
                         <td>{{ ucfirst($taskInvitation->invitation_status) }}</td>
                         <td>
                             <a href="#" class="btn btn-primary btn-sm" data-toggle="modal"
-                               data-target="#submitTaskQuoteModal" data-task-id="{{ $taskInvitation->id }}"
-                               data-task-title="{{ $taskInvitation->title }}"
-                               data-task-description="{{ $taskInvitation->description ?? 'No description available' }}"
-                               data-task-start-date="{{ $taskInvitation->start_date ?? 'Not specified' }}"
-                               data-task-due-date="{{ $taskInvitation->due_date ?? 'Not specified' }}">
+                                data-target="#submitTaskQuoteModal" data-task-id="{{ $taskInvitation->id }}"
+                                data-task-title="{{ $taskInvitation->title }}"
+                                data-task-description="{{ $taskInvitation->description ?? 'No description available' }}"
+                                data-task-start-date="{{ $taskInvitation->start_date ?? 'Not specified' }}"
+                                data-task-due-date="{{ $taskInvitation->due_date ?? 'Not specified' }}"
+                                data-task-pdf="{{ Storage::url($taskInvitation->task_pdf) ?? '#' }}">
                                 Submit Quote
                             </a>
                         </td>
@@ -57,40 +58,33 @@
                         <td>{{ ucfirst($quote->status) }}</td>
                         <td>
                             @if ($quote->status === 'submitted')
-                                <!-- For Submitted Status -->
                                 <span class="text-info">Awaiting Approval</span>
-                        
                             @elseif ($quote->status === 'suggested')
-                                <!-- For Suggested Status -->
                                 <button type="button" class="btn btn-warning btn-sm" data-toggle="modal"
                                     data-target="#taskSuggestionModal" data-quote-id="{{ $quote->id }}"
                                     data-task-id="{{ $quote->task_id }}" data-price="{{ $quote->quoted_price }}"
                                     data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
                                     View Suggestion
                                 </button>
-                        
-                                <form method="POST" action="{{ route('contractor.tasks.quotes.action', $quote->id) }}" class="d-inline">
+
+                                <form method="POST"
+                                    action="{{ route('contractor.tasks.acceptQuote', ['taskId' => $quote->task_id]) }}"
+                                    class="d-inline">
                                     @csrf
-                                    <input type="hidden" name="action" value="approve">
                                     <button type="submit" class="btn btn-success btn-sm">Accept</button>
                                 </form>
-                        
-                                <form method="POST" action="{{ route('contractor.tasks.quotes.action', $quote->id) }}" class="d-inline">
+
+                                <form method="POST"
+                                    action="{{ route('contractor.tasks.rejectQuote', ['taskId' => $quote->task_id]) }}"
+                                    class="d-inline">
                                     @csrf
-                                    <input type="hidden" name="action" value="reject">
                                     <button type="submit" class="btn btn-danger btn-sm">Reject</button>
                                 </form>
-                        
                             @elseif ($quote->status === 'approved')
-                                <!-- For Approved Status -->
                                 <span class="text-success">Quote Approved</span>
-                        
                             @elseif ($quote->status === 'rejected')
-                                <!-- For Rejected Status -->
                                 <span class="text-danger">Quote Rejected</span>
-                        
                             @else
-                                <!-- Default case for other statuses (if needed) -->
                                 <button type="button" class="btn btn-link btn-sm" data-toggle="modal"
                                     data-target="#taskActionModal" data-quote-id="{{ $quote->id }}"
                                     data-task-id="{{ $quote->task_id }}" data-price="{{ $quote->quoted_price }}">
@@ -98,8 +92,6 @@
                                 </button>
                             @endif
                         </td>
-                        
-                        
                     </tr>
                 @endforeach
             </tbody>
@@ -111,10 +103,9 @@
 
 <!-- Modal for Submitting Task Quotes -->
 <div class="modal fade" id="submitTaskQuoteModal" tabindex="-1" role="dialog"
-     aria-labelledby="submitTaskQuoteModalLabel" aria-hidden="true">
+    aria-labelledby="submitTaskQuoteModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <form id="submitTaskQuoteForm" method="POST" action="" {{-- Action set dynamically in script --}}
-              enctype="multipart/form-data">
+        <form id="submitTaskQuoteForm" method="POST" action="" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="task_id" id="taskId">
             <div class="modal-content">
@@ -144,17 +135,25 @@
                         <p id="taskDueDate"></p>
                     </div>
 
+                    <!-- Task PDF for Reference -->
+                    <div class="form-group">
+                        <label><strong>Task Quote PDF:</strong></label>
+                        <p>
+                            <a id="taskPdfLink" href="#" target="_blank" class="btn btn-link">View Task PDF</a>
+                        </p>
+                    </div>
+
                     <!-- Task Quote Submission Section -->
                     <h6><strong>Submit Your Task Quote</strong></h6>
                     <div class="form-group">
                         <label for="quoted_price">Quoted Price:</label>
                         <input type="number" class="form-control" id="quoted_price" name="quoted_price" step="0.01"
-                               required>
+                            required>
                     </div>
                     <div class="form-group">
                         <label for="quote_pdf">Upload Quote (PDF):</label>
                         <input type="file" class="form-control-file" id="quote_pdf" name="quote_pdf"
-                               accept="application/pdf" required>
+                            accept="application/pdf" required>
                     </div>
                     <div class="form-group">
                         <label for="quote_suggestion">Description:</label>
@@ -172,10 +171,9 @@
 
 <!-- Modal for Suggesting a New Price -->
 <div class="modal fade" id="taskSuggestionModal" tabindex="-1" role="dialog"
-     aria-labelledby="taskSuggestionModalLabel" aria-hidden="true">
+    aria-labelledby="taskSuggestionModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <form id="taskSuggestionForm" method="POST" action="/contractor/tasks/{task}/suggest-quote"
-              enctype="multipart/form-data">
+        <form id="taskSuggestionForm" method="POST" action="" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="quote_id" id="suggestQuoteId">
             <input type="hidden" name="task_id" id="suggestTaskId">
@@ -188,7 +186,8 @@
                 </div>
                 <div class="modal-body">
                     <p><strong>Original Price:</strong> $<span id="suggestedTaskPrice"></span></p>
-                    <p><strong>Suggestion Document:</strong> <a href="#" id="suggestedTaskPdf" target="_blank">View PDF</a></p>
+                    <p><strong>Suggestion Document:</strong> <a href="#" id="suggestedTaskPdf"
+                            target="_blank">View PDF</a></p>
                     <p><strong>Suggestion Notes:</strong> <span id="suggestedTaskNotes"></span></p>
                     <div class="form-group">
                         <label for="new_price">New Suggested Price:</label>
@@ -197,7 +196,7 @@
                     <div class="form-group">
                         <label for="new_pdf">Upload New Quote (PDF):</label>
                         <input type="file" class="form-control-file" id="new_pdf" name="new_pdf"
-                               accept="application/pdf">
+                            accept="application/pdf">
                     </div>
                     <div class="form-group">
                         <label for="description">Description:</label>
@@ -221,11 +220,13 @@
         $('#submitTaskQuoteModal').on('show.bs.modal', function(event) {
             var button = $(event.relatedTarget);
             var taskId = button.data('task-id');
-            $('#submitTaskQuoteForm').attr('action', '/contractor/tasks/' + taskId + '/submit-quote');
+            $('#submitTaskQuoteForm').attr('action', '/contractor/tasks/' + taskId + '/submit-quote'); 
+
             var taskTitle = button.data('task-title');
             var taskDescription = button.data('task-description');
             var taskStartDate = button.data('task-start-date');
             var taskDueDate = button.data('task-due-date');
+            var taskPdf = button.data('task-pdf'); 
 
             var modal = $(this);
             modal.find('#taskId').val(taskId);
@@ -233,6 +234,13 @@
             modal.find('#taskDescription').text(taskDescription);
             modal.find('#taskStartDate').text(taskStartDate || 'Not specified');
             modal.find('#taskDueDate').text(taskDueDate || 'Not specified');
+
+            // Set the task PDF link if available
+            if (taskPdf) {
+                modal.find('#taskPdfLink').attr('href', taskPdf).show();
+            } else {
+                modal.find('#taskPdfLink').hide();
+            }
         });
 
         // Open Task Suggestion Modal
@@ -242,26 +250,12 @@
             var taskId = button.data('task-id');
             var currentPrice = button.data('price');
             var currentPdf = button.data('pdf-link');
-            var opponentSuggestionPdf = button.data('suggestion-pdf');
-            var opponentSuggestionNotes = button.data('suggestion-notes');
 
             var modal = $(this);
             modal.find('#suggestQuoteId').val(quoteId);
             modal.find('#suggestTaskId').val(taskId);
             modal.find('#suggestedTaskPrice').text(currentPrice);
             modal.find('#suggestedTaskPdf').attr('href', currentPdf).text('View PDF');
-
-            if (opponentSuggestionPdf) {
-                modal.find('#suggestedTaskPdf').attr('href', opponentSuggestionPdf).show();
-            } else {
-                modal.find('#suggestedTaskPdf').hide();
-            }
-
-            if (opponentSuggestionNotes) {
-                modal.find('#suggestedTaskNotes').text(opponentSuggestionNotes);
-            } else {
-                modal.find('#suggestedTaskNotes').text('No notes provided.');
-            }
         });
 
         // Handle Task Suggestion Submission
@@ -321,11 +315,28 @@
                         action: 'accept'
                     },
                     success: function(response) {
-                        alert(response.message);
-                        location.reload();
+                        // Check if response is JSON
+                        try {
+                            var jsonResponse = JSON.parse(response);
+                            alert(jsonResponse.message);
+                            location.reload();
+                        } catch (e) {
+                            console.error('Error parsing response:', e);
+                            console.error('Response:', response);
+                            alert('An error occurred while processing the request.');
+                        }
                     },
-                    error: function(xhr) {
-                        alert('An error occurred while accepting the task quote. Please try again.');
+                    error: function(xhr, status, error) {
+                        // Check for server-side errors
+                        console.error('Request Failed:', status, error);
+                        console.error('Response:', xhr.responseText);
+
+                        // Try to display server error message if available
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            alert('Error: ' + xhr.responseJSON.message);
+                        } else {
+                            alert('An error occurred while accepting the task quote. Please try again.');
+                        }
                     }
                 });
             }

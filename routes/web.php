@@ -118,10 +118,10 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
 
     // Routes for task quotes
     Route::get('contractor/tasks', [ContractorTaskController::class, 'indexTasks'])->name('contractor.tasks.index');
-    Route::post('tasks/{taskId}/submit-quote', [ContractorTaskController::class, 'submitTaskQuote'])->name('contractor.tasks.submitQuote');
-    Route::post('tasks/{taskId}/accept-quote', [ContractorTaskController::class, 'acceptTaskQuote'])->name('contractor.tasks.acceptQuote');
-    Route::post('tasks/{taskId}/reject-quote', [ContractorTaskController::class, 'rejectTaskQuote'])->name('contractor.tasks.rejectQuote');
-    Route::post('tasks/{taskId}/suggest-quote', [ContractorTaskController::class, 'suggestTaskQuote'])->name('contractor.tasks.suggestQuote');
+    Route::post('tasks/{taskId}/submit-quote', [ContractorTaskController::class, 'submitTaskQuote'])->name('tasks.submitQuote');
+    Route::post('tasks/{taskId}/accept-quote', [ContractorTaskController::class, 'acceptTaskQuote'])->name('tasks.acceptQuote');
+    Route::post('tasks/{taskId}/reject-quote', [ContractorTaskController::class, 'rejectTaskQuote'])->name('tasks.rejectQuote');
+    Route::post('tasks/{taskId}/suggest-quote', [ContractorTaskController::class, 'suggestTaskQuote'])->name('tasks.suggestQuote');
     // Contractor Profile
     Route::get('/profile', [ContractorsController::class, 'editProfile'])->name('profile.edit');
     Route::post('/profile', [ContractorsController::class, 'updateProfile'])->name('profile.update');
@@ -169,14 +169,9 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
         Route::get('/invite', [TaskController::class, 'invite'])->name('invite');
         Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
-        
-
         // Route to show the task quote
         Route::get('/quote', [TaskController::class, 'showQuote'])->name('quote');
         Route::post('/tasks/{taskId}/quote/respond', [TaskController::class, 'respondToTaskQuote'])->name('quote.respond');
-
-        
-        // Add this to your routes/web.php
-
+        Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
 
     });

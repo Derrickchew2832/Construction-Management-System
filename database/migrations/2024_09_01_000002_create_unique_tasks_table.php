@@ -16,14 +16,19 @@ return new class extends Migration {
             $table->text('description');
             $table->date('start_date');
             $table->date('due_date');
-            $table->enum('status', [
+            $table->enum('category', [
                 'under_negotiation',
                 'due_date',
                 'priority_1',
                 'priority_2',
                 'completed',
                 'verified'
-            ])->default('under_negotiation'); // Status options
+            ])->default('under_negotiation'); // Change 'status' to 'category'
+            $table->enum('status', [
+                'pending',
+                'approved',
+                'rejected'
+            ])->default('pending'); // Add a separate 'status' field for task acceptance status
             $table->string('task_pdf')->nullable(); // Optional task document
             $table->timestamps();
         });

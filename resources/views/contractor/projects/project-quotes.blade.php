@@ -26,7 +26,7 @@
                                 data-project-start-date="{{ $invitation->start_date }}"
                                 data-project-end-date="{{ $invitation->end_date }}"
                                 data-project-location="{{ $invitation->location }}"
-                                data-project-documents='@json($invitation->documents)'>
+                                data-project-documents='@json([["document_path" => $invitation->document_path, "original_name" => $invitation->original_name]])'>
                                 Submit Quote
                             </a>
                         </td>
@@ -56,7 +56,13 @@
                     <tr>
                         <td>{{ $quote->project_name }}</td>
                         <td>${{ number_format($quote->quoted_price, 2) }}</td>
-                        <td><a href="{{ Storage::url($quote->quote_pdf) }}" target="_blank">View Document</a></td>
+                        <td>
+                            @if ($quote->quote_pdf)
+                                <a href="{{ Storage::url($quote->quote_pdf) }}" target="_blank">View Document</a>
+                            @else
+                                <span>No documents available</span>
+                            @endif
+                        </td>
                         <td>{{ ucfirst($quote->status) }}</td>
                         <td>
                             @if ($quote->status === 'submitted')
@@ -90,7 +96,6 @@
                                 </button>
                             @endif
                         </td>
-
                     </tr>
                 @endforeach
             </tbody>
@@ -105,7 +110,6 @@
     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <form id="submitQuoteForm" method="POST" enctype="multipart/form-data">
-
             @csrf
             <input type="hidden" name="project_id" id="projectId">
             <div class="modal-content">
@@ -132,6 +136,10 @@
                     <div class="form-group">
                         <label><strong>Location:</strong></label>
                         <p id="projectLocation"></p>
+                    </div>
+                    <div class="form-group">
+                        <label><strong>Documents:</strong></label>
+                        <ul id="projectDocuments"></ul> <!-- This is where the documents will be listed -->
                     </div>
 
                     <!-- Quoted Price -->
@@ -181,8 +189,7 @@
                 </div>
                 <div class="modal-body">
                     <p><strong>Original Price:</strong> $<span id="suggestedPrice"></span></p>
-                    <p><strong>Suggestion Document:</strong> <a href="#" id="suggestedPdf" target="_blank">View
-                            PDF</a></p>
+                    <p><strong>Suggestion Document:</strong> <a href="#" id="suggestedPdf" target="_blank">View PDF</a></p>
                     <p><strong>Suggestion Notes:</strong> <span id="suggestedNotes"></span></p>
                     <div class="form-group">
                         <label for="new_price">New Suggested Price:</label>
@@ -227,6 +234,20 @@
             modal.find('#projectStartDate').text(projectStartDate || 'Not specified');
             modal.find('#projectEndDate').text(projectEndDate || 'Not specified');
             modal.find('#projectLocation').text(projectLocation || 'Not specified');
+
+            var documentsList = modal.find('#projectDocuments');
+            documentsList.empty();
+
+            // Add each document as a clickable link
+            if (projectDocuments && projectDocuments.length > 0) {
+                projectDocuments.forEach(function(doc) {
+                    var documentLink = '<li><a href="/storage/' + doc.document_path +
+                        '" target="_blank">' + doc.original_name + '</a></li>';
+                    documentsList.append(documentLink);
+                });
+            } else {
+                documentsList.append('<li>No documents available.</li>');
+            }
         });
 
         // Open Suggestion Modal
@@ -244,7 +265,7 @@
             modal.find('#suggestProjectId').val(projectId);
             modal.find('#suggestedPrice').text(currentPrice);
             modal.find('#currentPdf').attr('href', currentPdf).text(
-                'View PDF'); // Fixed the syntax error
+                'View PDF');
 
             if (opponentSuggestionPdf) {
                 modal.find('#suggestedPdf').attr('href', opponentSuggestionPdf).show();
@@ -266,7 +287,7 @@
             // Confirmation before submitting the suggestion
             var confirmSubmit = confirm("Are you sure you want to suggest this new quote?");
             if (!confirmSubmit) {
-                return; // If the user cancels, do not proceed
+                return;
             }
 
             var formData = new FormData(this);
@@ -323,7 +344,7 @@
                     error: function(xhr) {
                         alert(
                             'An error occurred while accepting the quote. Please try again.'
-                            );
+                        );
                     }
                 });
             }
@@ -350,7 +371,7 @@
                     error: function(xhr) {
                         alert(
                             'An error occurred while rejecting the quote. Please try again.'
-                            );
+                        );
                     }
                 });
             }

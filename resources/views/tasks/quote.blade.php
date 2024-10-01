@@ -36,20 +36,23 @@
                                         <span class="text-success">Approved</span>
                                     @elseif ($task->quote->status == 'rejected')
                                         <span class="text-danger">Rejected</span>
+                                    @else
+                                        <span class="text-muted">Unknown Status</span>
+                                        <!-- Fallback in case status is missing -->
                                     @endif
                                 </td>
+
                                 <td>
                                     <!-- Buttons for Accept, Reject, Suggest -->
-                                    @if ($task->quote->status == 'submitted')
-                                        <!-- Debugging information for suggested_by and current user -->
-                                        <p>Suggested by: {{ $task->quote->suggested_by }} | Current User: {{ Auth::id() }}</p> 
-
+                                    @if ($task->quote->status == 'submitted' || $task->quote->status == 'suggested')
                                         @if (Auth::id() != $task->quote->suggested_by)
                                             <!-- Show buttons if the current user didn't make the last suggestion -->
-                                            <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#quoteModal"
-                                                data-task-id="{{ $task->id }}" data-task-title="{{ $task->title }}"
+                                            <button class="btn btn-warning btn-sm" data-toggle="modal"
+                                                data-target="#quoteModal" data-task-id="{{ $task->id }}"
+                                                data-task-title="{{ $task->title }}"
                                                 data-task-description="{{ $task->description }}"
-                                                data-task-start="{{ $task->start_date }}" data-task-due="{{ $task->due_date }}"
+                                                data-task-start="{{ $task->start_date }}"
+                                                data-task-due="{{ $task->due_date }}"
                                                 data-quote-price="{{ number_format($task->quote->quoted_price, 2) }}"
                                                 data-quote-suggestion="{{ $task->quote->quote_suggestion }}"
                                                 data-quote-document="{{ Storage::url($task->quote->quote_pdf) }}"
@@ -57,19 +60,19 @@
                                                 View Suggestion
                                             </button>
                                             <button class="btn btn-success btn-sm"
-                                                onclick="submitAction('accept', '{{ $task->quote->id }}')">Accept</button>
+                                                onclick="submitAction('accept', '{{ $task->quote->id }}', '{{ $task->id }}')">Accept</button>
                                             <button class="btn btn-danger btn-sm"
-                                                onclick="submitAction('reject', '{{ $task->quote->id }}')">Reject</button>
+                                                onclick="submitAction('reject', '{{ $task->quote->id }}', '{{ $task->id }}')">Reject</button>
                                         @else
                                             <!-- Current user already made a suggestion, awaiting other party's response -->
                                             <span class="text-info">Awaiting response from the other party.</span>
                                         @endif
-                                    @elseif ($task->quote->status == 'submitted')
-                                        <span class="text-info">Awaiting Approval</span>
                                     @elseif ($task->quote->status == 'approved')
                                         <span class="text-success">Quote Approved</span>
                                     @elseif ($task->quote->status == 'rejected')
                                         <span class="text-danger">Quote Rejected</span>
+                                    @else
+                                        <span class="text-muted">No Action Available</span>
                                     @endif
                                 </td>
                             </tr>
@@ -122,7 +125,8 @@
                         <h6><strong>Suggest New Price</strong></h6>
                         <div class="form-group">
                             <label for="new_price">New Suggested Price:</label>
-                            <input type="number" name="new_price" id="new_price" class="form-control" step="0.01" required>
+                            <input type="number" name="new_price" id="new_price" class="form-control" step="0.01"
+                                required>
                         </div>
                         <div class="form-group">
                             <label for="quote_description">Quote Description:</label>
@@ -153,7 +157,7 @@
             // Trigger the modal with task and quote details
             $('#quoteModal').on('show.bs.modal', function(event) {
                 var button = $(event.relatedTarget);
-    
+
                 // Extract the data attributes from the clicked button
                 var taskId = button.data('task-id');
                 var taskTitle = button.data('task-title');
@@ -164,7 +168,7 @@
                 var quoteSuggestion = button.data('quote-suggestion');
                 var quoteDocument = button.data('quote-document');
                 var quoteId = button.data('quote-id');
-    
+
                 // Update modal content with the data
                 var modal = $(this);
                 modal.find('#modalTaskId').val(taskId);
@@ -178,20 +182,53 @@
                 modal.find('#modalQuoteSuggestion').text(quoteSuggestion || 'No suggestion provided');
                 modal.find('#modalQuoteDocument').attr('href', quoteDocument);
             });
-    
+
             // Handle Accept and Reject actions
-            function submitAction(action, quoteId) {
+            function submitAction(action, quoteId, taskId) {
                 if (confirm('Are you sure you want to ' + action + ' this quote?')) {
-                    fetch(`/projects/{{ $projectId }}/tasks/${quoteId}/quote/respond`, {
+                    fetch(`/projects/{{ $projectId }}/tasks/${taskId}/quote/respond`, { // Use taskId in the URL
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                action: action,
+                                quote_id: quoteId // Pass the quoteId in the request body
+                            }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            alert(data.message);
+                            if (data.success) {
+                                window.location.reload();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred.');
+                        });
+                }
+            }
+
+
+            // Bind submitAction function globally to handle Accept and Reject button clicks
+            window.submitAction = submitAction;
+
+            $('#quoteActionForm').on('submit', function(e) {
+                e.preventDefault();
+
+                let formData = new FormData(this);
+                let taskId = document.getElementById('modalTaskId').value;
+                let projectId =
+                    '{{ $projectId }}'; // Assuming projectId is available in the Blade template
+
+                fetch(`/projects/${projectId}/tasks/${taskId}/quote/respond`, {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            action: action,
-                            quote_id: quoteId
-                        }),
+                        body: formData
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -204,39 +241,8 @@
                         console.error('Error:', error);
                         alert('An error occurred.');
                     });
-                }
-            }
-    
-            // Bind submitAction function globally to handle Accept and Reject button clicks
-            window.submitAction = submitAction;
-    
-            $('#quoteActionForm').on('submit', function(e) {
-                e.preventDefault();
-    
-                let formData = new FormData(this);
-                let taskId = document.getElementById('modalTaskId').value;
-                let projectId = '{{ $projectId }}'; // Assuming projectId is available in the Blade template
-    
-                fetch(`/projects/${projectId}/tasks/${taskId}/quote/respond`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    },
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.success) {
-                        window.location.reload();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred.');
-                });
             });
         });
     </script>
-    
+
 @endsection

@@ -1,6 +1,8 @@
 @extends('layouts.management', ['projectId' => $projectId])
 
 @section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
 <div class="container-fluid">
 
     <div class="task-board row">
