@@ -108,7 +108,8 @@ class ContractorsController extends Controller
         ->select(
             'projects.*', 
             'project_invitations.status as invitation_status', 
-            'project_documents.document_path as documents'
+            'project_documents.document_path',
+        'project_documents.original_name'
         )
         ->get();
     

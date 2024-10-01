@@ -92,21 +92,33 @@ class ContractorTaskController extends Controller
     }
 
     // Function to handle accepting a suggested task quote
-    public function acceptTaskQuote(Request $request, $taskId)
-    {
-        $quoteId = $request->input('quote_id');
+public function acceptTaskQuote(Request $request, $taskId)
+{
+    $contractorId = Auth::id(); // Get the logged-in contractor ID
+    $quoteId = $request->input('quote_id');
 
-        // Mark the task quote as approved in the task_contractor table
-        DB::table('task_contractor')
-            ->where('id', $quoteId)
-            ->update([
-                'status' => 'approved',
-                'is_final' => 1,  // Mark as final
-                'updated_at' => now(),
-            ]);
+    // Mark the task quote as approved in the task_contractor table
+    DB::table('task_contractor')
+        ->where('id', $quoteId)
+        ->update([
+            'status' => 'approved',
+            'is_final' => 1,  // Mark as final
+            'is_sub_contractor' => 1, // Mark as having a subcontractor
+            'updated_at' => now(),
+        ]);
 
-        return response()->json(['success' => true, 'message' => 'Task quote has been accepted.']);
-    }
+    // Update the tasks table to assign the contractor to this task
+    DB::table('tasks')
+        ->where('id', $taskId)
+        ->update([
+            'assigned_contractor_id' => $contractorId, // Assign contractor ID to the task
+            'status' => 'accepted', // Update task status to 'accepted'
+            'updated_at' => now(),
+        ]);
+
+    return response()->json(['success' => true, 'message' => 'Task quote has been accepted and contractor assigned.']);
+}
+
 
     // Function to handle rejecting a task quote
     public function rejectTaskQuote(Request $request, $taskId)
