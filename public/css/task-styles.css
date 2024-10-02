@@ -1,0 +1,91 @@
+/* Task card general styling */
+.task-card {
+    background-color: transparent;
+    padding: 5px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 9px;
+    height: 80px;
+    width: 150px;
+    overflow: hidden;
+    word-wrap: break-word;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Link styling inside task card */
+.task-card a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Task category container styling */
+.task-category {
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    height: auto;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    background-color: transparent;
+}
+
+/* Category-specific background colors */
+/* Task due date styling */
+.task-due-date {
+    background-color: #d9f3f9;
+}
+
+/* Priority 1 task styling */
+.task-priority-1 {
+    background-color: #fdd1c7;
+}
+
+/* Priority 2 task styling */
+.task-priority-2 {
+    background-color: #fcebc1;
+}
+
+/* Completed task styling */
+.task-completed {
+    background-color: #c3e6cb;
+}
+
+/* Verified task styling */
+.task-verified {
+    background-color: #bee5eb;
+}
+
+/* Space between task cards */
+.task-card + .task-card {
+    margin-top: 20px;
+}
+
+/* Center task category headers */
+.task-category h6 {
+    text-align: center;
+    margin-bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* Container styling for categories */
+.row {
+    display: flex;
+    justify-content: space-around;
+}
+
+/* Adjustments to text inside task card */
+.task-card h6,
+.task-card p {
+    margin: 0;
+    padding: 0;
+    text-align: left;
+}

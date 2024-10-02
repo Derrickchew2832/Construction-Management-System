@@ -272,10 +272,7 @@
     </div>
 </div>
 
-<!-- Include necessary scripts for modal and Bootstrap -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="{{ asset('js/app.js') }}"></script>
+
 
 <script>
     $(document).ready(function() {
@@ -370,77 +367,94 @@
 
 <!-- Task Card Inline CSS -->
 <style>
-    .task-card {
-        background-color: transparent;
-        /* Keep background transparent to inherit category color */
-        padding: 5px;
-        border-radius: 5px;
-        margin-bottom: 8px;
-        font-size: 9px;
-        /* Smaller font size */
-        height: 80px;
-        /* Standardize height */
-        width: 150px;
-        /* Standardize width */
-        overflow: hidden;
-        word-wrap: break-word;
-        text-align: left;
-        /* Align text to the left */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
+    /* Task card general styling */
+.task-card {
+    background-color: transparent;
+    padding: 5px;
+    border-radius: 5px;
+    margin-bottom: 15px; /* Gap between task cards */
+    font-size: 9px;
+    height: 80px;
+    width: 150px;
+    overflow: hidden;
+    word-wrap: break-word;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
 
-    /* Link text styling */
-    .task-card a {
-        color: inherit;
-        text-decoration: none;
-    }
+/* Task card background colors for each category */
+.category-negotiation .task-card {
+    background-color: #e8eaf6; /* Light blue for Under Negotiation */
+}
 
-    /* Category background colors and outer border */
-    .task-category {
-        padding: 8px;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        height: auto;
-        border: 1px solid #ccc;
-        /* Apply border around the entire category section */
-    }
+.category-due-date .task-card {
+    background-color: #fbe9e7; /* Light orange for Due Date */
+}
 
-    /* Category background colors */
-    .category-negotiation {
-        background-color: #e8eaf6;
-        /* Light blue for Under Negotiation */
-    }
+.category-priority-1 .task-card {
+    background-color: #fff9c4; /* Light yellow for Priority 1 */
+}
 
-    .category-due-date {
-        background-color: #fbe9e7;
-        /* Light orange for Due Date */
-    }
+.category-priority-2 .task-card {
+    background-color: #c8e6c9; /* Light green for Priority 2 */
+}
 
-    .category-priority-1 {
-        background-color: #fff9c4;
-        /* Light yellow for Priority 1 */
-    }
+.category-completed .task-card {
+    background-color: #cfd8dc; /* Light grey for Completed */
+}
 
-    .category-priority-2 {
-        background-color: #c8e6c9;
-        /* Light green for Priority 2 */
-    }
+.category-verified .task-card {
+    background-color: #d1c4e9; /* Light purple for Verified */
+}
 
-    .category-completed {
-        background-color: #cfd8dc;
-        /* Light grey for Completed */
-    }
+/* Link text styling */
+.task-card a {
+    color: inherit;
+    text-decoration: none;
+}
 
-    .category-verified {
-        background-color: #d1c4e9;
-        /* Light purple for Verified */
-    }
+/* Category styling */
+.task-category {
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    height: auto;
+    border: none;
+    background-color: transparent; /* Transparent background for the category */
+}
 
-    /* Hover effect for the outer category layer */
-    .task-category:hover {
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        /* Add subtle shadow when hovering over the category */
-    }
+/* Hover effect for task card */
+.task-card:hover {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add subtle shadow when hovering over a task card */
+}
+
+/* Center the task categories and ensure space between task cards */
+.task-category {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.row {
+    display: flex;
+    justify-content: space-around; /* Ensure even spacing between categories */
+}
+
+.task-card + .task-card {
+    margin-top: 15px; /* Gap between task cards */
+}
+
+/* Center task category headers */
+.task-category h6 {
+    text-align: center;
+    margin-bottom: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
 </style>

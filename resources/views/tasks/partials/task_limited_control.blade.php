@@ -190,10 +190,6 @@
     </div>
 </div>
 
-<!-- Include necessary scripts for modal and Bootstrap -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script src="{{ asset('js/app.js') }}"></script>
 
 <script>
     $(document).ready(function() {
@@ -229,9 +225,8 @@
     });
 </script>
 
-<!-- Task Card Inline CSS -->
 <style>
-/* Task card styling */
+    /* Task card general styling */
 .task-card {
     background-color: transparent;
     padding: 5px;
@@ -242,14 +237,14 @@
     width: 150px;
     overflow: hidden;
     word-wrap: break-word;
-    text-align: left; /* Ensure text inside is left-aligned */
+    text-align: left;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Center content vertically */
-    align-items: flex-start; /* Align content to the left */
+    justify-content: center;
+    align-items: flex-start;
 }
 
-/* Link styling */
+/* Link styling inside task card */
 .task-card a {
     color: inherit;
     text-decoration: none;
@@ -265,34 +260,39 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    align-items: center; /* Center task cards */
-    background-color: transparent; /* Keep the category background transparent */
+    align-items: center;
+    background-color: transparent;
 }
 
-/* Category-specific task card background colors */
+/* Category-specific background colors */
+/* Task due date styling */
 .task-due-date {
     background-color: #d9f3f9;
 }
 
+/* Priority 1 task styling */
 .task-priority-1 {
     background-color: #fdd1c7;
 }
 
+/* Priority 2 task styling */
 .task-priority-2 {
     background-color: #fcebc1;
 }
 
+/* Completed task styling */
 .task-completed {
     background-color: #c3e6cb;
 }
 
+/* Verified task styling */
 .task-verified {
     background-color: #bee5eb;
 }
 
-/* Add space between task cards */
+/* Space between task cards */
 .task-card + .task-card {
-    margin-top: 20px; /* Ensure proper spacing between task cards */
+    margin-top: 20px;
 }
 
 /* Center task category headers */
@@ -304,25 +304,17 @@
     justify-content: center;
 }
 
-/* Ensure task category and cards are aligned centrally in the column */
-.task-category {
-    align-items: center;
-    justify-content: flex-start;
-}
-
-/* Container styling to centralize categories */
+/* Container styling for categories */
 .row {
     display: flex;
-    justify-content: space-around; /* Ensure even spacing between categories */
+    justify-content: space-around;
 }
 
 /* Adjustments to text inside task card */
-.task-card h6, .task-card p {
+.task-card h6,
+.task-card p {
     margin: 0;
     padding: 0;
-    text-align: left; /* Left-align the text inside task cards */
+    text-align: left;
 }
-
-
-
 </style>

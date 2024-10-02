@@ -46,17 +46,23 @@ class TaskController extends Controller
      // Categorize tasks
      $categorizedTasks = [
         'under_negotiation' => $tasks->filter(function ($task) {
-            return $task->status == 'under_negotiation';
+            return $task->category == 'under_negotiation'; // Use category field
         }),
         'due_date' => $tasks->filter(function ($task) {
-            return $task->status == 'approved' && $task->due_date && now()->diffInDays($task->due_date) <= 7;
+            return $task->category == 'due_date' && $task->due_date == now()->toDateString(); // Exact due date
         }),
-        'priority_1' => $tasks->where('status', 'priority_1'),
+        'priority_1' => $tasks->filter(function ($task) {
+            return $task->category == 'priority_1'; // Use category field
+        }),
         'priority_2' => $tasks->filter(function ($task) {
-            return $task->status == 'approved' && now()->diffInDays($task->due_date) > 7;
+            return $task->category == 'priority_2'; // Use category field
         }),
-        'completed' => $tasks->where('status', 'completed'),
-        'verified' => $tasks->where('status', 'verified'),
+        'completed' => $tasks->filter(function ($task) {
+            return $task->category == 'completed'; // Use category field
+        }),
+        'verified' => $tasks->filter(function ($task) {
+            return $task->category == 'verified'; // Use category field
+        }),
     ];
     
 
