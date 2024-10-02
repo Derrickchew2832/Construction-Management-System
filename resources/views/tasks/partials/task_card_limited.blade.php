@@ -1,5 +1,5 @@
 <div class="task-card">
-    <h5>{{ $task->title }} ({{ $task->priority }})</h5>
+    <h5>{{ $task->title }} @if(isset($task->category)) ({{ $task->category }}) @endif</h5>
     <p>{{ $task->description }}</p>
     <span>Status: {{ $task->status }}</span>
     @if($task->status != 'completed')

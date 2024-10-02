@@ -36,8 +36,9 @@ class TaskController extends Controller
         ->join('task_invitations', 'tasks.id', '=', 'task_invitations.task_id')
         ->join('users', 'task_invitations.contractor_id', '=', 'users.id')
         ->where('tasks.project_id', $projectId)
-        ->select('tasks.*', 'users.email as contractor_email') // Select contractor's email
+        ->select('tasks.*', 'tasks.category', 'task_invitations.contractor_id as assigned_to', 'users.email as contractor_email')
         ->get();
+        
 
     // Convert tasks to a collection
     $tasks = collect($tasks);
