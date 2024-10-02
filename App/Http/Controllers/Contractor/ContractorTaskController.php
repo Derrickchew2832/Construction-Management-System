@@ -92,7 +92,8 @@ class ContractorTaskController extends Controller
         DB::table('tasks')
             ->where('id', $taskId)
             ->update([
-                'status' => 'pending', // Mark the task as pending
+                'status' => 'pending',
+                'category' => 'under_negotiation',
                 'updated_at' => now(),
             ]);
 
@@ -102,62 +103,39 @@ class ContractorTaskController extends Controller
     public function acceptTaskQuote(Request $request, $taskId)
 {
     try {
-        // Get the quote ID from the request
         $quoteId = $request->input('quote_id');
-        
-        // Log the quote ID to verify it's correct
-        \Log::info('Quote ID received', [
-            'quote_id' => $quoteId
-        ]);
-
-        // Fetch the contractor_id from the task_contractor table (this is the contractor who was invited)
         $taskQuote = DB::table('task_contractor')->where('id', $quoteId)->first();
 
         if (!$taskQuote) {
             return response()->json(['success' => false, 'message' => 'Quote not found.'], 404);
         }
 
-        // Log the task quote details, including contractor_id
-        \Log::info('Task Quote Details', [
-            'taskQuote' => $taskQuote
+        // Update the task_contractor table to mark the quote as approved
+        DB::table('task_contractor')->where('id', $quoteId)->update([
+            'status' => 'approved',
+            'is_final' => 1,
+            'is_sub_contractor' => 1,
+            'updated_at' => now(),
         ]);
 
-        // 1. Update the task_contractor table to mark the quote as approved
-        DB::table('task_contractor')
-            ->where('id', $quoteId)  // Find the quote by quoteId
-            ->update([
-                'status' => 'approved',  // Set the quote status to approved
-                'is_final' => 1,         // Mark the quote as final (no further negotiation)
-                'is_sub_contractor' => 1, // Mark this contractor as the one handling the task
-                'updated_at' => now(),   // Update the timestamp
-            ]);
+        // Check if the due date is close (within 7 days)
+        $task = DB::table('tasks')->where('id', $taskId)->first();
+        $category = (now()->diffInDays($task->due_date) <= 7) ? 'due_date' : 'priority_2';
 
-        // Log before updating the task to ensure the right contractor ID is being assigned
-        \Log::info('Assigning contractor to task', [
-            'task_id' => $taskId,
-            'assigned_contractor_id' => $taskQuote->contractor_id
+        // Update tasks table to assign the contractor and move task to the correct category
+        DB::table('tasks')->where('id', $taskId)->update([
+            'assigned_contractor_id' => $taskQuote->contractor_id,
+            'category' => $category, // Move task to "Priority 2" or "Due Date" based on due date
+            'status' => 'approved', // Mark task status as approved
+            'updated_at' => now(),
         ]);
 
-        // 2. Update the tasks table to assign the contractor who was invited (contractor_id from task_contractor)
-        DB::table('tasks')
-            ->where('id', $taskId)  // Find the task by taskId
-            ->update([
-                'assigned_contractor_id' => $taskQuote->contractor_id, // Assign the contractor who was invited
-                'category' => 'priority_2',                            // Update task category to 'priority_2'
-                'status' => 'approved',                                // Mark task status as approved
-                'updated_at' => now(),                                 // Update the timestamp
-            ]);
-
-        // Return success response
         return response()->json(['success' => true, 'message' => 'Quote approved successfully!']);
     } catch (\Exception $e) {
-        // Log the error and return error response
         \Log::error('Error approving quote: ' . $e->getMessage());
-
         return response()->json(['success' => false, 'message' => 'Error occurred while approving the quote.'], 500);
     }
 }
-
 
     // Function to handle rejecting a task quote
     public function rejectTaskQuote(Request $request, $taskId)
@@ -177,7 +155,8 @@ class ContractorTaskController extends Controller
         DB::table('tasks')
             ->where('id', $taskId)
             ->update([
-                'status' => 'rejected', // Update task status to 'rejected'
+                'status' => 'rejected',
+                'category' => 'rejected', // Update task status to 'rejected'
                 'updated_at' => now(),
             ]);
 

@@ -43,19 +43,17 @@ class TaskController extends Controller
     // Convert tasks to a collection
     $tasks = collect($tasks);
 
-    // Ensure that the due_date category is properly handled even if no tasks have a due date
-    $categorizedTasks = [
+     // Categorize tasks
+     $categorizedTasks = [
         'under_negotiation' => $tasks->filter(function ($task) {
             return $task->status == 'under_negotiation';
         }),
         'due_date' => $tasks->filter(function ($task) {
-            // Move to Due Date category if it's accepted and the due date is approaching
-            return $task->status != 'under_negotiation' && $task->due_date && now()->diffInDays($task->due_date) <= 7;
+            return $task->status == 'approved' && $task->due_date && now()->diffInDays($task->due_date) <= 7;
         }),
         'priority_1' => $tasks->where('status', 'priority_1'),
         'priority_2' => $tasks->filter(function ($task) {
-            // Move to Priority 2 if it's accepted and the due date is further away
-            return $task->status != 'under_negotiation' && now()->diffInDays($task->due_date) > 7;
+            return $task->status == 'approved' && now()->diffInDays($task->due_date) > 7;
         }),
         'completed' => $tasks->where('status', 'completed'),
         'verified' => $tasks->where('status', 'verified'),
@@ -73,7 +71,9 @@ class TaskController extends Controller
         ->get();
 
     // Calculate the project due date countdown
-    $dueDateCountdown = $this->calculateDueDate($project->end_date);
+    $dueDateCountdown = $this->calculateDueDate($project->start_date, $project->end_date);
+
+    $totalProjectDays = \Carbon\Carbon::parse($project->start_date)->diffInDays(\Carbon\Carbon::parse($project->end_date));
 
     // Pass data to the view
     return view('tasks.index', [
@@ -85,6 +85,7 @@ class TaskController extends Controller
         'userRole' => $userRole,
         'isMainContractor' => $isMainContractor,
         'dueDateCountdown' => $dueDateCountdown,
+        'totalProjectDays' => $totalProjectDays, 
         'projectManagerName' => $projectManager ? $projectManager->name : 'N/A',
         'mainContractorName' => $mainContractor ? $mainContractor->name : 'N/A',
         'contractors' => $contractors, // Pass contractors to the view
@@ -92,18 +93,50 @@ class TaskController extends Controller
 }
 
 
-    private function calculateDueDate($endDate)
-    {
-        if (!$endDate) {
-            return 'No end date set';
-        }
-
-        $today = now(); // Get the current date
-        $dueDate = \Carbon\Carbon::parse($endDate); // Parse the end date into a Carbon instance
-
-        // Calculate the difference in days between today and the end date
-        return $today->diffInDays($dueDate, false); // `false` ensures it returns a negative value if past due
+private function calculateDueDate($startDate, $endDate)
+{
+    // Check if either start date or end date is missing
+    if (!$startDate || !$endDate) {
+        \Log::error("Missing start or end date for the project");
+        return 'Project dates are not set';
     }
+
+    // Parsing the dates
+    $startDate = \Carbon\Carbon::parse($startDate); // Parse the start date into a Carbon instance
+    $dueDate = \Carbon\Carbon::parse($endDate); // Parse the end date into a Carbon instance
+    $today = now(); // Get the current date
+
+    // Log the start and due dates for debugging purposes
+    \Log::info("Start Date: " . $startDate);
+    \Log::info("Due Date: " . $dueDate);
+    \Log::info("Today Date: " . $today);
+
+    // Total days of the project (from start to due date)
+    $totalProjectDays = $startDate->diffInDays($dueDate, false);
+    \Log::info("Total project days: " . $totalProjectDays); // Log total project days
+
+    // Days remaining if the project is ongoing
+    if ($today >= $startDate && $today <= $dueDate) {
+        $daysRemaining = $today->diffInDays($dueDate);
+        \Log::info("Days remaining: " . $daysRemaining); // Log remaining days
+        return "$daysRemaining days remaining";
+    }
+
+    // Project hasn't started yet
+    if ($today < $startDate) {
+        $daysToStart = $today->diffInDays($startDate);
+        \Log::info("Project starts in: " . $daysToStart . " days"); // Log days to start
+        return "Project starts in $daysToStart days";
+    }
+
+    // Project already ended
+    if ($today > $dueDate) {
+        \Log::info("Project has already ended");
+        return 'Project has already ended';
+    }
+}
+
+
 
     private function getTasksDueToday($projectId)
     {
@@ -212,7 +245,7 @@ class TaskController extends Controller
         'description' => $data['description'],
         'start_date' => $data['start_date'],
         'due_date' => $data['due_date'],
-        'category' => $data['category'], // Now it's 'category'
+        'category' => 'under_negotiation', // Now it's 'category'
         'status' => 'pending', // Default task status on creation
         'task_pdf' => $taskPdfPath,
         'created_at' => now(),

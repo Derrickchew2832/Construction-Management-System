@@ -128,6 +128,11 @@
         .button-panel .btn {
             margin-right: 10px;
         }
+
+        /* Current Date Styling */
+        #current-date-time {
+            font-size: 12px; /* Smaller size for current date and time */
+        }
     </style>
 </head>
 
@@ -208,15 +213,18 @@
                 <!-- Left side: Project details -->
                 <div>
                     <h4 class="text-muted mb-0">{{ $project->name }}</h4>
-                    <small>Managed by: {{ $projectManagerName }} | Main Contractor: {{ $mainContractorName }}</small>
-                    <small> |
-                        Project Status:
-                        <span id="project-status"></span>
+                    <small>
+                        Managed by: {{ $projectManagerName }} | Main Contractor: {{ $mainContractorName }} |
+                        Project Start Date: {{ \Carbon\Carbon::parse($project->start_date)->format('d M Y') }} |
+                        Due Date: {{ \Carbon\Carbon::parse($project->end_date)->format('d M Y') }} |
+                        <span id="project-status"></span> |
+                        Total Project Days: <span id="total-project-days">{{ $totalProjectDays }}</span>
                     </small>
                 </div>
 
                 <!-- Right side: Exit button -->
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center flex-column">
+                    <div id="current-date-time" class="mb-1"></div> <!-- Smaller and above the exit button -->
                     @php
                         $exiturl = '';
                         if ($roleName == 'project_manager') {
@@ -227,12 +235,9 @@
                             $exiturl = route('client.projects.index');
                         }
                     @endphp
-                    <button class="btn btn-danger btn-sm"
-                        onclick="window.location.href='{{ $exiturl }}'">Exit</button>
+                    <button class="btn btn-danger btn-sm" onclick="window.location.href='{{ $exiturl }}'">Exit</button>
                 </div>
             </header>
-
-          
 
             <!-- Yield content from specific views -->
             @yield('content')
@@ -245,27 +250,41 @@
 
     <!-- Custom JavaScript for Countdown Functionality -->
     <script>
-        // Get project start date and due date from the server (these values would be dynamic in production)
-        const projectStartDate = new Date('{{ $project->start_date }}'); // Project start date
-        const projectDueDate = new Date('{{ $project->end_date }}'); // Project due date
-        const currentDate = new Date(); // Current date
-        const statusElement = document.getElementById('project-status'); // The element to show status
+        // Calculate remaining days and set the project status
+        const projectStartDate = new Date('{{ $project->start_date }}');
+        const projectDueDate = new Date('{{ $project->end_date }}');
+        const currentDate = new Date();
+        const statusElement = document.getElementById('project-status');
 
-        // Check if the project hasn't started yet
+        // Calculate and display project status based on dates
         if (currentDate < projectStartDate) {
             statusElement.innerHTML = 'Project hasn\'t started yet';
-        }
-        // Check if the project is in progress
-        else if (currentDate >= projectStartDate && currentDate <= projectDueDate) {
+        } else if (currentDate >= projectStartDate && currentDate <= projectDueDate) {
             const timeDifference = projectDueDate.getTime() - currentDate.getTime();
             const daysRemaining = Math.ceil(timeDifference / (1000 * 3600 * 24)); // Convert milliseconds to days
-
             statusElement.innerHTML = daysRemaining + ' days remaining';
-        }
-        // Check if the project has ended
-        else if (currentDate > projectDueDate) {
+        } else {
             statusElement.innerHTML = 'Project has already ended';
         }
+
+        // Display current date and time
+        function updateDateTime() {
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+            const formattedTime = currentDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+            document.getElementById('current-date-time').innerHTML = `Current Date: ${formattedDate} | Time: ${formattedTime}`;
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
     </script>
 </body>
 
