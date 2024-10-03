@@ -1,9 +1,9 @@
-/* Task card general styling */
+/* General Task Card Styling */
 .task-card {
-    background-color: transparent;
+    background-color: transparent; /* Task card background is transparent initially */
     padding: 5px;
     border-radius: 5px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     font-size: 9px;
     height: 80px;
     width: 150px;
@@ -14,60 +14,67 @@
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
+    position: relative;
+    transition: box-shadow 0.2s ease, background-color 0.2s ease; /* Smooth transition for hover */
 }
 
-/* Link styling inside task card */
-.task-card a {
-    color: inherit;
-    text-decoration: none;
+/* Hover Effect - Applied only to the task card */
+.task-card:hover {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow effect */
+    cursor: pointer;
 }
 
-/* Task category container styling */
+/* Category-Specific Background Colors - Only for Task Cards */
+.category-negotiation .task-card {
+    background-color: #e8eaf6; /* Light blue for Under Negotiation */
+}
+
+.category-due-date .task-card {
+    background-color: #fbe9e7; /* Light orange for Due Date */
+}
+
+.category-priority-1 .task-card {
+    background-color: #fff9c4; /* Light yellow for Priority 1 */
+}
+
+.category-priority-2 .task-card {
+    background-color: #fcebc1; /* Light peach for Priority 2 */
+}
+
+.category-completed .task-card {
+    background-color: #c3e6cb; /* Light green for Completed */
+}
+
+.category-verified .task-card {
+    background-color: #bee5eb; /* Light blue for Verified */
+}
+
+/* Consistent Category Container Styling */
 .task-category {
     padding: 8px;
     border-radius: 5px;
     margin-bottom: 15px;
     height: auto;
     border: none;
+    background-color: transparent; /* Ensure that category container has a transparent background */
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    background-color: transparent;
 }
 
-/* Category-specific background colors */
-/* Task due date styling */
-.task-due-date {
-    background-color: #d9f3f9;
-}
-
-/* Priority 1 task styling */
-.task-priority-1 {
-    background-color: #fdd1c7;
-}
-
-/* Priority 2 task styling */
-.task-priority-2 {
-    background-color: #fcebc1;
-}
-
-/* Completed task styling */
-.task-completed {
-    background-color: #c3e6cb;
-}
-
-/* Verified task styling */
-.task-verified {
-    background-color: #bee5eb;
-}
-
-/* Space between task cards */
+/* Space Between Task Cards */
 .task-card + .task-card {
-    margin-top: 20px;
+    margin-top: 15px; /* Ensure a gap between cards */
 }
 
-/* Center task category headers */
+/* Proper Alignment of Categories */
+.row {
+    display: flex;
+    justify-content: space-around;
+}
+
+/* Center Task Category Headers */
 .task-category h6 {
     text-align: center;
     margin-bottom: 20px;
@@ -76,16 +83,71 @@
     justify-content: center;
 }
 
-/* Container styling for categories */
-.row {
-    display: flex;
-    justify-content: space-around;
+/* Task Links Styling */
+.task-card a {
+    color: inherit;
+    text-decoration: none;
 }
 
-/* Adjustments to text inside task card */
+/* Adjustments to Text Inside Task Card */
 .task-card h6,
 .task-card p {
     margin: 0;
     padding: 0;
     text-align: left;
+}
+
+/* Button Styling for Create Task Button */
+.btn-create-task {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+.btn-create-task:hover {
+    background-color: #0056b3;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal Form Styling */
+#taskForm {
+    padding: 15px;
+}
+
+#taskForm label {
+    font-size: 0.85rem;
+}
+
+#taskForm input,
+#taskForm textarea,
+#taskForm select {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Modal Styling */
+.modal-content {
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+}
+
+.modal-footer button {
+    padding: 5px 15px;
+    font-size: 0.85rem;
 }

@@ -190,6 +190,10 @@
     </div>
 </div>
 
+<!-- Include necessary scripts for modal and Bootstrap -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="{{ asset('js/app.js') }}"></script>
 
 <script>
     $(document).ready(function() {
@@ -225,13 +229,15 @@
     });
 </script>
 
+
+<!-- Task Card Inline CSS -->
 <style>
     /* Task card general styling */
 .task-card {
     background-color: transparent;
     padding: 5px;
     border-radius: 5px;
-    margin-bottom: 10px;
+    margin-bottom: 15px; /* Gap between task cards */
     font-size: 9px;
     height: 80px;
     width: 150px;
@@ -244,55 +250,67 @@
     align-items: flex-start;
 }
 
-/* Link styling inside task card */
+/* Task card background colors for each category */
+.category-negotiation .task-card {
+    background-color: #e8eaf6; /* Light blue for Under Negotiation */
+}
+
+.category-due-date .task-card {
+    background-color: #fbe9e7; /* Light orange for Due Date */
+}
+
+.category-priority-1 .task-card {
+    background-color: #fff9c4; /* Light yellow for Priority 1 */
+}
+
+.category-priority-2 .task-card {
+    background-color: #c8e6c9; /* Light green for Priority 2 */
+}
+
+.category-completed .task-card {
+    background-color: #cfd8dc; /* Light grey for Completed */
+}
+
+.category-verified .task-card {
+    background-color: #d1c4e9; /* Light purple for Verified */
+}
+
+/* Link text styling */
 .task-card a {
     color: inherit;
     text-decoration: none;
 }
 
-/* Task category container styling */
+/* Category styling */
 .task-category {
     padding: 8px;
     border-radius: 5px;
     margin-bottom: 15px;
     height: auto;
     border: none;
+    background-color: transparent; /* Transparent background for the category */
+}
+
+/* Hover effect for task card */
+.task-card:hover {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add subtle shadow when hovering over a task card */
+}
+
+/* Center the task categories and ensure space between task cards */
+.task-category {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    background-color: transparent;
 }
 
-/* Category-specific background colors */
-/* Task due date styling */
-.task-due-date {
-    background-color: #d9f3f9;
+.row {
+    display: flex;
+    justify-content: space-around; /* Ensure even spacing between categories */
 }
 
-/* Priority 1 task styling */
-.task-priority-1 {
-    background-color: #fdd1c7;
-}
-
-/* Priority 2 task styling */
-.task-priority-2 {
-    background-color: #fcebc1;
-}
-
-/* Completed task styling */
-.task-completed {
-    background-color: #c3e6cb;
-}
-
-/* Verified task styling */
-.task-verified {
-    background-color: #bee5eb;
-}
-
-/* Space between task cards */
 .task-card + .task-card {
-    margin-top: 20px;
+    margin-top: 15px; /* Gap between task cards */
 }
 
 /* Center task category headers */
@@ -304,17 +322,4 @@
     justify-content: center;
 }
 
-/* Container styling for categories */
-.row {
-    display: flex;
-    justify-content: space-around;
-}
-
-/* Adjustments to text inside task card */
-.task-card h6,
-.task-card p {
-    margin: 0;
-    padding: 0;
-    text-align: left;
-}
 </style>

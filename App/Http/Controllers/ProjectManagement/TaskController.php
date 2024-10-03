@@ -290,119 +290,137 @@ public function updateTaskStatus(Request $request, $taskId)
     return response()->json(['success' => true, 'message' => 'Task status updated successfully']);
 }
 
-    public function showQuote($projectId)
-    {
-        // Fetch the project by its ID
-        $project = DB::table('projects')->where('id', $projectId)->first();
+public function showQuote($projectId)
+{
+    // Fetch the project by its ID
+    $project = DB::table('projects')->where('id', $projectId)->first();
 
-        if (!$project) {
-            return redirect()->route('projects.index')->with('error', 'Project not found.');
-        }
-
-        // Fetch all tasks for the current project
-        $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
-
-        if ($tasks->isEmpty()) {
-            return redirect()->back()->with('error', 'No tasks found for this project.');
-        }
-
-        // Fetch all quotes for tasks in the current project
-        foreach ($tasks as $task) {
-            $task->quote = DB::table('task_contractor')->where('task_id', $task->id)->first();
-        }
-
-        // Fetch the project manager and main contractor
-        $projectUsers = DB::table('users')
-            ->whereIn('id', [$project->project_manager_id, $project->main_contractor_id])
-            ->get()
-            ->keyBy('id');
-
-        $projectManager = $projectUsers->get($project->project_manager_id);
-        $mainContractor = $projectUsers->get($project->main_contractor_id);
-
-        // Determine if the current user is the main contractor
-        $isMainContractor = auth()->user()->id == $project->main_contractor_id;
-
-        // Pass all necessary data to the view
-        return view('tasks.quote', [
-            'project' => $project,
-            'tasks' => $tasks,
-            'projectId' => $projectId,
-            'projectManagerName' => $projectManager ? $projectManager->name : 'N/A',
-            'mainContractorName' => $mainContractor ? $mainContractor->name : 'N/A',
-            'isMainContractor' => $isMainContractor
-        ]);
+    if (!$project) {
+        return redirect()->route('projects.index')->with('error', 'Project not found.');
     }
 
-    public function respondToTaskQuote(Request $request, $projectId, $taskId)
-    {
-        // Fetch the current quote
-        $quoteId = $request->input('quote_id');
-        $quote = DB::table('task_contractor')->where('id', $quoteId)->first();
+    // Fetch all tasks for the current project
+    $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
 
-        // Get the logged-in user
-        $currentUser = Auth::user();
-
-        // Check if the current user is allowed to respond (based on `suggested_by`)
-        if ($quote->suggested_by == $currentUser->id) {
-            return response()->json(['success' => false, 'message' => 'You cannot respond at this time. Wait for the other party to respond.'], 403);
-        }
-
-        // Handle actions (accept, reject, suggest)
-        if ($request->action == 'accept') {
-            // Update the task with the contractor who submitted the quote
-            DB::table('tasks')
-                ->where('id', $taskId)
-                ->update([
-                    'assigned_contractor_id' => $quote->contractor_id, // Update to the contractor who submitted the quote
-                    'status' => 'approved', // Mark the task status as accepted
-                    'updated_at' => now(),
-                ]);
-    
-            // Update the task_contractor table to mark this contractor as a subcontractor
-            DB::table('task_contractor')
-                ->where('id', $quoteId)  // Update by quoteId
-                ->update([
-                    'status' => 'approved', // Approve the quote
-                    'is_sub_contractor' => 1, // Mark as having a subcontractor
-                    'is_final' => 1, // Mark as final
-                    'updated_at' => now(),
-                ]);
-
-            return response()->json(['success' => true, 'message' => 'Quote accepted successfully.']);
-        } elseif ($request->action == 'reject') {
-            DB::table('task_contractor')
-                ->where('id', $quoteId)  // Update by quoteId
-                ->update([
-                    'status' => 'rejected', // Reject the quote
-                    'is_final' => 1, // Mark as final
-                    'updated_at' => now(),
-                ]);
-
-            DB::table('tasks')
-                ->where('id', $taskId)
-                ->update([
-                    'status' => 'rejected', // Update task status to rejected
-                    'updated_at' => now(),
-                ]);
-
-            return response()->json(['success' => true, 'message' => 'Quote rejected successfully.']);
-        } else {
-            // Main Contractor suggests a new price
-            DB::table('task_contractor')
-                ->where('id', $quoteId)  // Update by quoteId
-                ->update([
-                    'quote_suggestion' => $request->input('new_price'),
-                    'quote_pdf' => $request->file('new_pdf')->store('task_quotes', 'public'),
-                    'suggested_by' => $currentUser->id,
-                    'status' => 'suggested', // Status becomes suggested for Contractor to act next
-                    'is_final' => 0,
-                    'updated_at' => now(),
-                ]);
-
-            return response()->json(['success' => true, 'message' => 'Quote suggestion submitted successfully.']);
-        }
+    if ($tasks->isEmpty()) {
+        return redirect()->back()->with('error', 'No tasks found for this project.');
     }
+
+    // Fetch all quotes for tasks in the current project
+    foreach ($tasks as $task) {
+        $task->quote = DB::table('task_contractor')->where('task_id', $task->id)->first();
+    }
+
+    // Fetch the project manager and main contractor
+    $projectUsers = DB::table('users')
+        ->whereIn('id', [$project->project_manager_id, $project->main_contractor_id])
+        ->get()
+        ->keyBy('id');
+
+    $projectManager = $projectUsers->get($project->project_manager_id);
+    $mainContractor = $projectUsers->get($project->main_contractor_id);
+
+    // Determine if the current user is the main contractor
+    $isMainContractor = auth()->user()->id == $project->main_contractor_id;
+
+    // Calculate total project days
+    $startDate = \Carbon\Carbon::parse($project->start_date);
+    $endDate = \Carbon\Carbon::parse($project->end_date);
+    $totalProjectDays = $startDate->diffInDays($endDate);
+
+    // Pass all necessary data to the view
+    return view('tasks.quote', [
+        'project' => $project,
+        'tasks' => $tasks,
+        'projectId' => $projectId,
+        'projectManagerName' => $projectManager ? $projectManager->name : 'N/A',
+        'mainContractorName' => $mainContractor ? $mainContractor->name : 'N/A',
+        'isMainContractor' => $isMainContractor,
+        'totalProjectDays' => $totalProjectDays // Pass the total project days to the view
+    ]);
+}
+
+
+public function respondToTaskQuote(Request $request, $projectId, $taskId)
+{
+    // Fetch the current quote
+    $quoteId = $request->input('quote_id');
+    $quote = DB::table('task_contractor')->where('id', $quoteId)->first();
+
+    // Get the logged-in user
+    $currentUser = Auth::user();
+
+    // Check if the current user is allowed to respond (based on `suggested_by`)
+    if ($quote->suggested_by == $currentUser->id) {
+        return response()->json(['success' => false, 'message' => 'You cannot respond at this time. Wait for the other party to respond.'], 403);
+    }
+
+    // Get the current date
+    $today = now()->toDateString();
+
+    // Handle actions (accept, reject, suggest)
+    if ($request->action == 'accept') {
+        // Fetch task due date
+        $task = DB::table('tasks')->where('id', $taskId)->first();
+
+        // Determine if the task is due today, and set the category accordingly
+        $category = ($task->due_date == $today) ? 'due_date' : 'priority_2';
+
+        // Update the task with the contractor who submitted the quote
+        DB::table('tasks')
+            ->where('id', $taskId)
+            ->update([
+                'assigned_contractor_id' => $quote->contractor_id, // Update to the contractor who submitted the quote
+                'status' => 'approved', // Mark the task status as accepted
+                'updated_at' => now(),
+                'category' => $category, // Set category based on due date or priority
+            ]);
+
+        // Update the task_contractor table to mark this contractor as a subcontractor
+        DB::table('task_contractor')
+            ->where('id', $quoteId)  // Update by quoteId
+            ->update([
+                'status' => 'approved', // Approve the quote
+                'is_sub_contractor' => 1, // Mark as having a subcontractor
+                'is_final' => 1, // Mark as final
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Quote accepted successfully.']);
+    } elseif ($request->action == 'reject') {
+        DB::table('task_contractor')
+            ->where('id', $quoteId)  // Update by quoteId
+            ->update([
+                'status' => 'rejected', // Reject the quote
+                'is_final' => 1, // Mark as final
+                'updated_at' => now(),
+            ]);
+
+        DB::table('tasks')
+            ->where('id', $taskId)
+            ->update([
+                'status' => 'rejected', // Update task status to rejected
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Quote rejected successfully.']);
+    } else {
+        // Main Contractor suggests a new price
+        DB::table('task_contractor')
+            ->where('id', $quoteId)  // Update by quoteId
+            ->update([
+                'quote_suggestion' => $request->input('new_price'),
+                'quote_pdf' => $request->file('new_pdf')->store('task_quotes', 'public'),
+                'suggested_by' => $currentUser->id,
+                'status' => 'suggested', // Status becomes suggested for Contractor to act next
+                'is_final' => 0,
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Quote suggestion submitted successfully.']);
+    }
+}
+
 
     public function invite($projectId)
     {

@@ -1,22 +1,23 @@
 <div class="container mt-3 px-10">
     <!-- Create New Task Button at the top -->
     <div class="mb-4">
-        <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createTaskModal">+ Create New
-            Task</button>
+        <button class="btn btn-primary btn-sm btn-create-task" data-toggle="modal" data-target="#createTaskModal">
+            + Create New Task
+        </button>
     </div>
 
     <div class="row">
         <!-- Category: Under Negotiation -->
         <div class="col-md-2">
-            <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Under Negotiation
+            <h6 class="text-muted">Under Negotiation
                 ({{ $categorizedTasks['under_negotiation']->count() }})</h6>
-            <div class="task-category p-2 category-negotiation">
+            <div class="task-category category-negotiation">
                 @php
                     $renderedTasks = [];
                 @endphp
 
                 @if ($categorizedTasks['under_negotiation']->isEmpty())
-                    <p class="text-muted" style="font-size: 0.75rem;">No tasks available in this category.</p>
+                    <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['under_negotiation'] as $task)
                         @if (!in_array($task->id, $renderedTasks))
@@ -39,25 +40,22 @@
 
         <!-- Category: Due Date -->
         <div class="col-md-2">
-            <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Due Date
+            <h6 class="text-muted">Due Date
                 ({{ $categorizedTasks['due_date']->count() }})</h6>
-            <div class="task-category p-2 category-due-date">
+            <div class="task-category category-due-date">
                 @php
                     $renderedTasks = [];
                 @endphp
 
                 @if ($categorizedTasks['due_date']->isEmpty())
-                    <p class="text-muted" style="font-size: 0.75rem;">No tasks available in this category.</p>
+                    <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['due_date'] as $task)
                         @if (!in_array($task->id, $renderedTasks))
-                            <!-- Ensure no duplicates -->
                             @php
                                 $renderedTasks[] = $task->id;
                             @endphp
-                            <div class="task-card mb-2" style="background-color: #d9f3f9; border: none;">
-                                @include('tasks.partials.task_card', ['task' => $task])
-                            </div>
+                            @include('tasks.partials.task_card', ['task' => $task])
                         @endif
                     @endforeach
                 @endif
@@ -66,25 +64,22 @@
 
         <!-- Category: Priority 1 -->
         <div class="col-md-2">
-            <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Priority 1
+            <h6 class="text-muted">Priority 1
                 ({{ $categorizedTasks['priority_1']->count() }})</h6>
-            <div class="task-category p-2 category-priority-1">
+            <div class="task-category category-priority-1">
                 @php
                     $renderedTasks = [];
                 @endphp
 
                 @if ($categorizedTasks['priority_1']->isEmpty())
-                    <p class="text-muted" style="font-size: 0.75rem;">No tasks available in this category.</p>
+                    <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['priority_1'] as $task)
                         @if (!in_array($task->id, $renderedTasks))
-                            <!-- Ensure no duplicates -->
                             @php
                                 $renderedTasks[] = $task->id;
                             @endphp
-                            <div class="task-card mb-2" style="background-color: #fdd1c7; border: none;">
-                                @include('tasks.partials.task_card', ['task' => $task])
-                            </div>
+                            @include('tasks.partials.task_card', ['task' => $task])
                         @endif
                     @endforeach
                 @endif
@@ -93,25 +88,22 @@
 
         <!-- Category: Priority 2 -->
         <div class="col-md-2">
-            <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Priority 2
+            <h6 class="text-muted">Priority 2
                 ({{ $categorizedTasks['priority_2']->count() }})</h6>
-            <div class="task-category p-2 category-priority-2">
+            <div class="task-category category-priority-2">
                 @php
                     $renderedTasks = [];
                 @endphp
 
                 @if ($categorizedTasks['priority_2']->isEmpty())
-                    <p class="text-muted" style="font-size: 0.75rem;">No tasks available in this category.</p>
+                    <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['priority_2'] as $task)
                         @if (!in_array($task->id, $renderedTasks))
-                            <!-- Ensure no duplicates -->
                             @php
                                 $renderedTasks[] = $task->id;
                             @endphp
-                            <div class="task-card mb-2" style="background-color: #fcebc1; border: none;">
-                                @include('tasks.partials.task_card', ['task' => $task])
-                            </div>
+                            @include('tasks.partials.task_card', ['task' => $task])
                         @endif
                     @endforeach
                 @endif
@@ -120,25 +112,22 @@
 
         <!-- Category: Completed -->
         <div class="col-md-2">
-            <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Completed
+            <h6 class="text-muted">Completed
                 ({{ $categorizedTasks['completed']->count() }})</h6>
-            <div class="task-category p-2 category-completed">
+            <div class="task-category category-completed">
                 @php
                     $renderedTasks = [];
                 @endphp
 
                 @if ($categorizedTasks['completed']->isEmpty())
-                    <p class="text-muted" style="font-size: 0.75rem;">No tasks available in this category.</p>
+                    <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['completed'] as $task)
                         @if (!in_array($task->id, $renderedTasks))
-                            <!-- Ensure no duplicates -->
                             @php
                                 $renderedTasks[] = $task->id;
                             @endphp
-                            <div class="task-card mb-2" style="background-color: #c3e6cb; border: none;">
-                                @include('tasks.partials.task_card', ['task' => $task])
-                            </div>
+                            @include('tasks.partials.task_card', ['task' => $task])
                         @endif
                     @endforeach
                 @endif
@@ -147,25 +136,22 @@
 
         <!-- Category: Verified -->
         <div class="col-md-2">
-            <h6 class="text-muted mb-3" style="font-size: 0.85rem;">Verified
+            <h6 class="text-muted">Verified
                 ({{ $categorizedTasks['verified']->count() }})</h6>
-            <div class="task-category p-2 category-verified">
+            <div class="task-category category-verified">
                 @php
                     $renderedTasks = [];
                 @endphp
 
                 @if ($categorizedTasks['verified']->isEmpty())
-                    <p class="text-muted" style="font-size: 0.75rem;">No tasks available in this category.</p>
+                    <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['verified'] as $task)
                         @if (!in_array($task->id, $renderedTasks))
-                            <!-- Ensure no duplicates -->
                             @php
                                 $renderedTasks[] = $task->id;
                             @endphp
-                            <div class="task-card mb-2" style="background-color: #bee5eb; border: none;">
-                                @include('tasks.partials.task_card', ['task' => $task])
-                            </div>
+                            @include('tasks.partials.task_card', ['task' => $task])
                         @endif
                     @endforeach
                 @endif
@@ -364,97 +350,3 @@
         });
     });
 </script>
-
-<!-- Task Card Inline CSS -->
-<style>
-    /* Task card general styling */
-.task-card {
-    background-color: transparent;
-    padding: 5px;
-    border-radius: 5px;
-    margin-bottom: 15px; /* Gap between task cards */
-    font-size: 9px;
-    height: 80px;
-    width: 150px;
-    overflow: hidden;
-    word-wrap: break-word;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-}
-
-/* Task card background colors for each category */
-.category-negotiation .task-card {
-    background-color: #e8eaf6; /* Light blue for Under Negotiation */
-}
-
-.category-due-date .task-card {
-    background-color: #fbe9e7; /* Light orange for Due Date */
-}
-
-.category-priority-1 .task-card {
-    background-color: #fff9c4; /* Light yellow for Priority 1 */
-}
-
-.category-priority-2 .task-card {
-    background-color: #c8e6c9; /* Light green for Priority 2 */
-}
-
-.category-completed .task-card {
-    background-color: #cfd8dc; /* Light grey for Completed */
-}
-
-.category-verified .task-card {
-    background-color: #d1c4e9; /* Light purple for Verified */
-}
-
-/* Link text styling */
-.task-card a {
-    color: inherit;
-    text-decoration: none;
-}
-
-/* Category styling */
-.task-category {
-    padding: 8px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    height: auto;
-    border: none;
-    background-color: transparent; /* Transparent background for the category */
-}
-
-/* Hover effect for task card */
-.task-card:hover {
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add subtle shadow when hovering over a task card */
-}
-
-/* Center the task categories and ensure space between task cards */
-.task-category {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-}
-
-.row {
-    display: flex;
-    justify-content: space-around; /* Ensure even spacing between categories */
-}
-
-.task-card + .task-card {
-    margin-top: 15px; /* Gap between task cards */
-}
-
-/* Center task category headers */
-.task-category h6 {
-    text-align: center;
-    margin-bottom: 20px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-</style>
