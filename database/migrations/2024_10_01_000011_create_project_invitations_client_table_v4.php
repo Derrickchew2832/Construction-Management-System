@@ -5,8 +5,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 class CreateProjectInvitationsClientTablev4 extends Migration
-
-
 {
     public function up()
     {
@@ -16,8 +14,8 @@ class CreateProjectInvitationsClientTablev4 extends Migration
             $table->unsignedBigInteger('client_id')->nullable();  // Nullable client ID (for unregistered clients)
             $table->unsignedBigInteger('invited_by');             // ID of the user who sent the invitation (likely project manager)
             $table->string('email');                              // Email for the client invitation
-            $table->string('token')->nullable();                  // Token for verifying the invitation (if applicable)
-            $table->string('status')->default('pending');         // Status of the invitation (pending, accepted, rejected, etc.)
+            $table->string('token')->nullable();                  // Token for verifying the invitation
+            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');  // Status of the invitation
             $table->timestamps();
 
             // Foreign key constraints

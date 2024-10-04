@@ -167,13 +167,21 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::get('/tasks/{taskId}/edit', [TaskController::class, 'edit'])->name('edit');
         Route::put('/tasks/{taskId}', [TaskController::class, 'update'])->name('update');
         Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('destroy');
-        Route::get('/invite', [TaskController::class, 'invite'])->name('invite');
+        
+        // Invite related routes
+        Route::get('/invite', [TaskController::class, 'inviteClientForm'])->name('inviteClientForm');
+
+        // Handle form submission for inviting clients
+        Route::post('/invite-client', [TaskController::class, 'inviteClient'])->name('inviteClient');
+
+        // Handle updating the invitation status
+        Route::post('/invitations/{invitationId}/update-status', [TaskController::class, 'updateInvitationStatus'])->name('updateInvitationStatus');  // To send the invitation
+
         Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
-        // Route to show the task quote
         Route::get('/quote', [TaskController::class, 'showQuote'])->name('quote');
         Route::post('/tasks/{taskId}/quote/respond', [TaskController::class, 'respondToTaskQuote'])->name('quote.respond');
         Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
         Route::post('/tasks/{taskId}/update-status', [TaskController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/tasks/{task}/update-category', [TaskController::class, 'updateCategory'])->name('updateCategory');
-
     });
+

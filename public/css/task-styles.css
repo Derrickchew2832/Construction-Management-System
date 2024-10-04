@@ -1,36 +1,38 @@
 /* General Task Card Styling */
 .task-card {
-    background-color: transparent; /* Task card background is transparent initially */
-    padding: 5px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    font-size: 9px;
-    height: 80px;
-    width: 150px;
+    background-color: #ffffff; /* White background for better readability */
+    padding: 12px; /* Increased padding for optimal spacing */
+    border-radius: 6px; /* Rounded corners */
+    margin-bottom: 10px; /* Increased spacing between cards */
+    font-size: 0.8rem; /* Adjusted font size for readability */
+    min-height: 100px; /* Increased height to accommodate content */
+    width: 160px; /* Increased width for better fit */
     overflow: hidden;
-    word-wrap: break-word;
-    text-align: left;
+    word-wrap: break-word; /* Ensure words wrap within the box */
+    text-align: left; /* Align text to the left */
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
+    justify-content: flex-start;
+    align-items: flex-start; /* Ensure left alignment of content */
     position: relative;
-    transition: box-shadow 0.2s ease, background-color 0.2s ease; /* Smooth transition for hover */
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 /* Hover Effect - Applied only to the task card */
 .task-card:hover {
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow effect */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
+    background-color: #f1f8ff; /* Light blue background to indicate selection */
     cursor: pointer;
 }
 
 /* Category-Specific Background Colors - Only for Task Cards */
 .category-negotiation .task-card {
-    background-color: #e8eaf6; /* Light blue for Under Negotiation */
+    background-color: #e3f2fd; /* Light blue for Under Negotiation */
 }
 
 .category-due-date .task-card {
-    background-color: #fbe9e7; /* Light orange for Due Date */
+    background-color: #ffccbc; /* Light orange for Due Date */
 }
 
 .category-priority-1 .task-card {
@@ -38,78 +40,119 @@
 }
 
 .category-priority-2 .task-card {
-    background-color: #fcebc1; /* Light peach for Priority 2 */
+    background-color: #ffe0b2; /* Light peach for Priority 2 */
 }
 
 .category-completed .task-card {
-    background-color: #c3e6cb; /* Light green for Completed */
+    background-color: #c8e6c9; /* Light green for Completed */
 }
 
 .category-verified .task-card {
-    background-color: #bee5eb; /* Light blue for Verified */
+    background-color: #b2ebf2; /* Light blue for Verified */
 }
 
 /* Consistent Category Container Styling */
 .task-category {
     padding: 8px;
-    border-radius: 5px;
-    margin-bottom: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    width: 160px; /* Increased width to fit larger cards */
     height: auto;
-    border: none;
-    background-color: transparent; /* Ensure that category container has a transparent background */
+    border: 1px solid #e0e0e0; /* Solid border for better distinction */
+    background-color: #ffffff; /* White background for a clean and modern look */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Soft shadow for better depth */
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
+    transition: box-shadow 0.3s ease;
+}
+
+.task-category:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Enhance shadow on hover for emphasis */
 }
 
 /* Space Between Task Cards */
 .task-card + .task-card {
-    margin-top: 15px; /* Ensure a gap between cards */
+    margin-top: 10px; /* Increased gap between cards */
 }
 
 /* Proper Alignment of Categories */
 .row {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between; /* Consistent spacing between categories */
+    flex-wrap: nowrap; /* Ensure all categories are in a single row */
+    gap: 20px; /* Increased gap for better spacing between columns */
 }
 
 /* Center Task Category Headers */
 .task-category h6 {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     width: 100%;
     display: flex;
     justify-content: center;
+    font-size: 0.85rem; /* Slightly smaller font size for better fit */
+    font-weight: bold;
+    color: #333;
 }
 
 /* Task Links Styling */
 .task-card a {
-    color: inherit;
+    color: #333;
     text-decoration: none;
+    width: 100%; /* Ensure anchor takes full width */
 }
 
-/* Adjustments to Text Inside Task Card */
-.task-card h6,
-.task-card p {
+/* Adjust text within the task card */
+.task-card h6 {
     margin: 0;
-    padding: 0;
-    text-align: left;
+    font-size: 0.85rem; /* Reduced font size for title */
+    font-weight: bold;
+    color: #424242;
+    word-wrap: break-word;
+    hyphens: auto; /* Break long words gracefully */
+    margin-bottom: 5px; /* Adjusted margin for better spacing */
+    text-align: left; /* Align title to the left */
+    width: 100%; /* Full width to ensure proper alignment */
+}
+
+.task-card p {
+    margin: 2px 0 0 0; /* Reduced margin to save space */
+    font-size: 0.75rem; /* Reduced font size for descriptions */
+    color: #757575; /* Darker color for better readability */
+    word-wrap: break-word; /* Ensure description text wraps */
+    hyphens: auto; /* Handle longer words */
+    line-height: 1.3; /* Adjusted line height for readability */
+    text-align: left; /* Align description text to the left */
+    width: 100%; /* Full width to ensure proper alignment */
+}
+
+/* Assigned Email Styling */
+.task-card p.text-muted {
+    font-size: 0.7rem; /* Reduced font size for assigned email */
+    color: #909090; /* Lighter color for distinction from task description */
+    margin-top: 2px; /* Reduced margin for closer spacing */
+    text-align: left; /* Align email text to the left */
+    width: 100%; /* Full width to ensure proper alignment */
+    white-space: normal; /* Allow email to wrap instead of ellipsis */
+    overflow: visible; /* Ensure email is fully visible */
 }
 
 /* Button Styling for Create Task Button */
 .btn-create-task {
-    padding: 10px 15px;
-    font-size: 0.85rem;
+    padding: 6px 12px; /* Original padding for consistency */
+    font-size: 0.8rem; /* Original font size for visibility */
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 5px; /* Rounded corners for a modern look */
+    transition: background-color 0.3s, box-shadow 0.3s;
 }
 
-.btn-create-task:hover {
+.btn-create-task:hover, .modal-footer .btn-primary:hover, #confirmModal .modal-footer .btn-primary:hover {
     background-color: #0056b3;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2); /* Increased shadow effect on hover */
 }
 
 /* Modal Form Styling */
@@ -118,36 +161,128 @@
 }
 
 #taskForm label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #333;
 }
 
 #taskForm input,
 #taskForm textarea,
 #taskForm select {
     width: 100%;
-    padding: 8px;
-    font-size: 0.85rem;
-    margin-bottom: 10px;
+    padding: 6px;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
     border-radius: 5px;
     border: 1px solid #ccc;
+    transition: border-color 0.3s ease;
+}
+
+#taskForm input:focus,
+#taskForm textarea:focus,
+#taskForm select:focus {
+    border-color: #007bff;
+    outline: none;
 }
 
 /* Modal Styling */
 .modal-content {
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Enhanced shadow for better focus */
 }
 
 .modal-header {
     background-color: #f8f9fa;
     border-bottom: 1px solid #dee2e6;
+    border-radius: 10px 10px 0 0;
+    padding-bottom: 10px;
 }
 
 .modal-footer {
     border-top: 1px solid #dee2e6;
+    padding-top: 10px;
 }
 
 .modal-footer button {
-    padding: 5px 15px;
-    font-size: 0.85rem;
+    padding: 6px 15px;
+    font-size: 0.8rem;
+    border-radius: 5px;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    transition: background-color 0.3s ease;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Button Styling for Modal Submit */
+.modal-footer .btn-primary {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    transition: background-color 0.3s ease, box-shadow 0.3s;
+}
+
+/* Styling for "Create New Task" Modal */
+#createTaskModal .modal-header {
+    background-color: #007bff;
+    color: #ffffff;
+}
+
+#createTaskModal .modal-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+/* Form Element Styling */
+#taskForm input[type="date"] {
+    padding: 8px;
+    font-size: 0.8rem;
+}
+
+#taskForm textarea {
+    resize: vertical;
+    min-height: 80px; /* Original minimum height */
+}
+
+/* Error Styling */
+.text-danger {
+    font-size: 0.75rem;
+}
+
+/* Adjustments for Category Headers and Task Counts */
+.task-category h6 {
+    font-size: 0.85rem; /* Slightly smaller font size for better fit */
+    font-weight: bold;
+    color: #333;
+}
+
+/* Styling for Empty Category Message */
+.task-category p.text-muted {
+    font-size: 0.75rem; /* Reduced to fit better in small spaces */
+    color: #999;
+}
+
+/* Confirmation Modal Styling */
+#confirmModal .modal-body {
+    font-size: 0.8rem;
+    color: #333;
+    padding: 15px;
+}
+
+#confirmModal .modal-footer .btn-primary {
+    background-color: #28a745;
+    border: none;
+    transition: background-color 0.3s ease, box-shadow 0.3s;
+}
+
+#confirmModal .modal-footer .btn-secondary {
+    background-color: #6c757d;
+    color: white;
 }

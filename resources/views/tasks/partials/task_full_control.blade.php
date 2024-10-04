@@ -9,30 +9,21 @@
     <div class="row">
         <!-- Category: Under Negotiation -->
         <div class="col-md-2">
-            <h6 class="text-muted">Under Negotiation
-                ({{ $categorizedTasks['under_negotiation']->count() }})</h6>
+            <h6 class="text-muted">Under Negotiation (<span class="task-count"
+                    data-category="under_negotiation">{{ $categorizedTasks['under_negotiation']->count() }}</span>)</h6>
             <div class="task-category category-negotiation" data-category="under_negotiation">
-                @php
-                    $renderedTasks = [];
-                @endphp
-
                 @if ($categorizedTasks['under_negotiation']->isEmpty())
                     <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['under_negotiation'] as $task)
-                        @if (!in_array($task->id, $renderedTasks))
-                            @php
-                                $renderedTasks[] = $task->id;
-                            @endphp
-                            <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id ?? 'undefined' }}"
-                                data-project-id="{{ $projectId ?? 'undefined' }}">
-                                <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}"
-                                    class="text-decoration-none">
-                                    <h6>{{ $task->title }}</h6>
-                                    <p>{{ $task->description }}</p>
-                                </a>
-                            </div>
-                        @endif
+                        <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id }}"
+                            data-project-id="{{ $projectId }}">
+                            <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}">
+                                <h6>{{ $task->title }}</h6>
+                                <p>{{ $task->description }}</p>
+                                <p>Assigned to:{{ $task->contractor_email ?? 'Unassigned' }}</p>
+                            </a>
+                        </div>
                     @endforeach
                 @endif
             </div>
@@ -40,23 +31,21 @@
 
         <!-- Category: Due Date -->
         <div class="col-md-2">
-            <h6 class="text-muted">Due Date
-                ({{ $categorizedTasks['due_date']->count() }})</h6>
+            <h6 class="text-muted">Due Date (<span class="task-count"
+                    data-category="due_date">{{ $categorizedTasks['due_date']->count() }}</span>)</h6>
             <div class="task-category category-due-date" data-category="due_date">
-                @php
-                    $renderedTasks = [];
-                @endphp
-
                 @if ($categorizedTasks['due_date']->isEmpty())
                     <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['due_date'] as $task)
-                        @if (!in_array($task->id, $renderedTasks))
-                            @php
-                                $renderedTasks[] = $task->id;
-                            @endphp
-                            @include('tasks.partials.task_card', ['task' => $task])
-                        @endif
+                        <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id }}"
+                            data-project-id="{{ $projectId }}">
+                            <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}">
+                                <h6>{{ $task->title }}</h6>
+                                <p>{{ $task->description }}</p>
+                                <p>Assigned to:{{ $task->contractor_email ?? 'Unassigned' }}</p>
+                            </a>
+                        </div>
                     @endforeach
                 @endif
             </div>
@@ -64,23 +53,21 @@
 
         <!-- Category: Priority 1 -->
         <div class="col-md-2">
-            <h6 class="text-muted">Priority 1
-                ({{ $categorizedTasks['priority_1']->count() }})</h6>
+            <h6 class="text-muted">Priority 1 (<span class="task-count"
+                    data-category="priority_1">{{ $categorizedTasks['priority_1']->count() }}</span>)</h6>
             <div class="task-category category-priority-1" data-category="priority_1">
-                @php
-                    $renderedTasks = [];
-                @endphp
-
                 @if ($categorizedTasks['priority_1']->isEmpty())
                     <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['priority_1'] as $task)
-                        @if (!in_array($task->id, $renderedTasks))
-                            @php
-                                $renderedTasks[] = $task->id;
-                            @endphp
-                            @include('tasks.partials.task_card', ['task' => $task])
-                        @endif
+                        <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id }}"
+                            data-project-id="{{ $projectId }}">
+                            <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}">
+                                <h6>{{ $task->title }}</h6>
+                                <p>{{ $task->description }}</p>
+                                <p>Assigned to:{{ $task->contractor_email ?? 'Unassigned' }}</p>
+                            </a>
+                        </div>
                     @endforeach
                 @endif
             </div>
@@ -88,23 +75,21 @@
 
         <!-- Category: Priority 2 -->
         <div class="col-md-2">
-            <h6 class="text-muted">Priority 2
-                ({{ $categorizedTasks['priority_2']->count() }})</h6>
+            <h6 class="text-muted">Priority 2 (<span class="task-count"
+                    data-category="priority_2">{{ $categorizedTasks['priority_2']->count() }}</span>)</h6>
             <div class="task-category category-priority-2" data-category="priority_2">
-                @php
-                    $renderedTasks = [];
-                @endphp
-
                 @if ($categorizedTasks['priority_2']->isEmpty())
                     <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['priority_2'] as $task)
-                        @if (!in_array($task->id, $renderedTasks))
-                            @php
-                                $renderedTasks[] = $task->id;
-                            @endphp
-                            @include('tasks.partials.task_card', ['task' => $task])
-                        @endif
+                        <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id }}"
+                            data-project-id="{{ $projectId }}">
+                            <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}">
+                                <h6>{{ $task->title }}</h6>
+                                <p>{{ $task->description }}</p>
+                                <p>Assigned to:{{ $task->contractor_email ?? 'Unassigned' }}</p>
+                            </a>
+                        </div>
                     @endforeach
                 @endif
             </div>
@@ -112,23 +97,21 @@
 
         <!-- Category: Completed -->
         <div class="col-md-2">
-            <h6 class="text-muted">Completed
-                ({{ $categorizedTasks['completed']->count() }})</h6>
+            <h6 class="text-muted">Completed (<span class="task-count"
+                    data-category="completed">{{ $categorizedTasks['completed']->count() }}</span>)</h6>
             <div class="task-category category-completed" data-category="completed">
-                @php
-                    $renderedTasks = [];
-                @endphp
-
                 @if ($categorizedTasks['completed']->isEmpty())
                     <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['completed'] as $task)
-                        @if (!in_array($task->id, $renderedTasks))
-                            @php
-                                $renderedTasks[] = $task->id;
-                            @endphp
-                            @include('tasks.partials.task_card', ['task' => $task])
-                        @endif
+                        <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id }}"
+                            data-project-id="{{ $projectId }}">
+                            <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}">
+                                <h6>{{ $task->title }}</h6>
+                                <p>{{ $task->description }}</p>
+                                <p>Assigned to:{{ $task->contractor_email ?? 'Unassigned' }}</p>
+                            </a>
+                        </div>
                     @endforeach
                 @endif
             </div>
@@ -136,29 +119,28 @@
 
         <!-- Category: Verified -->
         <div class="col-md-2">
-            <h6 class="text-muted">Verified
-                ({{ $categorizedTasks['verified']->count() }})</h6>
+            <h6 class="text-muted">Verified (<span class="task-count"
+                    data-category="verified">{{ $categorizedTasks['verified']->count() }}</span>)</h6>
             <div class="task-category category-verified" data-category="verified">
-                @php
-                    $renderedTasks = [];
-                @endphp
-
                 @if ($categorizedTasks['verified']->isEmpty())
                     <p class="text-muted">No tasks available in this category.</p>
                 @else
                     @foreach ($categorizedTasks['verified'] as $task)
-                        @if (!in_array($task->id, $renderedTasks))
-                            @php
-                                $renderedTasks[] = $task->id;
-                            @endphp
-                            @include('tasks.partials.task_card', ['task' => $task])
-                        @endif
+                        <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id }}"
+                            data-project-id="{{ $projectId }}">
+                            <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}">
+                                <h6>{{ $task->title }}</h6>
+                                <p>{{ $task->description }}</p>
+                                <p>Assigned to:{{ $task->contractor_email ?? 'Unassigned' }}</p>
+                            </a>
+                        </div>
                     @endforeach
                 @endif
             </div>
         </div>
     </div>
 </div>
+
 
 <!-- Task Details Modal -->
 <div class="modal fade" id="taskDetailsModal" tabindex="-1" role="dialog" aria-labelledby="taskDetailsModalLabel"
@@ -183,7 +165,8 @@
 </div>
 
 <!-- Modal for creating a new task -->
-<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="taskForm" action="{{ route('tasks.store', ['projectId' => $project->id]) }}" method="POST"
@@ -281,7 +264,7 @@
 <script>
     $(document).ready(function() {
         let draggedTask = null;
-        let currentCategory = null;  // Define currentCategory outside the event listener
+        let currentCategory = null; // Define currentCategory outside the event listener
 
         // Dragging the task card
         $('.task-card').on('dragstart', function(event) {
@@ -290,7 +273,8 @@
             // Fetch the task ID and project ID directly from the dragged task card
             const taskId = draggedTask.data('task-id');
             const projectId = draggedTask.data('project-id'); // Get the project ID from the task card
-            currentCategory = draggedTask.closest('.task-category').data('category'); // Save the current category globally
+            currentCategory = draggedTask.closest('.task-category').data(
+                'category'); // Save the current category globally
 
             // Log the values for debugging
             console.log('taskId:', taskId);
@@ -309,7 +293,9 @@
             event.originalEvent.dataTransfer.setData('category', currentCategory);
             event.originalEvent.dataTransfer.setData('projectId', projectId); // Pass projectId
 
-            console.log(`Dragging Task ID: ${taskId} from Category: ${currentCategory} in Project: ${projectId}`);
+            console.log(
+                `Dragging Task ID: ${taskId} from Category: ${currentCategory} in Project: ${projectId}`
+            );
         });
 
         // On drop
@@ -318,12 +304,20 @@
 
             const taskId = event.originalEvent.dataTransfer.getData('taskId');
             const newCategory = $(this).data('category');
-            const projectId = event.originalEvent.dataTransfer.getData('projectId'); // Retrieve projectId from dragged task
+            const projectId = event.originalEvent.dataTransfer.getData(
+                'projectId'); // Retrieve projectId from dragged task
 
-            console.log('Dropped task info:', { taskId, currentCategory, newCategory, projectId });
+            console.log('Dropped task info:', {
+                taskId,
+                currentCategory,
+                newCategory,
+                projectId
+            });
 
             if (!taskId || !currentCategory || !newCategory || !projectId) {
-                console.error('Task ID, Current Category, New Category, or Project ID is missing during drop.');
+                console.error(
+                    'Task ID, Current Category, New Category, or Project ID is missing during drop.'
+                );
                 alert('An error occurred while dropping the task.');
                 return;
             }
@@ -341,48 +335,65 @@
 
         // On drag over, allow dropping
         $('.task-category').on('dragover', function(event) {
-            event.preventDefault();  // Allow the drop action
+            event.preventDefault(); // Allow the drop action
         });
 
-        // Modified updateTaskCategory function
         function updateTaskCategory(projectId, taskId, newCategory) {
-            console.log(`Updating Task ID: ${taskId} to Category: ${newCategory} in Project: ${projectId}`);
+    console.log(`Updating Task ID: ${taskId} to Category: ${newCategory} in Project: ${projectId}`);
 
-            $.ajax({
-                url: `/projects/${projectId}/tasks/${taskId}/update-category`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    category: newCategory
-                },
-                success: function(response) {
-                    if (response.success) {
-                        const taskCard = $(`[data-task-id="${taskId}"]`);
+    $.ajax({
+        url: `/projects/${projectId}/tasks/${taskId}/update-category`,
+        type: 'POST',
+        data: {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            category: newCategory
+        },
+        success: function(response) {
+            if (response.success) {
+                // Find the task card element
+                const taskCard = $(`[data-task-id="${taskId}"]`);
 
-                        // Clone the task card to avoid event listener loss, and append to the new category
-                        const taskClone = taskCard.clone(true, true);  // Clone with event listeners intact
-                        
-                        // Remove the task card from all categories before adding it to the new one
-                        taskCard.remove();
+                // Log the response to check if the contractor email is being received
+                console.log("Server response:", response);
 
-                        // Add the cloned task to the new category
-                        const newCategoryContainer = $(`[data-category="${newCategory}"]`);
-                        newCategoryContainer.append(taskClone);  // Move the task card to the new category
-                        taskClone.fadeIn();
+                // Clone the task card to avoid event listener loss, and append to the new category
+                const taskClone = taskCard.clone(true, true);
 
-                        // Update the "No tasks available" message
-                        updateCategoryMessage(currentCategory);  // Update the old category using the globally defined currentCategory
-                        updateCategoryMessage(newCategory);  // Update the new category
-                    } else {
-                        alert('Failed to update the task category.');
-                    }
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                    alert('An error occurred while updating the task category.');
+                // Update the contractor email in the cloned task card
+                if (response.task && response.task.contractor_email) {
+                    taskClone.find('.text-muted').html('Assigned to: ' + response.task.contractor_email);
+                } else {
+                    taskClone.find('.text-muted').html('Assigned to: Unassigned');
                 }
-            });
+
+                // Remove the task card from its current category
+                taskCard.remove();
+
+                // Append the cloned task card to the new category container
+                const newCategoryContainer = $(`[data-category="${newCategory}"]`);
+                newCategoryContainer.append(taskClone);
+
+                // Show the cloned task card with a fade-in effect
+                taskClone.fadeIn();
+
+                // **Ensure the category message is correctly updated**
+                updateCategoryMessage(currentCategory);
+                updateCategoryMessage(newCategory);
+
+                // **Ensure the task count is correctly updated**
+                updateTaskCount(currentCategory);
+                updateTaskCount(newCategory);
+            } else {
+                alert('Failed to update the task category.');
+            }
+        },
+        error: function(xhr) {
+            console.error(xhr.responseText);
+            alert('An error occurred while updating the task category.');
         }
+    });
+}
+
 
         // Update the category message dynamically
         function updateCategoryMessage(category) {
@@ -396,6 +407,11 @@
                 // Remove the "No tasks available" message
                 categoryContainer.find('p.text-muted').remove();
             }
+        }
+
+        function updateTaskCount(category) {
+            const count = $(`[data-category="${category}"]`).find('.task-card').length;
+            $(`.task-count[data-category="${category}"]`).text(count);
         }
 
         // Original task-card click functionality (do not remove)
@@ -483,5 +499,3 @@
 
     });
 </script>
-
-
