@@ -11,7 +11,7 @@
         <div class="col-md-2">
             <h6 class="text-muted">Under Negotiation
                 ({{ $categorizedTasks['under_negotiation']->count() }})</h6>
-            <div class="task-category category-negotiation">
+            <div class="task-category category-negotiation" data-category="under_negotiation">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -24,7 +24,7 @@
                             @php
                                 $renderedTasks[] = $task->id;
                             @endphp
-                            <div class="task-card mb-2" data-task-id="{{ $task->id ?? 'undefined' }}"
+                            <div class="task-card mb-2" draggable="true" data-task-id="{{ $task->id ?? 'undefined' }}"
                                 data-project-id="{{ $projectId ?? 'undefined' }}">
                                 <a href="{{ route('tasks.details', ['projectId' => $projectId, 'taskId' => $task->id]) }}"
                                     class="text-decoration-none">
@@ -42,7 +42,7 @@
         <div class="col-md-2">
             <h6 class="text-muted">Due Date
                 ({{ $categorizedTasks['due_date']->count() }})</h6>
-            <div class="task-category category-due-date">
+            <div class="task-category category-due-date" data-category="due_date">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -66,7 +66,7 @@
         <div class="col-md-2">
             <h6 class="text-muted">Priority 1
                 ({{ $categorizedTasks['priority_1']->count() }})</h6>
-            <div class="task-category category-priority-1">
+            <div class="task-category category-priority-1" data-category="priority_1">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -90,7 +90,7 @@
         <div class="col-md-2">
             <h6 class="text-muted">Priority 2
                 ({{ $categorizedTasks['priority_2']->count() }})</h6>
-            <div class="task-category category-priority-2">
+            <div class="task-category category-priority-2" data-category="priority_2">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -114,7 +114,7 @@
         <div class="col-md-2">
             <h6 class="text-muted">Completed
                 ({{ $categorizedTasks['completed']->count() }})</h6>
-            <div class="task-category category-completed">
+            <div class="task-category category-completed" data-category="completed">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -138,7 +138,7 @@
         <div class="col-md-2">
             <h6 class="text-muted">Verified
                 ({{ $categorizedTasks['verified']->count() }})</h6>
-            <div class="task-category category-verified">
+            <div class="task-category category-verified" data-category="verified">
                 @php
                     $renderedTasks = [];
                 @endphp
@@ -241,7 +241,6 @@
                         </select>
                     </div>
 
-
                     <!-- Task PDF Upload -->
                     <div class="form-group">
                         <label for="task_pdf">Upload Task PDF</label>
@@ -258,11 +257,148 @@
     </div>
 </div>
 
-
+<!-- Modal for confirmation when moving to verified -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Confirm Task Verification</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to move this task to verified? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmMoveButton">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     $(document).ready(function() {
-        // Use event delegation to handle dynamically added task-card elements
+        let draggedTask = null;
+        let currentCategory = null;  // Define currentCategory outside the event listener
+
+        // Dragging the task card
+        $('.task-card').on('dragstart', function(event) {
+            draggedTask = $(this); // jQuery object for the dragged element
+
+            // Fetch the task ID and project ID directly from the dragged task card
+            const taskId = draggedTask.data('task-id');
+            const projectId = draggedTask.data('project-id'); // Get the project ID from the task card
+            currentCategory = draggedTask.closest('.task-category').data('category'); // Save the current category globally
+
+            // Log the values for debugging
+            console.log('taskId:', taskId);
+            console.log('currentCategory:', currentCategory);
+            console.log('projectId:', projectId);
+
+            // Check if any of the required data is missing
+            if (!taskId || !currentCategory || !projectId) {
+                console.error('Task ID, Category, or Project ID is missing on dragstart.');
+                event.preventDefault();
+                return;
+            }
+
+            // Transfer the data for drag and drop
+            event.originalEvent.dataTransfer.setData('taskId', taskId);
+            event.originalEvent.dataTransfer.setData('category', currentCategory);
+            event.originalEvent.dataTransfer.setData('projectId', projectId); // Pass projectId
+
+            console.log(`Dragging Task ID: ${taskId} from Category: ${currentCategory} in Project: ${projectId}`);
+        });
+
+        // On drop
+        $('.task-category').on('drop', function(event) {
+            event.preventDefault();
+
+            const taskId = event.originalEvent.dataTransfer.getData('taskId');
+            const newCategory = $(this).data('category');
+            const projectId = event.originalEvent.dataTransfer.getData('projectId'); // Retrieve projectId from dragged task
+
+            console.log('Dropped task info:', { taskId, currentCategory, newCategory, projectId });
+
+            if (!taskId || !currentCategory || !newCategory || !projectId) {
+                console.error('Task ID, Current Category, New Category, or Project ID is missing during drop.');
+                alert('An error occurred while dropping the task.');
+                return;
+            }
+
+            // Ensure that the task is moved between valid categories
+            if ((currentCategory === 'priority_1' && newCategory === 'priority_2') ||
+                (currentCategory === 'priority_2' && newCategory === 'priority_1')) {
+
+                // Move the task to the new category
+                updateTaskCategory(projectId, taskId, newCategory); // Pass projectId to the function
+            } else {
+                alert('You can only move tasks between Priority 1 and Priority 2.');
+            }
+        });
+
+        // On drag over, allow dropping
+        $('.task-category').on('dragover', function(event) {
+            event.preventDefault();  // Allow the drop action
+        });
+
+        // Modified updateTaskCategory function
+        function updateTaskCategory(projectId, taskId, newCategory) {
+            console.log(`Updating Task ID: ${taskId} to Category: ${newCategory} in Project: ${projectId}`);
+
+            $.ajax({
+                url: `/projects/${projectId}/tasks/${taskId}/update-category`,
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    category: newCategory
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const taskCard = $(`[data-task-id="${taskId}"]`);
+
+                        // Clone the task card to avoid event listener loss, and append to the new category
+                        const taskClone = taskCard.clone(true, true);  // Clone with event listeners intact
+                        
+                        // Remove the task card from all categories before adding it to the new one
+                        taskCard.remove();
+
+                        // Add the cloned task to the new category
+                        const newCategoryContainer = $(`[data-category="${newCategory}"]`);
+                        newCategoryContainer.append(taskClone);  // Move the task card to the new category
+                        taskClone.fadeIn();
+
+                        // Update the "No tasks available" message
+                        updateCategoryMessage(currentCategory);  // Update the old category using the globally defined currentCategory
+                        updateCategoryMessage(newCategory);  // Update the new category
+                    } else {
+                        alert('Failed to update the task category.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    alert('An error occurred while updating the task category.');
+                }
+            });
+        }
+
+        // Update the category message dynamically
+        function updateCategoryMessage(category) {
+            const categoryContainer = $(`[data-category="${category}"]`);
+            const tasksInCategory = categoryContainer.find('.task-card').length;
+
+            if (tasksInCategory === 0) {
+                // If no tasks, show the "No tasks available" message
+                categoryContainer.html('<p class="text-muted">No tasks available in this category.</p>');
+            } else {
+                // Remove the "No tasks available" message
+                categoryContainer.find('p.text-muted').remove();
+            }
+        }
+
+        // Original task-card click functionality (do not remove)
         $(document).on('click', '.task-card', function(event) {
             event.preventDefault();
 
@@ -307,10 +443,7 @@
                 }
             }
         });
-    });
 
-    $(document).ready(function() {
-        // Handle task form submission with AJAX
         $('#taskForm').on('submit', function(e) {
             e.preventDefault(); // Prevent default form submission
 
@@ -320,7 +453,7 @@
             // Ensure that projectId is being passed correctly in the form
             var projectId = $(this).data('project-id');
             var url = '{{ route('tasks.store', ':projectId') }}';
-            url = url.replace(':projectId', projectId);
+            url = url.replace(':projectId', projectId); // Replace projectId in the URL
 
             // Submit the form via AJAX
             $.ajax({
@@ -333,7 +466,6 @@
                 contentType: false,
                 processData: false,
                 success: function(response) {
-                    // Check if the backend returned success or failure
                     if (response.success) {
                         alert(response.message); // Display success message
                         $('#taskForm')[0].reset(); // Clear the form fields after success
@@ -348,5 +480,8 @@
                 }
             });
         });
+
     });
 </script>
+
+

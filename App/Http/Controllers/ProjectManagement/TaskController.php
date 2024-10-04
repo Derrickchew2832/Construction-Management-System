@@ -271,25 +271,6 @@ private function calculateDueDate($startDate, $endDate)
     return response()->json(['success' => true, 'message' => 'Task created and contractor invited successfully.']);
 }
 
-
-public function updateTaskStatus(Request $request, $taskId)
-{
-    // Validate new status
-    $data = $request->validate([
-        'status' => 'required|string|in:pending,approved,rejected', // Validate for task acceptance status
-    ]);
-
-    // Update task status (e.g., pending, approved, rejected)
-    DB::table('tasks')
-        ->where('id', $taskId)
-        ->update([
-            'status' => $data['status'],
-            'updated_at' => now(),
-        ]);
-
-    return response()->json(['success' => true, 'message' => 'Task status updated successfully']);
-}
-
 public function showQuote($projectId)
 {
     // Fetch the project by its ID
@@ -443,6 +424,24 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
         return view('tasks.statistics', compact('projectId', 'contractorCount', 'completedTasksCount', 'mainContractorName'));
     }
 
+    public function updateStatus(Request $request, $taskId)
+    {
+        // Validate the new status
+        $data = $request->validate([
+            'status' => 'required|string|in:pending,approved,rejected', // Validate task acceptance status
+        ]);
+
+        // Update task status (e.g., pending, approved, rejected)
+        DB::table('tasks')
+            ->where('id', $taskId)
+            ->update([
+                'status' => $data['status'],
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Task status updated successfully']);
+    }
+
     public function viewTaskDetails($projectId, $taskId)
     {
         $task = DB::table('tasks')
@@ -471,6 +470,40 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
     
         return view('tasks.taskdetails', compact('task'));
     }
+
+    public function updateCategory(Request $request, $projectId, $taskId)
+    {
+        // Log the incoming request data to make sure it's being received
+        \Log::info("Received request to update category for Task ID: $taskId");
+        \Log::info("Project ID: $projectId");
+        \Log::info("Category: " . $request->input('category'));
+    
+        // Validate the category input
+        $request->validate([
+            'category' => 'required|string|in:under_negotiation,due_date,priority_1,priority_2,completed,verified',
+        ]);
+    
+        // Ensure the task exists for the given project and task ID
+        $task = DB::table('tasks')->where('id', $taskId)->where('project_id', $projectId)->first();
+    
+        if (!$task) {
+            \Log::error("Task not found for Task ID: $taskId in Project ID: $projectId");
+            return response()->json(['success' => false, 'message' => 'Task not found'], 404);
+        }
+    
+        // Update the task's category in the database
+        DB::table('tasks')
+            ->where('id', $taskId)
+            ->update([
+                'category' => $request->input('category'),
+                'updated_at' => now(),
+            ]);
+    
+        \Log::info("Task ID: $taskId category updated to: " . $request->input('category'));
+    
+        return response()->json(['success' => true, 'message' => 'Task category updated successfully']);
+    }
     
 
+    
 }

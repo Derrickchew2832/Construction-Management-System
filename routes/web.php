@@ -173,5 +173,7 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::get('/quote', [TaskController::class, 'showQuote'])->name('quote');
         Route::post('/tasks/{taskId}/quote/respond', [TaskController::class, 'respondToTaskQuote'])->name('quote.respond');
         Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
+        Route::post('/tasks/{taskId}/update-status', [TaskController::class, 'updateStatus'])->name('updateStatus');
+        Route::post('/tasks/{task}/update-category', [TaskController::class, 'updateCategory'])->name('updateCategory');
 
     });
