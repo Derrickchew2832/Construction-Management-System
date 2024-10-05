@@ -153,6 +153,9 @@ Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->g
     Route::get('/invitations', [ClientController::class, 'invitations'])->name('invitations');
     Route::get('/profile', [ClientController::class, 'editProfile'])->name('profile');
     Route::put('/profile', [ClientController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/invitation/{invitationId}', [ClientController::class, 'updateInvitationStatus'])->name('invitation.update');
+    Route::post('/projects/{projectId}/favorite', [ClientController::class, 'updateFavoriteStatus'])->name('projects.favorite');
+
 });
 
 
@@ -183,5 +186,6 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
         Route::post('/tasks/{taskId}/update-status', [TaskController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/tasks/{task}/update-category', [TaskController::class, 'updateCategory'])->name('updateCategory');
+        
     });
 

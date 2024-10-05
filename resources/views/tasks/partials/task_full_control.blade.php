@@ -315,22 +315,24 @@
             });
 
             if (!taskId || !currentCategory || !newCategory || !projectId) {
-                console.error(
-                    'Task ID, Current Category, New Category, or Project ID is missing during drop.'
-                );
-                alert('An error occurred while dropping the task.');
-                return;
-            }
+        console.error('Task ID, Current Category, New Category, or Project ID is missing during drop.');
+        alert('An error occurred while dropping the task.');
+        return;
+    }
 
-            // Ensure that the task is moved between valid categories
-            if ((currentCategory === 'priority_1' && newCategory === 'priority_2') ||
-                (currentCategory === 'priority_2' && newCategory === 'priority_1')) {
-
-                // Move the task to the new category
-                updateTaskCategory(projectId, taskId, newCategory); // Pass projectId to the function
-            } else {
-                alert('You can only move tasks between Priority 1 and Priority 2.');
-            }
+    // Allow moving from Completed to Verified with confirmation
+    if (currentCategory === 'completed' && newCategory === 'verified') {
+        // Confirm action before moving
+        if (confirm("Is the task completed? Are you sure you want to move this task to Verified?")) {
+            updateTaskCategory(projectId, taskId, newCategory); // Pass projectId to the function
+        }
+    } else if ((currentCategory === 'priority_1' && newCategory === 'priority_2') ||
+               (currentCategory === 'priority_2' && newCategory === 'priority_1')) {
+        // Move the task to the new category
+        updateTaskCategory(projectId, taskId, newCategory); // Pass projectId to the function
+    } else {
+        alert('You can only move tasks between Priority 1 and Priority 2, or from Completed to Verified.');
+    }
         });
 
         // On drag over, allow dropping

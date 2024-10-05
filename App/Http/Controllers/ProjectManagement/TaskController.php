@@ -446,6 +446,7 @@ public function inviteClient(Request $request, $projectId)
     DB::table('project_invitations_client')->insert([
         'project_id' => $projectId,
         'email' => $request->email,
+        'client_id' => $client->id, // Associate the client ID
         'invited_by' => auth()->user()->id,  // The project manager sending the invite
         'status' => 'pending',  // Default status is 'pending'
         'created_at' => now(),

@@ -278,7 +278,7 @@
                         } elseif ($roleName == 'contractor') {
                             $exiturl = route('contractor.projects.index');
                         } elseif ($roleName == 'client') {
-                            $exiturl = route('client.projects.index');
+                            $exiturl = route('client.projects.dashboard');
                         }
                     @endphp
                     <button class="btn btn-danger btn-sm"
