@@ -22,12 +22,16 @@
         <div class="card-header">Contractor Information</div>
         <div class="card-body">
             <p><strong>Contractor Name:</strong> {{ $task->contractor_name }}</p>
-            <p><strong>Quoted Price:</strong> ${{ number_format($task->quoted_price, 2) }}</p>
-            <p><strong>Quote Suggestion:</strong> {{ $task->quote_suggestion ?? 'No suggestion provided' }}</p>
-            @if($task->quote_pdf)
-                <p><strong>Quote PDF:</strong> <a href="{{ asset('storage/' . $task->quote_pdf) }}" target="_blank">View Quote PDF</a></p>
-            @else
-                <p><strong>Quote PDF:</strong> Not available</p>
+
+            <!-- Hide quote information from clients and project managers -->
+            @if(!auth()->user()->hasRole('client') && !auth()->user()->hasRole('project_manager'))
+                <p><strong>Quoted Price:</strong> ${{ number_format($task->quoted_price, 2) }}</p>
+                <p><strong>Quote Suggestion:</strong> {{ $task->quote_suggestion ?? 'No suggestion provided' }}</p>
+                @if($task->quote_pdf)
+                    <p><strong>Quote PDF:</strong> <a href="{{ asset('storage/' . $task->quote_pdf) }}" target="_blank">View Quote PDF</a></p>
+                @else
+                    <p><strong>Quote PDF:</strong> Not available</p>
+                @endif
             @endif
         </div>
     </div>
