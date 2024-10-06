@@ -442,6 +442,12 @@ public function inviteClient(Request $request, $projectId)
         return redirect()->back()->with('error', 'Project not found.');
     }
 
+    // Find the client by email in the users table
+    $client = DB::table('users')->where('email', $request->email)->first();
+    if (!$client) {
+        return redirect()->back()->with('error', 'Client not found.');
+    }
+
     // Insert invitation into the database without generating a token
     DB::table('project_invitations_client')->insert([
         'project_id' => $projectId,
@@ -455,6 +461,7 @@ public function inviteClient(Request $request, $projectId)
 
     return redirect()->back()->with('success', 'Invitation sent successfully!');
 }
+
 
 
 // Method to update invitation status

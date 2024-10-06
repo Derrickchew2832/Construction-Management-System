@@ -12,8 +12,10 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\ProjectManagement\TaskController;
+use App\Http\Controllers\ProjectManagement\TaskSupplyController;
 use App\Http\Controllers\ClientController;
-use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\Supplier\SupplierController;
+use App\Http\Controllers\Supplier\SupplyItemController;
 use Illuminate\Support\Facades\Log;
 
 // Redirect root URL to login
@@ -136,14 +138,21 @@ Route::middleware(['auth', 'role:contractor'])->prefix('contractor')->name('cont
 });
 
 
-// Supplier Routes
 Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+    // Supplier dashboard and quotes
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard'); 
-    Route::get('/quotes/dashboard', [SupplierController::class, 'quotes'])->name('quotes.index'); 
-    Route::get('/delivery', [SupplierController::class, 'delivery'])->name('delivery');
+    Route::get('/quotes/dashboard', [SupplierController::class, 'quotes'])->name('quotes.dashboard'); 
     Route::get('/profile', [SupplierController::class, 'editProfile'])->name('profile');
     Route::put('/profile', [SupplierController::class, 'updateProfile'])->name('profile.update');
+
+    // Supply Items routes
+    Route::get('/supplyitems', [SupplyItemController::class, 'supplyIndex'])->name('supplyitems.index');
+    Route::post('/supplyitems/store', [SupplyItemController::class, 'supplyStore'])->name('supplyitems.store');
+    Route::get('/supplyitems/{id}/edit', [SupplyItemController::class, 'supplyEdit'])->name('supplyitems.edit');
+    Route::put('/supplyitems/{id}/update', [SupplyItemController::class, 'supplyUpdate'])->name('supplyitems.update');
+    Route::delete('/supplyitems/{id}/delete', [SupplyItemController::class, 'supplyDelete'])->name('supplyitems.delete');
 });
+
 
 
 // Client Routes
@@ -182,10 +191,12 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
 
         Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
         Route::get('/quote', [TaskController::class, 'showQuote'])->name('quote');
+
         Route::post('/tasks/{taskId}/quote/respond', [TaskController::class, 'respondToTaskQuote'])->name('quote.respond');
         Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
         Route::post('/tasks/{taskId}/update-status', [TaskController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/tasks/{task}/update-category', [TaskController::class, 'updateCategory'])->name('updateCategory');
-        
+        Route::get('/supply_order', [TaskSupplyController::class, 'showSuppliers'])->name('supply_order');
+
     });
 

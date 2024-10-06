@@ -23,10 +23,10 @@
                         <a class="nav-link" href="{{ route('supplier.dashboard') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('supplier.quotes.index') }}">Quotes</a>
+                        <a class="nav-link" href="{{ route('supplier.quotes.dashboard') }}">Quotes</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('supplier.delivery') }}">Delivery</a>
+                        <a class="nav-link" href="{{ route('supplier.supplyitems.index') }}">Supply</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ml-auto">
@@ -52,9 +52,16 @@
         @yield('content')
     </div>
 
-    <!-- jQuery and Bootstrap JS -->
+    <!-- Load jQuery and Bootstrap JS correctly -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Ensure dropdown functionality works
+            $('.dropdown-toggle').dropdown();
+        });
+    </script>
 </body>
 </html>

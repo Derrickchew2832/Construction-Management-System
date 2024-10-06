@@ -218,11 +218,12 @@
                 <!-- Show 'Supply' only to Contractors -->
                 @if ($roleName == 'contractor' && !$isMainContractor)
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="{{ route('tasks.supply_order', ['projectId' => $projectId]) }}" class="nav-link">
                             <i class="fas fa-box"></i> <span>Supply</span>
                         </a>
                     </li>
                 @endif
+
 
                 @if ($isMainContractor)
                     <li class="nav-item">
