@@ -8,10 +8,10 @@
     <title>@yield('title', 'Management Board')</title>
 
     <!-- Include Bootstrap CSS and Font Awesome -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/task-styles.css') }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -180,7 +180,7 @@
 </head>
 
 <body>
-
+    @stack('scripts')
     <div class="wrapper d-flex">
         <!-- Sidebar -->
         <aside class="sidebar collapsed" id="sidebar">
@@ -224,7 +224,6 @@
                     </li>
                 @endif
 
-
                 @if ($isMainContractor)
                     <li class="nav-item">
                         <a href="{{ route('tasks.quote', ['projectId' => $projectId]) }}" class="nav-link">
@@ -236,14 +235,11 @@
                 <!-- Invite Button for Project Manager -->
                 @if ($roleName == 'project_manager')
                     <li class="nav-item">
-                        <!-- Change to a link that navigates to the invite page -->
                         <a href="{{ route('tasks.inviteClientForm', ['projectId' => $projectId]) }}" class="nav-link">
                             <i class="fas fa-user-plus"></i> Invite
                         </a>
                     </li>
                 @endif
-
-
 
                 <!-- Statistics -->
                 <li class="nav-item">
@@ -271,7 +267,7 @@
 
                 <!-- Right side: Exit button -->
                 <div class="d-flex align-items-center flex-column">
-                    <div id="current-date-time" class="mb-1"></div> <!-- Smaller and above the exit button -->
+                    <div id="current-date-time" class="mb-1"></div>
                     @php
                         $exiturl = '';
                         if ($roleName == 'project_manager') {
@@ -282,8 +278,7 @@
                             $exiturl = route('client.projects.dashboard');
                         }
                     @endphp
-                    <button class="btn btn-danger btn-sm"
-                        onclick="window.location.href='{{ $exiturl }}'">Exit</button>
+                    <button class="btn btn-danger btn-sm" onclick="window.location.href='{{ $exiturl }}'">Exit</button>
                 </div>
             </header>
 
@@ -293,25 +288,26 @@
     </div>
 
     <script>
-        // Sidebar toggle functionality
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
+        // Check if 'mySidebarElement' is already defined to avoid redeclaration
+        if (typeof window.mySidebarElement === 'undefined') {
+            const mySidebarElement = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
 
-        let isSidebarHovered = false;
+            mySidebarElement.classList.add('collapsed');
+            mainContent.classList.add('collapsed');
 
-        // Set sidebar to be collapsed by default
-        sidebar.classList.add('collapsed');
-        mainContent.classList.add('collapsed');
+            mySidebarElement.addEventListener('mouseenter', () => {
+                mySidebarElement.classList.add('expanded');
+                mainContent.classList.add('expanded');
+            });
 
-        sidebar.addEventListener('mouseenter', () => {
-            sidebar.classList.add('expanded');
-            mainContent.classList.add('expanded');
-        });
+            mySidebarElement.addEventListener('mouseleave', () => {
+                mySidebarElement.classList.remove('expanded');
+                mainContent.classList.remove('expanded');
+            });
 
-        sidebar.addEventListener('mouseleave', () => {
-            sidebar.classList.remove('expanded');
-            mainContent.classList.remove('expanded');
-        });
+            window.mySidebarElement = mySidebarElement;
+        }
 
         // Calculate remaining days and set the project status
         const projectStartDate = new Date('{{ $project->start_date }}');
@@ -350,6 +346,7 @@
         updateDateTime();
         setInterval(updateDateTime, 1000);
     </script>
+
 </body>
 
 </html>

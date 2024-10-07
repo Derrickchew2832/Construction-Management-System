@@ -187,7 +187,7 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::post('/invite-client', [TaskController::class, 'inviteClient'])->name('inviteClient');
 
         // Handle updating the invitation status
-        Route::post('/invitations/{invitationId}/update-status', [TaskController::class, 'updateInvitationStatus'])->name('updateInvitationStatus');  // To send the invitation
+        Route::post('/invitations/{invitationId}/update-status', [TaskController::class, 'updateInvitationStatus'])->name('updateInvitationStatus');
 
         Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
         Route::get('/quote', [TaskController::class, 'showQuote'])->name('quote');
@@ -196,7 +196,11 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
         Route::post('/tasks/{taskId}/update-status', [TaskController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/tasks/{task}/update-category', [TaskController::class, 'updateCategory'])->name('updateCategory');
+
+        // Supply routes
         Route::get('/supply_order', [TaskSupplyController::class, 'showSuppliers'])->name('supply_order');
+        Route::get('/supplieritems/{supplierId}', [TaskSupplyController::class, 'getSupplierItems']);  // Updated 'supplieritems'
+        Route::post('/place-order', [TaskSupplyController::class, 'placeOrder']);
 
     });
 

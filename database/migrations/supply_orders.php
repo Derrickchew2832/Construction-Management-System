@@ -16,20 +16,21 @@ return new class extends Migration {
             $table->unsignedBigInteger('supply_item_id'); // Reference to the supply item
             $table->integer('quantity'); // Quantity of the item
             $table->string('description')->nullable(); // Any special description for the order
-            $table->date('delivery_date')->nullable(); // Expected delivery date
+            $table->string('delivery_address')->nullable(); // Delivery address for the order
             $table->decimal('quoted_price', 10, 2)->nullable(); // Price quoted by the supplier
             $table->string('quote_pdf')->nullable(); // Path to the quote document (PDF)
             $table->string('delivery_form')->nullable(); // Path to the delivery form (PDF)
             $table->string('delivery_image')->nullable(); // Path to the delivery image (photo of shipped items)
             $table->string('received_image')->nullable(); // Path to the received image uploaded by the contractor
             $table->string('status')->default('pending'); // Order status: pending, approved, shipped, received, rejected
+            $table->string('company_name')->nullable(); // Store the contractor's name
             $table->timestamps();
 
             // Foreign key constraints
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
             $table->foreign('contractor_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('supplier_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('supply_item_id')->references('id')->on('supply_items')->onDelete('cascade'); // New foreign key to supply_items table
+            $table->foreign('supply_item_id')->references('id')->on('supply_items')->onDelete('cascade'); // Foreign key to supply_items table
         });
     }
 

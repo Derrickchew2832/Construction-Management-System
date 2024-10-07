@@ -1,11 +1,11 @@
 @foreach($supplyItems as $item)
 <tr data-item-id="{{ $item->id }}">
     <td class="item-name">{{ $item->name }}</td>
-    <td>{{ $item->description }}</td>
+    <td class="item-description">{{ $item->description }}</td>
     <td class="item-price">{{ $item->price }}</td>
-    <td>{{ $item->stock_quantity }}</td>
+    <td class="stock-quantity">{{ $item->stock_quantity }}</td>
     <td>
-        <input type="number" name="order[{{ $item->id }}]" class="form-control order-quantity" min="0" max="{{ $item->stock_quantity }}" value="0">
+        <input type="number" class="form-control order-quantity" value="1" min="1" max="{{ $item->stock_quantity }}">
     </td>
 </tr>
 @endforeach
