@@ -548,8 +548,6 @@ public function updateInvitationStatus(Request $request, $invitationId)
     ));
 }
 
-
-
     public function updateStatus(Request $request, $taskId)
     {
         // Validate the new status
@@ -633,8 +631,6 @@ public function updateInvitationStatus(Request $request, $invitationId)
         ]);
     }
     
-
-
 
 }
 

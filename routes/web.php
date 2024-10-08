@@ -142,6 +142,13 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     // Supplier dashboard and quotes
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard'); 
     Route::get('/quotes/dashboard', [SupplierController::class, 'quotes'])->name('quotes.dashboard'); 
+    
+    // Accept/Reject Quote
+    Route::patch('/quote/{id}/update', [SupplierController::class, 'updateQuote'])->name('quote.update'); 
+    
+    // Submit Delivery Details
+    Route::post('/order/{id}/delivery', [SupplierController::class, 'submitDelivery'])->name('order.delivery.submit');
+    // Supplier profile management
     Route::get('/profile', [SupplierController::class, 'editProfile'])->name('profile');
     Route::put('/profile', [SupplierController::class, 'updateProfile'])->name('profile.update');
 
@@ -151,8 +158,9 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     Route::get('/supplyitems/{id}/edit', [SupplyItemController::class, 'supplyEdit'])->name('supplyitems.edit');
     Route::put('/supplyitems/{id}/update', [SupplyItemController::class, 'supplyUpdate'])->name('supplyitems.update');
     Route::delete('/supplyitems/{id}/delete', [SupplyItemController::class, 'supplyDelete'])->name('supplyitems.delete');
-});
 
+
+});
 
 
 // Client Routes
@@ -169,10 +177,14 @@ Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->g
 
 
 
+// routes/web.php
+
 Route::middleware(['auth', 'role:project_manager,contractor,client'])
     ->prefix('projects/{projectId}')
     ->name('tasks.')
     ->group(function () {
+
+        // Task routes
         Route::get('/tasks', [TaskController::class, 'index'])->name('index');
         Route::get('/tasks/create', [TaskController::class, 'create'])->name('create');
         Route::post('/tasks', [TaskController::class, 'store'])->name('store');
@@ -182,25 +194,24 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         
         // Invite related routes
         Route::get('/invite', [TaskController::class, 'inviteClientForm'])->name('inviteClientForm');
-
-        // Handle form submission for inviting clients
         Route::post('/invite-client', [TaskController::class, 'inviteClient'])->name('inviteClient');
-
-        // Handle updating the invitation status
         Route::post('/invitations/{invitationId}/update-status', [TaskController::class, 'updateInvitationStatus'])->name('updateInvitationStatus');
 
+        // Task-related additional routes
         Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
         Route::get('/quote', [TaskController::class, 'showQuote'])->name('quote');
-
         Route::post('/tasks/{taskId}/quote/respond', [TaskController::class, 'respondToTaskQuote'])->name('quote.respond');
         Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
         Route::post('/tasks/{taskId}/update-status', [TaskController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/tasks/{task}/update-category', [TaskController::class, 'updateCategory'])->name('updateCategory');
 
-        // Supply routes
+        // Supply order routes
         Route::get('/supply_order', [TaskSupplyController::class, 'showSuppliers'])->name('supply_order');
         Route::get('/supplieritems/{supplierId}', [TaskSupplyController::class, 'getSupplierItems']);  // Updated 'supplieritems'
         Route::post('/place-order', [TaskSupplyController::class, 'placeOrder']);
 
+        // New route for marking order as received
+        Route::put('/orders/{orderId}/received', [TaskSupplyController::class, 'OrderReceived'])->name('order.received');
     });
+
 

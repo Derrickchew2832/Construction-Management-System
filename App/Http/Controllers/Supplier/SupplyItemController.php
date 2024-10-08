@@ -79,7 +79,7 @@ class SupplyItemController extends Controller
         'name' => 'required|string|max:255',
         'description' => 'nullable|string',
         'price' => 'required|numeric',
-        'stock_quantity' => 'required|integer|min:1',
+        'stock_quantity' => 'required|integer|min:0',
     ]);
 
     // Update the supply item in the database

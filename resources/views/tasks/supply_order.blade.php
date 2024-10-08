@@ -2,11 +2,24 @@
 
 @section('content')
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4>Supply Orders</h4> <!-- Adjusted the heading size -->
+        <!-- Card for Project Financial Overview -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Project Financial Overview</h5>
+                <p class="card-text"><strong>Quoted Price:</strong> ${{ number_format($quotedPrice, 2) }}</p>
+                <p class="card-text"><strong>Total Supply Orders:</strong> ${{ number_format($totalSupplyOrderPrice, 2) }}</p>
+                <p class="card-text"><strong>Remaining Money:</strong> ${{ number_format($remainingMoney, 2) }}</p>
+                <!-- Pie chart placeholder -->
+                <canvas id="financePieChart"></canvas>
+            </div>
         </div>
-        
-        <!-- Order Supply Button (moved to below Supply Orders heading) -->
+
+        <!-- Divider between financial overview and supply orders -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4>Supply Orders</h4>
+        </div>
+
+        <!-- Order Supply Button -->
         <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#orderSupplyModal">Order Supply</button>
 
         <!-- Success and Error Messages -->
@@ -27,8 +40,9 @@
                         <th>Quantity</th>
                         <th>Price</th>
                         <th>Total Price</th>
-                        <th>Supplier Name</th> <!-- New column for supplier name -->
+                        <th>Supplier Name</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -39,9 +53,53 @@
                             <td>{{ $order->quantity }}</td>
                             <td>${{ number_format($order->quoted_price / $order->quantity, 2) }}</td>
                             <td>${{ number_format($order->quoted_price, 2) }}</td>
-                            <td>{{ $order->supplier_name }}</td> <!-- Display supplier's name here -->
+                            <td>{{ $order->supplier_name }}</td>
                             <td>{{ ucfirst($order->status) }}</td>
+                            <td>
+                                @if ($order->status == 'Shipped')
+                                    <button type="button" class="btn btn-primary" data-toggle="modal"
+                                        data-target="#orderReceivedModal-{{ $order->id }}">
+                                        Confirm Received
+                                    </button>
+                                @endif
+                            </td>
                         </tr>
+
+                        <!-- Modal for Order Received -->
+                        <div class="modal fade" id="orderReceivedModal-{{ $order->id }}" tabindex="-1"
+                            aria-labelledby="orderReceivedModalLabel-{{ $order->id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="orderReceivedModalLabel-{{ $order->id }}">Confirm
+                                            Order Received</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <form
+                                        action="{{ route('tasks.order.received', ['projectId' => $projectId, 'orderId' => $order->id]) }}"
+                                        method="POST" enctype="multipart/form-data">
+                                        @csrf
+                                        @method('PUT')
+
+                                        <div class="modal-body">
+                                            <div class="form-group">
+                                                <label for="received_image_{{ $order->id }}">Upload Received
+                                                    Image</label>
+                                                <input type="file" name="received_image"
+                                                    id="received_image_{{ $order->id }}" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                data-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn btn-primary">Order Received</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     @endforeach
                 </tbody>
             </table>
@@ -127,9 +185,51 @@
 @endsection
 
 @push('scripts')
+    <!-- Add Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         $(document).ready(function() {
             console.log('Page and jQuery are ready.');
+
+            // Variables for the pie chart (these should come from the server)
+            var quotedPrice = {{ $quotedPrice ?? 0 }};
+            var totalSupplyOrderPrice = {{ $totalSupplyOrderPrice ?? 0 }};
+            var remainingMoney = {{ $remainingMoney ?? 0 }};
+
+            // Draw the pie chart
+            var ctx = document.getElementById('financePieChart').getContext('2d');
+            var budgetPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Quoted Price', 'Total Supply Orders', 'Remaining Budget'],
+                    datasets: [{
+                        data: [quotedPrice, totalSupplyOrderPrice, remainingMoney],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.raw.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
 
             // Attach click event to supplier selection dynamically using event delegation
             $(document).on('click', '.supplier-option', function() {
@@ -137,8 +237,7 @@
                 var projectId = '{{ $projectId }}'; // Ensuring projectId is available in JS
 
                 console.log('Supplier clicked, Supplier ID:', supplierId);
-                console.log('AJAX URL:', '/projects/' + projectId + '/supplieritems/' +
-                    supplierId); // Debug URL
+                console.log('AJAX URL:', '/projects/' + projectId + '/supplieritems/' + supplierId); // Debug URL
 
                 fetchSupplyItems(supplierId, projectId);
             });
@@ -153,9 +252,7 @@
                     success: function(data) {
                         console.log('Received supply items:', data);
 
-                        // Make sure only table body is updated, not the whole table
                         if (data.html) {
-                            // Avoid re-adding the headers by targeting the tbody
                             $('#supply-items-list').html(data.html);
                             $('#supplier-selection').hide();
                             $('#supply-items-section').removeClass('d-none');
@@ -165,49 +262,38 @@
                     },
                     error: function(xhr) {
                         console.error('Error fetching supply items:', xhr.responseText);
-                        alert('Error fetching supply items: ' + xhr.responseText); // Alert failure
+                        alert('Error fetching supply items: ' + xhr.responseText);
                     }
                 });
             }
 
             // Handle proceeding to order confirmation
             $('#confirm-order').on('click', function(e) {
-                e.preventDefault(); // Prevent form submission until validation passes
+                e.preventDefault();
                 var orderSummary = '';
                 var hasValidationError = false;
 
-                // Loop through each item in the supply list
                 $('#supply-items-list tr').each(function() {
                     var itemName = $(this).find('.item-name').text();
                     var description = $(this).find('.item-description').text();
                     var quantity = parseInt($(this).find('.order-quantity').val(), 10);
-                    var stockQuantity = parseInt($(this).find('.stock-quantity').text(), 10); // Ensure class is 'stock-quantity'
+                    var stockQuantity = parseInt($(this).find('.stock-quantity').text(), 10);
                     var price = parseFloat($(this).find('.item-price').text());
                     var totalPrice = quantity * price;
 
-                    // Debugging: Output the values to the console to ensure correct values
-                    console.log(
-                        `Item: ${itemName}, Quantity Entered: ${quantity}, Stock Quantity: ${stockQuantity}`
-                    );
-
-                    // Check if quantity is a valid number
                     if (isNaN(quantity) || quantity <= 0) {
                         alert(`Please enter a valid quantity for ${itemName}.`);
                         hasValidationError = true;
-                        return false; // Stop the loop
+                        return false;
                     }
 
-                    // Validate if the quantity exceeds the stock quantity
                     if (quantity > stockQuantity) {
-                        alert(
-                            `The quantity ordered for ${itemName} exceeds the stock quantity (${stockQuantity}).`
-                        );
+                        alert(`The quantity ordered for ${itemName} exceeds the stock quantity (${stockQuantity}).`);
                         hasValidationError = true;
-                        return false; // Stop the loop
+                        return false;
                     }
 
                     if (quantity > 0) {
-                        // Add the item to the order summary
                         orderSummary += `<tr>
                             <td>${itemName}</td>
                             <td>${description}</td>
@@ -218,7 +304,6 @@
                     }
                 });
 
-                // If validation passes, proceed to display the order summary
                 if (!hasValidationError) {
                     $('#order-summary-list').html(orderSummary);
                     $('#supply-items-section').addClass('d-none');
@@ -237,29 +322,26 @@
                     description: $('#description').val(),
                 };
 
-                // Loop through each item in the table
                 $('#supply-items-list tr').each(function() {
-                    var itemId = $(this).data('item-id'); // Get the item_id from the data attribute
-                    var quantity = $(this).find('.order-quantity').val(); // Get the quantity entered
+                    var itemId = $(this).data('item-id');
+                    var quantity = $(this).find('.order-quantity').val();
 
-                    // Ensure the quantity is greater than 0 before adding to formData
                     if (quantity > 0) {
                         formData.items.push({
-                            item_id: itemId, // Push the item_id to the items array
+                            item_id: itemId,
                             quantity: quantity
                         });
                     }
                 });
 
-                var projectId = '{{ $projectId }}'; // Ensure projectId is available in JS
+                var projectId = '{{ $projectId }}';
 
-                // Using jQuery AJAX to submit the order
                 $.ajax({
                     url: '/projects/' + projectId + '/place-order',
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'), // Adding CSRF token here
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                     },
                     data: JSON.stringify(formData),
                     success: function(response) {
@@ -269,7 +351,7 @@
                     },
                     error: function(xhr) {
                         console.error('Error placing order:', xhr.responseText);
-                        alert('Error placing order: ' + xhr.responseText); // Show error to user
+                        alert('Error placing order: ' + xhr.responseText);
                     }
                 });
             });
