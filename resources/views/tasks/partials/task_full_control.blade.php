@@ -412,11 +412,14 @@
         }
 
         function updateTaskCount(category) {
-            const count = $(`[data-category="${category}"]`).find('.task-card').length;
-            $(`.task-count[data-category="${category}"]`).text(count);
+            const taskCountElement = $(`.task-count[data-category="${category}"]`);
+            const taskCount = $(`.task-category[data-category="${category}"] .task-card`).length;
+
+            taskCountElement.text(taskCount); // Update the task count in the UI
+     
         }
 
-        // Original task-card click functionality (do not remove)
+        // Original task-card click functionality 
         $(document).on('click', '.task-card', function(event) {
             event.preventDefault();
 

@@ -8,9 +8,11 @@
                 <h5 class="card-title">Project Financial Overview</h5>
                 <p class="card-text"><strong>Quoted Price:</strong> ${{ number_format($quotedPrice, 2) }}</p>
                 <p class="card-text"><strong>Total Supply Orders:</strong> ${{ number_format($totalSupplyOrderPrice, 2) }}</p>
-                <p class="card-text"><strong>Remaining Money:</strong> ${{ number_format($remainingMoney, 2) }}</p>
-                <!-- Pie chart placeholder -->
-                <canvas id="financePieChart"></canvas>
+                <div class="d-flex justify-content-center">
+                    <div style="width: 400px; height: 400px;">
+                        <canvas id="financePieChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -195,22 +197,22 @@
             // Variables for the pie chart (these should come from the server)
             var quotedPrice = {{ $quotedPrice ?? 0 }};
             var totalSupplyOrderPrice = {{ $totalSupplyOrderPrice ?? 0 }};
-            var remainingMoney = {{ $remainingMoney ?? 0 }};
 
-            // Draw the pie chart
+            // Draw the pie chart (smaller)
             var ctx = document.getElementById('financePieChart').getContext('2d');
             var budgetPieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: ['Quoted Price', 'Total Supply Orders', 'Remaining Budget'],
+                    labels: ['Quoted Price', 'Total Supply Orders'],
                     datasets: [{
-                        data: [quotedPrice, totalSupplyOrderPrice, remainingMoney],
-                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                        data: [quotedPrice, totalSupplyOrderPrice],
+                        backgroundColor: ['#FF6384', '#36A2EB'],
+                        hoverBackgroundColor: ['#FF6384', '#36A2EB']
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: true, 
                     plugins: {
                         legend: {
                             position: 'top',

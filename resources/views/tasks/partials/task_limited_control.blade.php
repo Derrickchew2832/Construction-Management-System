@@ -247,7 +247,13 @@
                 const taskCard = $(`[data-task-id="${taskId}"]`);
 
                 // Remove the task card from its current category
+                const oldCategoryContainer = taskCard.closest('.task-category');
                 taskCard.remove();
+
+                // Update the old category's message if no tasks remain
+                if (oldCategoryContainer.find('.task-card').length === 0) {
+                    oldCategoryContainer.html('<p class="text-muted">No tasks available in this category.</p>');
+                }
 
                 // Append the task card to the new category container
                 const newCategoryContainer = $(`[data-category="${newCategory}"]`);
@@ -256,24 +262,12 @@
                 // Show the task card with a fade-in effect
                 taskCard.fadeIn();
 
+                // Remove the "No tasks available" message if the new category has tasks
+                newCategoryContainer.find('p.text-muted').remove();
+
                 // Update the task counts for the affected categories
                 updateTaskCount(currentCategory);
                 updateTaskCount(newCategory);
-
-                // Check if the new category is empty and update the message
-                if (newCategoryContainer.find('.task-card').length === 0) {
-                    newCategoryContainer.html('<p class="text-muted">No tasks available in this category.</p>');
-                } else {
-                    newCategoryContainer.find('p.text-muted').remove();
-                }
-
-                // Similarly, check the old category
-                const oldCategoryContainer = $(`[data-category="${currentCategory}"]`);
-                if (oldCategoryContainer.find('.task-card').length === 0) {
-                    oldCategoryContainer.html('<p class="text-muted">No tasks available in this category.</p>');
-                } else {
-                    oldCategoryContainer.find('p.text-muted').remove();
-                }
             } else {
                 alert('Failed to update the task category.');
             }
@@ -287,8 +281,10 @@
 
 
         function updateTaskCount(category) {
-            const count = $(`[data-category="${category}"]`).find('.task-card').length;
-            $(`.task-count[data-category="${category}"]`).text(count);
+            const taskCountElement = $(`.task-count[data-category="${category}"]`);
+            const taskCount = $(`.task-category[data-category="${category}"] .task-card`).length;
+
+            taskCountElement.text(taskCount); // Update the task count in the UI
         }
 
         // Original task-card click functionality (do not remove)

@@ -49,10 +49,11 @@ class TaskSupplyController extends Controller
         // Ensure the task exists and fetch the quoted price
         $quotedPrice = $task ? $task->quoted_price : 0;
     
-        // Fetch the total supply order price only for the authenticated contractor
+        // Fetch the total supply order price only for confirmed/received orders by the authenticated contractor
         $totalSupplyOrderPrice = DB::table('supply_orders')
             ->where('project_id', $projectId)
             ->where('contractor_id', $contractorId)
+            ->where('status', 'Received')  // Only count orders that have been confirmed/received
             ->sum('quoted_price');
     
         // Calculate the remaining money
@@ -90,91 +91,88 @@ class TaskSupplyController extends Controller
         ));
     }
     
-
-
-
-
     public function getSupplierItems($projectId, $supplierId)
-{
-    // Fetch items with stock quantity
-    $supplyItems = DB::table('supply_items')
-        ->where('supplier_id', $supplierId)
-        ->where('stock_quantity', '>', 0)
-        ->get();
+    {
+        // Fetch items with stock quantity
+        $supplyItems = DB::table('supply_items')
+            ->where('supplier_id', $supplierId)
+            ->where('stock_quantity', '>', 0)
+            ->get();
 
-    $html = view('tasks.partials.supply_items_list', compact('supplyItems'))->render();
-    return response()->json(['html' => $html]);
-}
-
-
-public function placeOrder(Request $request, $projectId)
-{
-    // Ensure only the correct contractor can place an order
-    $contractorId = auth()->user()->id;
-
-    // Validate that the contractor is part of the project
-    $isValidContractor = DB::table('project_contractor')
-        ->where('contractor_id', $contractorId)
-        ->where('project_id', $projectId)
-        ->exists();
-
-    if (!$isValidContractor) {
-        return response()->json(['error' => 'Unauthorized contractor'], 403);
+        $html = view('tasks.partials.supply_items_list', compact('supplyItems'))->render();
+        return response()->json(['html' => $html]);
     }
 
-    // Continue with placing the order
-    $validated = $request->validate([
-        'delivery_address' => 'required|string',
-        'items' => 'required|array',
-        'items.*.item_id' => 'required|integer|exists:supply_items,id',
-        'items.*.quantity' => 'required|integer|min:1',
-        'description' => 'nullable|string',
-    ]);
+    public function placeOrder(Request $request, $projectId)
+    {
+        // Ensure only the correct contractor can place an order
+        $contractorId = auth()->user()->id;
 
-    // Contractor's name for order record
-    $contractor = DB::table('users')->where('id', $contractorId)->first();
-    $companyName = $contractor->name;
+        // Validate that the contractor is part of the task, not just the project
+        $isValidContractor = DB::table('task_contractor')
+            ->where('contractor_id', $contractorId)
+            ->where('task_id', function ($query) use ($projectId) {
+                $query->select('id')
+                    ->from('tasks')
+                    ->where('project_id', $projectId);
+            })
+            ->exists();
 
-    foreach ($request->items as $item) {
-        $supplyItem = DB::table('supply_items')->where('id', $item['item_id'])->first();
+        if (!$isValidContractor) {
+            return response()->json(['error' => 'Unauthorized contractor'], 403);
+        }
 
-        DB::table('supply_orders')->insert([
-            'project_id' => $projectId,
-            'contractor_id' => $contractorId,
-            'supplier_id' => $supplyItem->supplier_id,
-            'supply_item_id' => $supplyItem->id,
-            'quantity' => $item['quantity'],
-            'quoted_price' => $supplyItem->price * $item['quantity'],
-            'status' => 'pending',
-            'company_name' => $companyName,
-            'delivery_address' => $request->input('delivery_address'),
-            'description' => $request->input('description'),
-            'created_at' => now(),
-            'updated_at' => now(),
+        // Continue with placing the order
+        $validated = $request->validate([
+            'delivery_address' => 'required|string',
+            'items' => 'required|array',
+            'items.*.item_id' => 'required|integer|exists:supply_items,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'description' => 'nullable|string',
         ]);
+
+        // Contractor's name for order record
+        $contractor = DB::table('users')->where('id', $contractorId)->first();
+        $companyName = $contractor->name;
+
+        foreach ($request->items as $item) {
+            $supplyItem = DB::table('supply_items')->where('id', $item['item_id'])->first();
+
+            DB::table('supply_orders')->insert([
+                'project_id' => $projectId,
+                'contractor_id' => $contractorId,
+                'supplier_id' => $supplyItem->supplier_id,
+                'supply_item_id' => $supplyItem->id,
+                'quantity' => $item['quantity'],
+                'quoted_price' => $supplyItem->price * $item['quantity'],
+                'status' => 'pending',
+                'company_name' => $companyName,
+                'delivery_address' => $request->input('delivery_address'),
+                'description' => $request->input('description'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return response()->json(['success' => true]);
     }
 
-    return response()->json(['success' => true]);
-}
-
-
-public function OrderReceived(Request $request, $projectId, $orderId)
-{
-    // Validate the received image if it's required
-    $request->validate([
-        'received_image' => 'required|image|max:2048', // example validation for the image
-    ]);
-
-    // Find the order by ID and update its status to 'received'
-    DB::table('supply_orders')
-        ->where('id', $orderId)
-        ->update([
-            'status' => 'Received',
-            'received_image' => $request->file('received_image')->store('received_images', 'public'), // save image path
-            'updated_at' => now(),
+    public function OrderReceived(Request $request, $projectId, $orderId)
+    {
+        // Validate the received image if it's required
+        $request->validate([
+            'received_image' => 'required|image|max:2048', // example validation for the image
         ]);
 
-    return redirect()->back()->with('success', 'Order marked as received successfully.');
-}
+        // Find the order by ID and update its status to 'received'
+        DB::table('supply_orders')
+            ->where('id', $orderId)
+            ->update([
+                'status' => 'Received',
+                'received_image' => $request->file('received_image')->store('received_images', 'public'), // save image path
+                'updated_at' => now(),
+            ]);
 
+        return redirect()->back()->with('success', 'Order marked as received successfully.');
+    }
 }
