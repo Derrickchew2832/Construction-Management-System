@@ -415,7 +415,7 @@
             const taskCountElement = $(`.task-count[data-category="${category}"]`);
             const taskCount = $(`.task-category[data-category="${category}"] .task-card`).length;
 
-            taskCountElement.text(taskCount); // Update the task count in the UI
+            taskCountElement.text(taskCount); 
      
         }
 
