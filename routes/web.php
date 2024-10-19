@@ -94,6 +94,8 @@ Route::middleware(['auth', 'role:project_manager'])->prefix('project_manager')->
     // Profile routes
     Route::get('/profile', [ProjectManagerController::class, 'editProfile'])->name('profile');
     Route::put('/profile', [ProjectManagerController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/updatePassword', [ProjectManagerController::class, 'updatePassword'])->name('profile.updatePassword');
+
 
     // Favorite and invitation routes
     Route::post('/projects/{project}/favorite', [ProjectManagerController::class, 'toggleFavorite'])->name('projects.toggleFavorite');

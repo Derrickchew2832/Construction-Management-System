@@ -188,7 +188,7 @@
                 <h5>{{ $project->name }}</h5>
             </div>
             <ul class="nav flex-column">
-                <!-- Common options -->
+                <!-- Common options for all roles -->
                 <li class="nav-item">
                     <a href="{{ route('tasks.index', ['projectId' => $projectId]) }}" class="nav-link">
                         <i class="fas fa-tasks"></i> <span>Tasks</span>
@@ -215,7 +215,7 @@
                         ->exists();
                 @endphp
 
-                <!-- Show 'Supply' only to Contractors -->
+                <!-- Contractor-specific options -->
                 @if ($roleName == 'contractor' && !$isMainContractor)
                     <li class="nav-item">
                         <a href="{{ route('tasks.supply_order', ['projectId' => $projectId]) }}" class="nav-link">
@@ -224,6 +224,7 @@
                     </li>
                 @endif
 
+                <!-- Main Contractor options -->
                 @if ($isMainContractor)
                     <li class="nav-item">
                         <a href="{{ route('tasks.quote', ['projectId' => $projectId]) }}" class="nav-link">
@@ -232,16 +233,16 @@
                     </li>
                 @endif
 
-                <!-- Invite Button for Project Manager -->
+                <!-- Project Manager-specific options -->
                 @if ($roleName == 'project_manager')
                     <li class="nav-item">
                         <a href="{{ route('tasks.inviteClientForm', ['projectId' => $projectId]) }}" class="nav-link">
-                            <i class="fas fa-user-plus"></i> Invite
+                            <i class="fas fa-user-plus"></i> <span>Invite</span>
                         </a>
                     </li>
                 @endif
 
-                <!-- Statistics -->
+                <!-- Common option for viewing statistics (available to all roles) -->
                 <li class="nav-item">
                     <a href="{{ route('tasks.statistics', ['projectId' => $projectId]) }}" class="nav-link">
                         <i class="fas fa-chart-bar"></i> <span>Statistics</span>

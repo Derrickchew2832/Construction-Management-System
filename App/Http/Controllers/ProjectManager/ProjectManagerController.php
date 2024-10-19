@@ -130,18 +130,43 @@ class ProjectManagerController extends Controller
 
     public function storeProject(Request $request)
 {
-    // Validate the inputs
+    // Validate the inputs with custom error messages
     $data = $request->validate([
         'name' => 'required|string|max:255',
         'description' => 'required|string',
-        'start_date' => 'required|date',
-        'end_date' => 'required|date',
-        'total_budget' => 'required|numeric',
+        'start_date' => 'required|date|after_or_equal:today', // Start date must be today or in the future
+        'end_date' => 'required|date|after:start_date', // End date must be after the start date
+        'total_budget' => 'required|numeric|min:0',
         'location' => 'required|string|max:255',
         'documents' => 'required|array', // Ensure at least one document is uploaded
         'documents.*' => 'mimes:pdf,doc,docx|max:2048' // Validate file types and size for each file
     ], [
-        'documents.required' => 'At least one document is required.' // Custom error message
+        'name.required' => 'The project name is required.',
+        'name.string' => 'The project name must be a valid string.',
+        'name.max' => 'The project name must not exceed 255 characters.',
+        
+        'description.required' => 'The project description is required.',
+        'description.string' => 'The project description must be a valid string.',
+        
+        'start_date.required' => 'The start date is required.',
+        'start_date.date' => 'The start date must be a valid date.',
+        'start_date.after_or_equal' => 'The start date must be today or a future date.',
+
+        'end_date.required' => 'The end date is required.',
+        'end_date.date' => 'The end date must be a valid date.',
+        'end_date.after' => 'The end date must be after the start date.',
+
+        'total_budget.required' => 'The total budget is required.',
+        'total_budget.numeric' => 'The total budget must be a numeric value.',
+        'total_budget.min' => 'The total budget must be at least 0.',
+
+        'location.required' => 'The location is required.',
+        'location.string' => 'The location must be a valid string.',
+        'location.max' => 'The location must not exceed 255 characters.',
+
+        'documents.required' => 'At least one document is required.',
+        'documents.*.mimes' => 'Documents must be a PDF, DOC, or DOCX file.',
+        'documents.*.max' => 'Documents must not exceed 2MB in size.'
     ]);
 
     // Insert the new project
@@ -189,7 +214,7 @@ class ProjectManagerController extends Controller
     return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project created successfully');
 }
 
-    public function editProject($projectId)
+public function editProject($projectId)
 {
     $project = DB::table('projects')->where('id', $projectId)->first();
     if (!$project) {
@@ -204,10 +229,33 @@ public function updateProject(Request $request, $projectId)
     $data = $request->validate([
         'name' => 'required|string|max:255',
         'description' => 'required|string',
-        'start_date' => 'required|date',
-        'end_date' => 'required|date',
-        'total_budget' => 'required|numeric',
+        'start_date' => 'required|date|after_or_equal:today', // Start date must be today or in the future
+        'end_date' => 'required|date|after:start_date', // End date must be after the start date
+        'total_budget' => 'required|numeric|min:0',
         'location' => 'required|string|max:255',
+    ], [
+        'name.required' => 'The project name is required.',
+        'name.string' => 'The project name must be a valid string.',
+        'name.max' => 'The project name must not exceed 255 characters.',
+        
+        'description.required' => 'The project description is required.',
+        'description.string' => 'The project description must be a valid string.',
+
+        'start_date.required' => 'The start date is required.',
+        'start_date.date' => 'The start date must be a valid date.',
+        'start_date.after_or_equal' => 'The start date must be today or a future date.',
+
+        'end_date.required' => 'The end date is required.',
+        'end_date.date' => 'The end date must be a valid date.',
+        'end_date.after' => 'The end date must be after the start date.',
+
+        'total_budget.required' => 'The total budget is required.',
+        'total_budget.numeric' => 'The total budget must be a numeric value.',
+        'total_budget.min' => 'The total budget must be at least 0.',
+
+        'location.required' => 'The location is required.',
+        'location.string' => 'The location must be a valid string.',
+        'location.max' => 'The location must not exceed 255 characters.'
     ]);
 
     DB::table('projects')->where('id', $projectId)->update([
@@ -222,6 +270,8 @@ public function updateProject(Request $request, $projectId)
 
     return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project updated successfully!');
 }
+
+
 
 
     public function deleteProject($projectId)
@@ -332,10 +382,6 @@ public function storeInvite(Request $request, $projectId)
     return redirect()->route('project_manager.projects.invite', $projectId)
         ->with('error', 'This contractor has already been invited.');
 }
-
-
-
-
 
     public function viewQuote($projectId, $quoteId)
     {
@@ -678,21 +724,48 @@ public function storeInvite(Request $request, $projectId)
 
     public function updateProfile(Request $request)
     {
-        $data = $request->validate([
+        $user = Auth::user();
+
+        // Validate input with custom error messages
+        $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . Auth::id(),
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+        ], [
+            'name.required' => 'Please enter your name.',
+            'email.required' => 'Please enter a valid email address.',
+            'email.unique' => 'This email address is already in use.',
         ]);
 
-        DB::table('users')
-            ->where('id', Auth::id())
-            ->update([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'updated_at' => now(),
-            ]);
+        // Update the user's name and email
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->save();
 
-        return redirect()->route('project_manager.profile')->with('success', 'Profile updated successfully!');
+        // Redirect back with a success message
+        return redirect()->back()->with('success', 'Profile updated successfully.');
     }
+
+    // Update Project Manager's Password
+    public function updatePassword(Request $request)
+    {
+        // Validate the password fields with custom error messages
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.required' => 'Please enter a new password.',
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'Passwords do not match.',
+        ]);
+
+        // Update the password
+        $user = Auth::user();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        // Redirect back with a success message
+        return redirect()->back()->with('status', 'password-updated');
+    }
+
 
     public function managementBoard($projectId)
     {
