@@ -23,9 +23,6 @@
                     <!-- Moved Task Management Button below the details -->
                     <a href="{{ route('tasks.index', $project->id) }}" class="btn btn-success mb-3">Enter Task Management Page</a>
                     
-                    @if ($project->status !== 'started')
-                        <a href="{{ route('project_manager.projects.edit', $project->id) }}" class="btn btn-primary mb-3">Edit Project</a>
-                    @endif
                 </div>
             </div>
         </div>
@@ -44,16 +41,6 @@
             </div>
         </div>
 
-        <!-- Statistical Analysis Section in a Card View -->
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Statistical Analysis</h5>
-                    <p>Graphical analysis related to the project will be added here later.</p>
-                    <!-- Placeholder for future graphs -->
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 

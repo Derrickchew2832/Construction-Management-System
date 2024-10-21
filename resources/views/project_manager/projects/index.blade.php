@@ -32,11 +32,6 @@
                             <p class="card-text">{{ $project->description }}</p>
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
-                                    <!-- Display the number of people in the project -->
-                                    <span>{{ $project->members_count ?? 0 }}</span>
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div>
                                     <!-- Favorite Button -->
                                     @php
                                         $isFavorite = $project->is_favorite ? 'fas' : 'far';
@@ -45,8 +40,9 @@
                                         data-project-id="{{ $project->id }}">
                                         <i class="{{ $isFavorite }} fa-star"></i>
                                     </a>
-                                    <!-- Settings Dropdown, hidden if project is in progress -->
-                                    @if ($project->status !== 'started')
+
+                                    <!-- Settings Dropdown, hidden if project is in progress or completed -->
+                                    @if ($project->status !== 'started' && $project->status !== 'completed')
                                         <div class="dropdown">
                                             <button class="btn btn-link dropdown-toggle" type="button"
                                                 id="dropdownMenuButton{{ $project->id }}" data-bs-toggle="dropdown"
@@ -90,6 +86,13 @@
                                     class="btn btn-outline-primary btn-block">
                                     Enter Project
                                 </a>
+                            @endif
+
+                            <!-- Disable actions if the project is completed -->
+                            @if ($project->status === 'completed')
+                                <div class="alert alert-info mt-2" role="alert">
+                                    This project is completed. All actions are disabled.
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -135,38 +138,37 @@
 
         .w-auto {
             width: 150px;
-            /* Matching size for both search and sort buttons */
         }
     </style>
 
     <script>
         // Sorting functionality
-        let isAscending = true; // Track the sorting order
-        document.getElementById('sortButton').addEventListener('click', function() {
+        let isAscending = true;
+        document.getElementById('sortButton').addEventListener('click', function () {
             let projectCards = Array.from(document.querySelectorAll('.project-card'));
-            projectCards.sort(function(a, b) {
+            projectCards.sort(function (a, b) {
                 let titleA = a.querySelector('.card-title').textContent.trim().toLowerCase();
                 let titleB = b.querySelector('.card-title').textContent.trim().toLowerCase();
                 return isAscending ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA);
             });
 
-            isAscending = !isAscending; // Toggle the sorting order for next click
-            let sortButtonText = isAscending ? 'Sort A-Z' : 'Sort Z-A'; // Change button text based on order
+            isAscending = !isAscending;
+            let sortButtonText = isAscending ? 'Sort A-Z' : 'Sort Z-A';
             document.getElementById('sortButton').textContent = sortButtonText;
 
             let projectContainer = document.getElementById('projectCards');
             projectContainer.innerHTML = '';
-            projectCards.forEach(function(card) {
+            projectCards.forEach(function (card) {
                 projectContainer.appendChild(card);
             });
         });
 
         // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function() {
+        document.getElementById('searchInput').addEventListener('input', function () {
             let searchValue = this.value.toLowerCase();
             let projectCards = document.querySelectorAll('.project-card');
 
-            projectCards.forEach(function(card) {
+            projectCards.forEach(function (card) {
                 let projectName = card.querySelector('.card-title').textContent.toLowerCase();
                 let projectDescription = card.querySelector('.card-text').textContent.toLowerCase();
                 if (projectName.includes(searchValue) || projectDescription.includes(searchValue)) {
@@ -178,53 +180,46 @@
         });
 
         // Toggle favorite status
-        document.querySelectorAll('.favorite-btn').forEach(function(button) {
-            button.addEventListener('click', function(event) {
+        document.querySelectorAll('.favorite-btn').forEach(function (button) {
+            button.addEventListener('click', function (event) {
                 event.preventDefault();
                 let icon = this.querySelector('i');
                 let projectId = this.getAttribute('data-project-id');
                 let isFavorite = icon.classList.contains('fas');
 
-                // Toggle the favorite state visually
                 icon.classList.toggle('fas');
                 icon.classList.toggle('far');
 
-                // Send AJAX request to toggle favorite state
                 fetch(`/project_manager/projects/${projectId}/favorite`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                .getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            is_favorite: !isFavorite
-                        })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        is_favorite: !isFavorite
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Favorite status updated:', data);
-                        if (data.is_favorite) {
-                            alert('Project added to favorites!');
-                        } else {
-                            alert('Project removed from favorites!');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while updating the favorite status.');
-                    });
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                }).then(data => {
+                    if (data.is_favorite) {
+                        alert('Project added to favorites!');
+                    } else {
+                        alert('Project removed from favorites!');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the favorite status.');
+                });
             });
         });
 
         // Bootstrap dropdown fix
-        document.querySelectorAll('.dropdown-toggle').forEach(function(dropdown) {
-            dropdown.addEventListener('click', function(event) {
+        document.querySelectorAll('.dropdown-toggle').forEach(function (dropdown) {
+            dropdown.addEventListener('click', function (event) {
                 event.preventDefault();
                 let menu = this.nextElementSibling;
                 menu.classList.toggle('show');

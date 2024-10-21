@@ -72,9 +72,11 @@
                                 <button type="button" class="btn btn-warning btn-sm" data-toggle="modal"
                                     data-target="#suggestionModal" data-quote-id="{{ $quote->id }}"
                                     data-project-id="{{ $quote->project_id }}" data-price="{{ $quote->quoted_price }}"
-                                    data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">
+                                    data-pdf-link="{{ Storage::url($quote->quote_pdf) }}" 
+                                    data-suggestion="{{ $quote->quote_suggestion }}">
                                     View Suggestion
                                 </button>
+
                                 <button type="button" class="btn btn-success btn-sm accept-quote"
                                     data-project-id="{{ $quote->project_id }}" data-quote-id="{{ $quote->id }}">
                                     Accept
@@ -175,8 +177,7 @@
 <div class="modal fade" id="suggestionModal" tabindex="-1" role="dialog" aria-labelledby="suggestionModalLabel"
     aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <form id="suggestionForm" method="POST" action="/contractor/projects/{project}/suggest-quote"
-            enctype="multipart/form-data">
+        <form id="suggestionForm" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="quote_id" id="suggestQuoteId">
             <input type="hidden" name="project_id" id="suggestProjectId">
@@ -191,15 +192,20 @@
                     <p><strong>Original Price:</strong> $<span id="suggestedPrice"></span></p>
                     <p><strong>Suggestion Document:</strong> <a href="#" id="suggestedPdf" target="_blank">View PDF</a></p>
                     <p><strong>Suggestion Notes:</strong> <span id="suggestedNotes"></span></p>
+                    
+                    <!-- New price form field -->
                     <div class="form-group">
                         <label for="new_price">New Suggested Price:</label>
                         <input type="number" class="form-control" id="new_price" name="new_price" step="0.01">
                     </div>
+                    
+                    <!-- Upload new quote PDF form field -->
                     <div class="form-group">
                         <label for="new_pdf">Upload New Quote (PDF):</label>
-                        <input type="file" class="form-control-file" id="new_pdf" name="new_pdf"
-                            accept="application/pdf">
+                        <input type="file" class="form-control-file" id="new_pdf" name="new_pdf" accept="application/pdf">
                     </div>
+                    
+                    <!-- New description form field -->
                     <div class="form-group">
                         <label for="description">Description:</label>
                         <textarea class="form-control" id="suggestDescription" name="description" rows="3"></textarea>
@@ -213,6 +219,7 @@
         </form>
     </div>
 </div>
+
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -257,27 +264,23 @@
             var projectId = button.data('project-id');
             var currentPrice = button.data('price');
             var currentPdf = button.data('pdf-link');
-            var opponentSuggestionPdf = button.data('suggestion-pdf');
-            var opponentSuggestionNotes = button.data('suggestion-notes');
+            var opponentSuggestion = button.data('suggestion');
 
             var modal = $(this);
             modal.find('#suggestQuoteId').val(quoteId);
             modal.find('#suggestProjectId').val(projectId);
             modal.find('#suggestedPrice').text(currentPrice);
-            modal.find('#currentPdf').attr('href', currentPdf).text(
-                'View PDF');
+            modal.find('#suggestedPdf').attr('href', currentPdf).text('View PDF');
 
-            if (opponentSuggestionPdf) {
-                modal.find('#suggestedPdf').attr('href', opponentSuggestionPdf).show();
-            } else {
-                modal.find('#suggestedPdf').hide();
-            }
-
-            if (opponentSuggestionNotes) {
-                modal.find('#suggestedNotes').text(opponentSuggestionNotes);
+            // Set the suggestion notes or provide a default value
+            if (opponentSuggestion) {
+                modal.find('#suggestedNotes').text(opponentSuggestion);
             } else {
                 modal.find('#suggestedNotes').text('No notes provided.');
             }
+
+            // Set the form action URL dynamically
+            $('#suggestionForm').attr('action', '/contractor/projects/' + projectId + '/suggest-quote');
         });
 
         // Handle Suggestion Submission
@@ -290,7 +293,7 @@
                 return;
             }
 
-            var formData = new FormData(this);
+            var formData = new FormData(this); // Use formData to collect the form inputs
             var projectId = $('#suggestProjectId').val();
             var quoteId = $('#suggestQuoteId').val();
 
@@ -303,13 +306,13 @@
                 contentType: false, // Required for file upload
                 processData: false, // Required for file upload
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Ensure the CSRF token is correctly passed
                 },
                 success: function(response) {
                     alert(response.message);
                     if (response.success) {
                         $('#suggestionModal').modal('hide');
-                        location.reload();
+                        location.reload(); // Reload the page after a successful suggestion
                     }
                 },
                 error: function(xhr) {
@@ -339,7 +342,7 @@
                     },
                     success: function(response) {
                         alert(response.message);
-                        location.reload();
+                        location.reload(); // Reload the page to reflect the changes
                     },
                     error: function(xhr) {
                         alert(
@@ -366,7 +369,7 @@
                     },
                     success: function(response) {
                         alert(response.message);
-                        location.reload();
+                        location.reload(); // Reload the page to reflect the changes
                     },
                     error: function(xhr) {
                         alert(

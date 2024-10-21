@@ -630,6 +630,132 @@ public function updateInvitationStatus(Request $request, $invitationId)
             ],
         ]);
     }
+
+    public function viewPhotos($projectId)
+{
+    // Fetch the project details
+    $project = DB::table('projects')->where('id', $projectId)->first();
+    
+    if (!$project) {
+        return redirect()->back()->withErrors(['error' => 'Project not found.']);
+    }
+
+    // Fetch the project manager's name
+    $projectManager = DB::table('users')->where('id', $project->project_manager_id)->first();
+    $projectManagerName = $projectManager ? $projectManager->name : 'Unknown';
+
+    // Fetch the main contractor's name
+    $mainContractor = DB::table('users')
+                        ->join('project_contractor', 'users.id', '=', 'project_contractor.contractor_id')
+                        ->where('project_contractor.project_id', $projectId)
+                        ->where('project_contractor.main_contractor', 1)
+                        ->first();
+    $mainContractorName = $mainContractor ? $mainContractor->name : 'No Main Contractor';
+
+    // Calculate total project days
+    $totalProjectDays = \Carbon\Carbon::parse($project->start_date)
+                          ->diffInDays(\Carbon\Carbon::parse($project->end_date));
+
+    // Fetch the photos for the project and join with tasks using 'title' column
+    $photos = DB::table('photos')
+                ->leftJoin('tasks', 'photos.task_id', '=', 'tasks.id')
+                ->select('photos.*', 'tasks.title as task_name') // Changed 'tasks.name' to 'tasks.title'
+                ->where('photos.project_id', $projectId)
+                ->get();
+
+    // Fetch the tasks related to the project for the task dropdown
+    $tasks = DB::table('tasks')
+               ->where('project_id', $projectId)
+               ->get();
+
+    // Pass all the required data to the view
+    return view('tasks.photos', compact(
+        'photos', 
+        'projectId', 
+        'project', 
+        'projectManagerName', 
+        'mainContractorName', 
+        'totalProjectDays', 
+        'tasks'
+    ));
+}
+
+public function uploadPhoto(Request $request, $projectId)
+{
+    // Validate the uploaded data
+    $request->validate([
+        'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'description' => 'nullable|string',
+        'task_id' => 'required|exists:tasks,id'
+    ]);
+
+    // Store the uploaded photo in the storage
+    $photoPath = $request->file('photo')->store('photos', 'public');
+
+    // Insert the photo details into the database
+    DB::table('photos')->insert([
+        'project_id' => $projectId,
+        'task_id' => $request->task_id, // Associate the photo with a task
+        'uploaded_by' => Auth::id(),
+        'photo_path' => $photoPath,
+        'description' => $request->description,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    // Redirect back with a success message
+    return redirect()->back()->with('success', 'Photo uploaded successfully.');
+}
+
+
+
+
+public function viewFiles($projectId)
+{
+    // Fetch the project details
+    $project = DB::table('projects')->where('id', $projectId)->first();
+
+    // Fetch the project manager name
+    $projectManager = DB::table('users')->where('id', $project->project_manager_id)->first();
+    $projectManagerName = $projectManager ? $projectManager->name : 'Unknown';
+
+    // Fetch the main contractor name
+    $mainContractor = DB::table('users')
+                        ->join('project_contractor', 'users.id', '=', 'project_contractor.contractor_id')
+                        ->where('project_contractor.project_id', $projectId)
+                        ->where('project_contractor.main_contractor', 1)
+                        ->first();
+    $mainContractorName = $mainContractor ? $mainContractor->name : 'No Main Contractor';
+
+    // Calculate total project days
+    $totalProjectDays = \Carbon\Carbon::parse($project->start_date)->diffInDays(\Carbon\Carbon::parse($project->end_date));
+
+    // Fetch the files for the project
+    $files = DB::table('documents')->where('project_id', $projectId)->get();
+
+    // Pass all the required data to the view
+    return view('tasks.files', compact('files', 'projectId', 'project', 'projectManagerName', 'mainContractorName', 'totalProjectDays'));
+}
+
+
+
+    public function endProject(Request $request, $projectId)
+    {
+        $project = DB::table('projects')->where('id', $projectId)->first();
+
+        // Check if the user is the main contractor
+        if (auth()->user()->id == $project->main_contractor_id && $project->status !== 'completed') {
+            DB::table('projects')->where('id', $projectId)->update([
+                'status' => 'completed',
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Unauthorized or project already completed.'], 403);
+    }
+
     
 
 }

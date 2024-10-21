@@ -154,37 +154,40 @@ class ContractorsController extends Controller
 }
 
 
-    public function submitQuote(Request $request, $projectId)
-    {
-        // Validate the quote data
-        $data = $request->validate([
-            'quoted_price' => 'required|numeric|min:0',
-            'quote_pdf' => 'required|file|mimes:pdf|max:2048',
-        ]);
+public function submitQuote(Request $request, $projectId)
+{
+    // Validate the quote data
+    $data = $request->validate([
+        'quoted_price' => 'required|numeric|min:0',
+        'quote_pdf' => 'required|file|mimes:pdf|max:2048',
+        'description' => 'required|string|max:1000', // Validate the description field
+    ]);
 
-        // Save the uploaded PDF file
-        $pdfPath = $request->file('quote_pdf')->store('quotes', 'public');
+    // Save the uploaded PDF file
+    $pdfPath = $request->file('quote_pdf')->store('quotes', 'public');
 
-        // Insert or update the contractor's quote in project_contractor table
-        DB::table('project_contractor')->updateOrInsert(
-            ['project_id' => $projectId, 'contractor_id' => Auth::id()],
-            [
-                'quoted_price' => $data['quoted_price'],
-                'quote_pdf' => $pdfPath,
-                'status' => 'submitted',
-                'suggested_by' => 'contractor',
-                'updated_at' => now(),
-            ]
-        );
+    // Insert or update the contractor's quote in project_contractor table
+    DB::table('project_contractor')->updateOrInsert(
+        ['project_id' => $projectId, 'contractor_id' => Auth::id()],
+        [
+            'quoted_price' => $data['quoted_price'],
+            'quote_pdf' => $pdfPath,
+            'quote_suggestion' => $data['description'], // Save the description as the quote suggestion
+            'status' => 'submitted',
+            'suggested_by' => 'contractor',
+            'updated_at' => now(),
+        ]
+    );
 
-        // Update the invitation status
-        DB::table('project_invitations')
-            ->where('project_id', $projectId)
-            ->where('contractor_id', Auth::id())
-            ->update(['status' => 'submitted', 'updated_at' => now()]);
+    // Update the invitation status
+    DB::table('project_invitations')
+        ->where('project_id', $projectId)
+        ->where('contractor_id', Auth::id())
+        ->update(['status' => 'submitted', 'updated_at' => now()]);
 
-        return redirect()->route('contractor.projects.index')->with('success', 'Quote submitted successfully!');
-    }
+    return redirect()->route('contractor.projects.index')->with('success', 'Quote submitted successfully!');
+}
+
 
     public function respondToSuggestion(Request $request, $projectId)
     {
@@ -229,6 +232,7 @@ class ContractorsController extends Controller
             $data = $request->validate([
                 'new_price' => 'required|numeric|min:0',
                 'new_pdf' => 'required|file|mimes:pdf|max:2048',
+                'description' => 'required|string',
             ]);
     
             // Save the new PDF file
@@ -240,6 +244,7 @@ class ContractorsController extends Controller
                 ->update([
                     'quoted_price' => $data['new_price'],
                     'quote_pdf' => $pdfPath,
+                    'quote_suggestion' => $data['description'],
                     'status' => 'submitted', // Change status to 'submitted' after suggesting a new price
                     'suggested_by' => 'contractor', // The logged-in user who suggested the new quote
                     'updated_at' => now(),
@@ -251,11 +256,6 @@ class ContractorsController extends Controller
         return response()->json(['success' => false, 'message' => 'Invalid action.']);
     }
     
-
-
-
-
-
     public function toggleFavorite(Request $request, $projectId)
     {
         // Toggle the project favorite status

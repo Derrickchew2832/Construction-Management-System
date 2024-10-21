@@ -214,6 +214,13 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
 
         // New route for marking order as received
         Route::put('/orders/{orderId}/received', [TaskSupplyController::class, 'OrderReceived'])->name('order.received');
+        
+
+        Route::get('/photos', [TaskController::class, 'viewPhotos'])->name('photos.view');
+        Route::post('/photos/upload', [TaskController::class, 'uploadPhoto'])->name('photos.upload');
+        Route::get('/files', [TaskController::class, 'viewFiles'])->name('files.view');
+        Route::post('/files/upload', [TaskController::class, 'uploadFile'])->name('files.upload');
+        Route::post('/end', [TaskController::class, 'endProject'])->name('endProject');
     });
 
 

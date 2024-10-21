@@ -195,15 +195,17 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="{{ route('tasks.photos.view', ['projectId' => $projectId]) }}" class="nav-link">
                         <i class="fas fa-image"></i> <span>Photos</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="{{ route('tasks.files.view', ['projectId' => $projectId]) }}" class="nav-link">
                         <i class="fas fa-file-alt"></i> <span>Files</span>
                     </a>
                 </li>
+                
+                
 
                 <!-- Role-specific options -->
                 @php
@@ -280,6 +282,10 @@
                         }
                     @endphp
                     <button class="btn btn-danger btn-sm" onclick="window.location.href='{{ $exiturl }}'">Exit</button>
+                    @if ($isMainContractor && $project->status !== 'completed')
+                        <!-- Project Ended button only for Main Contractor -->
+                        <button class="btn btn-warning btn-sm mt-2" id="endProjectBtn">Project Ended</button>
+                    @endif        
                 </div>
             </header>
 
@@ -287,6 +293,28 @@
             @yield('content')
         </div>
     </div>
+
+    <!-- Confirmation Modal for Ending Project -->
+    <div class="modal fade" id="endProjectModal" tabindex="-1" role="dialog" aria-labelledby="endProjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="endProjectModalLabel">Confirm End Project</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to end the project? This action cannot be undone, and no further changes can be made by any users.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="confirmEndProjectBtn">Yes, End Project</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // Check if 'mySidebarElement' is already defined to avoid redeclaration
@@ -344,6 +372,41 @@
                 `Current Date: ${formattedDate} | Time: ${formattedTime}`;
         }
 
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+
+
+        document.getElementById('endProjectBtn').addEventListener('click', function() {
+            $('#endProjectModal').modal('show'); // Show the confirmation modal
+        });
+
+        document.getElementById('confirmEndProjectBtn').addEventListener('click', function() {
+            const projectId = '{{ $project->id }}';
+
+            // Send AJAX request to end the project
+            $.ajax({
+                url: '/projects/' + projectId + '/end',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Project has been marked as completed.');
+                        location.reload(); // Reload the page to update the UI
+                    } else {
+                        alert('An error occurred while ending the project.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    alert('An error occurred while ending the project.');
+                }
+            });
+        });
+
+        // Display current date and time (existing functionality)
         updateDateTime();
         setInterval(updateDateTime, 1000);
     </script>

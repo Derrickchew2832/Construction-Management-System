@@ -40,7 +40,7 @@
                         <button type="submit" class="btn btn-danger btn-sm">Reject</button>
                     </form>
 
-                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#suggestPriceModal" data-quote-id="{{ $quote->id }}" data-contractor-id="{{ $quote->contractor_id }}" data-price="{{ $quote->quoted_price }}" data-status="{{ $quote->quote_status }}" data-pdf-link="{{ Storage::url($quote->quote_pdf) }}">Suggest</button>
+                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#suggestPriceModal" data-quote-id="{{ $quote->id }}" data-contractor-id="{{ $quote->contractor_id }}" data-price="{{ $quote->quoted_price }}" data-status="{{ $quote->quote_status }}" data-pdf-link="{{ Storage::url($quote->quote_pdf) }}" data-suggestion="{{ $quote->quote_suggestion }}">Suggest</button>
                     @elseif ($quote->quote_status === 'approved')
                     <span class="text-success">Quote Approved</span>
                     @elseif ($quote->quote_status === 'rejected')
@@ -63,6 +63,7 @@
             <input type="hidden" name="action" value="suggest">
             <input type="hidden" name="quote_id" id="suggestQuoteId">
             <input type="hidden" name="contractor_id" id="suggestContractorId">
+            
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="suggestPriceModalLabel">Provide New Price and Quote</h5>
@@ -74,7 +75,8 @@
                     <p><strong>Quoted Price:</strong> $<span id="quotedPrice"></span></p>
                     <p><strong>Status:</strong> <span id="quoteStatus"></span></p>
                     <p><strong>Document:</strong> <a href="#" id="quotePdfLink" target="_blank">View PDF</a></p>
-
+                    <p><strong>Contractor's Suggestion:</strong> <span id="quoteSuggestion"></span></p>
+        
                     <div class="form-group">
                         <label for="new_price">New Price:</label>
                         <input type="number" class="form-control" id="new_price" name="new_price" step="0.01" required>
@@ -93,7 +95,7 @@
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </div>
             </div>
-        </form>
+        </form>        
     </div>
 </div>
 
@@ -106,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var price = button.data('price');
         var status = button.data('status');
         var pdfLink = button.data('pdf-link');
+        var suggestion = button.data('suggestion');
 
         var modal = $(this);
         modal.find('#suggestQuoteId').val(quoteId);
@@ -113,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.find('#quotedPrice').text(price || 'N/A');
         modal.find('#quoteStatus').text(status || 'N/A');
         modal.find('#quotePdfLink').attr('href', pdfLink || '#');
+        modal.find('#quoteSuggestion').text(suggestion || 'No suggestion provided.');
     });
 
     $('#actionModal').on('show.bs.modal', function (event) {
