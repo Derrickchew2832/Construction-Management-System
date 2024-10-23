@@ -20,7 +20,6 @@
                 <tbody>
                     @foreach ($tasks as $task)
                         @if (isset($task->quote))
-                            {{-- Ensure there is a quote --}}
                             <tr>
                                 <td>{{ $task->title }}</td>
                                 <td>${{ number_format($task->quote->quoted_price, 2) }}</td>
@@ -38,42 +37,27 @@
                                         <span class="text-danger">Rejected</span>
                                     @else
                                         <span class="text-muted">Unknown Status</span>
-                                        <!-- Fallback in case status is missing -->
                                     @endif
                                 </td>
 
                                 <td>
                                     <!-- Buttons for Accept, Reject, Suggest -->
-                                    @if ($task->quote->status == 'submitted' || $task->quote->status == 'suggested')
-                                        @if (Auth::id() != $task->quote->suggested_by)
-                                            <!-- Show buttons if the current user didn't make the last suggestion -->
-                                            <button class="btn btn-warning btn-sm" data-toggle="modal"
-                                                data-target="#quoteModal" data-task-id="{{ $task->id }}"
-                                                data-task-title="{{ $task->title }}"
-                                                data-task-description="{{ $task->description }}"
-                                                data-task-start="{{ $task->start_date }}"
-                                                data-task-due="{{ $task->due_date }}"
-                                                data-quote-price="{{ number_format($task->quote->quoted_price, 2) }}"
-                                                data-quote-suggestion="{{ $task->quote->quote_suggestion }}"
-                                                data-quote-document="{{ Storage::url($task->quote->quote_pdf) }}"
-                                                data-quote-id="{{ $task->quote->id }}">
-                                                View Suggestion
-                                            </button>
-                                            <button class="btn btn-success btn-sm"
-                                                onclick="submitAction('accept', '{{ $task->quote->id }}', '{{ $task->id }}')">Accept</button>
-                                            <button class="btn btn-danger btn-sm"
-                                                onclick="submitAction('reject', '{{ $task->quote->id }}', '{{ $task->id }}')">Reject</button>
-                                        @else
-                                            <!-- Current user already made a suggestion, awaiting other party's response -->
-                                            <span class="text-info">Awaiting response from the other party.</span>
-                                        @endif
-                                    @elseif ($task->quote->status == 'approved')
-                                        <span class="text-success">Quote Approved</span>
-                                    @elseif ($task->quote->status == 'rejected')
-                                        <span class="text-danger">Quote Rejected</span>
-                                    @else
-                                        <span class="text-muted">No Action Available</span>
-                                    @endif
+                                    <button class="btn btn-warning btn-sm open-modal" 
+                                        data-task-id="{{ $task->id }}"
+                                        data-task-title="{{ $task->title }}"
+                                        data-task-description="{{ $task->description }}"
+                                        data-task-start="{{ $task->start_date }}"
+                                        data-task-due="{{ $task->due_date }}"
+                                        data-quote-price="{{ number_format($task->quote->quoted_price, 2) }}"
+                                        data-quote-suggestion="{{ $task->quote->quote_suggestion }}"
+                                        data-quote-document="{{ Storage::url($task->quote->quote_pdf) }}"
+                                        data-quote-id="{{ $task->quote->id }}">
+                                        View Suggestion
+                                    </button>
+                                    <button class="btn btn-success btn-sm"
+                                        onclick="submitAction('accept', '{{ $task->quote->id }}', '{{ $task->id }}')">Accept</button>
+                                    <button class="btn btn-danger btn-sm"
+                                        onclick="submitAction('reject', '{{ $task->quote->id }}', '{{ $task->id }}')">Reject</button>
                                 </td>
                             </tr>
                         @endif
@@ -116,8 +100,7 @@
                         <h6><strong>Quote Details</strong></h6>
                         <p><strong>Quoted Price:</strong> $<span id="modalQuotePrice"></span></p>
                         <p><strong>Quote Suggestion:</strong> <span id="modalQuoteSuggestion"></span></p>
-                        <p><strong>Quote Document:</strong> <a href="#" id="modalQuoteDocument" target="_blank">View
-                                Document</a></p>
+                        <p><strong>Quote Document:</strong> <a href="#" id="modalQuoteDocument" target="_blank">View Document</a></p>
 
                         <hr>
 
@@ -125,8 +108,7 @@
                         <h6><strong>Suggest New Price</strong></h6>
                         <div class="form-group">
                             <label for="new_price">New Suggested Price:</label>
-                            <input type="number" name="new_price" id="new_price" class="form-control" step="0.01"
-                                required>
+                            <input type="number" name="new_price" id="new_price" class="form-control" step="0.01" required>
                         </div>
                         <div class="form-group">
                             <label for="quote_description">Quote Description:</label>
@@ -134,14 +116,12 @@
                         </div>
                         <div class="form-group">
                             <label for="new_pdf">Upload New Quote (PDF):</label>
-                            <input type="file" name="new_pdf" id="new_pdf" class="form-control-file"
-                                accept="application/pdf" required>
+                            <input type="file" name="new_pdf" id="new_pdf" class="form-control-file" accept="application/pdf" required>
                         </div>
                     </div>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <!-- Only the Suggest Button -->
                         <button type="submit" class="btn btn-warning">Submit Suggestion</button>
                     </div>
                 </div>
@@ -151,13 +131,14 @@
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script> <!-- Ensure Bootstrap JS -->
 
     <script>
         $(document).ready(function() {
             // Trigger the modal with task and quote details
-            $('#quoteModal').on('show.bs.modal', function(event) {
-                var button = $(event.relatedTarget);
-
+            $('.open-modal').on('click', function(event) {
+                var button = $(this);  // Correctly reference the clicked button
+                
                 // Extract the data attributes from the clicked button
                 var taskId = button.data('task-id');
                 var taskTitle = button.data('task-title');
@@ -169,24 +150,34 @@
                 var quoteDocument = button.data('quote-document');
                 var quoteId = button.data('quote-id');
 
+                // Debugging logs
+                console.log('Task ID:', taskId);
+                console.log('Task Title:', taskTitle);
+                console.log('Task Description:', taskDescription);
+                console.log('Quote Price:', quotePrice);
+                console.log('Quote Suggestion:', quoteSuggestion);
+                console.log('Quote Document:', quoteDocument);
+
                 // Update modal content with the data
-                var modal = $(this);
+                var modal = $('#quoteModal');
                 modal.find('#modalTaskId').val(taskId);
                 modal.find('#modalQuoteId').val(quoteId);
-                modal.find('#modalTaskTitle').text(taskTitle);
-                modal.find('#modalTaskTitleDetail').text(taskTitle);
-                modal.find('#modalTaskDescription').text(taskDescription);
-                modal.find('#modalTaskStart').text(taskStart);
-                modal.find('#modalTaskDue').text(taskDue);
-                modal.find('#modalQuotePrice').text(quotePrice);
+                modal.find('#modalTaskTitle').text(taskTitle || 'No Title Available');
+                modal.find('#modalTaskTitleDetail').text(taskTitle || 'No Title Available');
+                modal.find('#modalTaskDescription').text(taskDescription || 'No description available');
+                modal.find('#modalTaskStart').text(taskStart || 'No start date available');
+                modal.find('#modalTaskDue').text(taskDue || 'No due date available');
+                modal.find('#modalQuotePrice').text(quotePrice || 'No price available');
                 modal.find('#modalQuoteSuggestion').text(quoteSuggestion || 'No suggestion provided');
-                modal.find('#modalQuoteDocument').attr('href', quoteDocument);
+                modal.find('#modalQuoteDocument').attr('href', quoteDocument || '#').text(quoteDocument ? 'View Document' : 'No document available');
+                
+                modal.modal('show'); // Show the modal programmatically
             });
 
             // Handle Accept and Reject actions
             function submitAction(action, quoteId, taskId) {
                 if (confirm('Are you sure you want to ' + action + ' this quote?')) {
-                    fetch(`/projects/{{ $projectId }}/tasks/${taskId}/quote/respond`, { // Use taskId in the URL
+                    fetch(`/projects/{{ $projectId }}/tasks/${taskId}/quote/respond`, {
                             method: 'POST',
                             headers: {
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -194,7 +185,7 @@
                             },
                             body: JSON.stringify({
                                 action: action,
-                                quote_id: quoteId // Pass the quoteId in the request body
+                                quote_id: quoteId
                             }),
                         })
                         .then(response => response.json())
@@ -211,7 +202,6 @@
                 }
             }
 
-
             // Bind submitAction function globally to handle Accept and Reject button clicks
             window.submitAction = submitAction;
 
@@ -220,8 +210,7 @@
 
                 let formData = new FormData(this);
                 let taskId = document.getElementById('modalTaskId').value;
-                let projectId =
-                    '{{ $projectId }}'; // Assuming projectId is available in the Blade template
+                let projectId = '{{ $projectId }}'; 
 
                 fetch(`/projects/${projectId}/tasks/${taskId}/quote/respond`, {
                         method: 'POST',
@@ -244,5 +233,4 @@
             });
         });
     </script>
-
 @endsection
