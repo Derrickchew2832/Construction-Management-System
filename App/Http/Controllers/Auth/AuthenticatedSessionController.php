@@ -34,9 +34,9 @@ class AuthenticatedSessionController extends Controller
         if ($user->role_id == $adminRoleId) {
             return redirect()->intended(route('admin.dashboard', absolute: false));
         } elseif ($user->role_id == $projectManagerRoleId) {
-            return redirect()->intended(route('project_manager.dashboard', absolute: false));
+            return redirect()->intended(route('project_manager.projects.index', absolute: false));
         } elseif ($user->role_id == $contractorRoleId) {
-            return redirect()->intended(route('contractor.dashboard', absolute: false));
+            return redirect()->intended(route('contractor.projects.index', absolute: false));
         } elseif ($user->role_id == $supplierRoleId) {
             return redirect()->intended(route('supplier.dashboard', absolute: false));
         } elseif ($user->role_id == $clientRoleId) {

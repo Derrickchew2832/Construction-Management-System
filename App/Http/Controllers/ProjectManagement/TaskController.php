@@ -203,70 +203,99 @@ private function calculateDueDate($startDate, $endDate)
     }
 
     public function store(Request $request, $projectId)
-{
-    // Validate the input
-    $data = $request->validate([
-        'title' => 'required|string|max:255',
-        'description' => 'required|string',
-        'start_date' => 'required|date|before_or_equal:due_date',
-        'due_date' => 'required|date|after_or_equal:start_date',
-        'contractor_email' => 'required|email',
-        'category' => 'required|string|in:under_negotiation,due_date,priority_1,priority_2,completed,verified', // Updated from 'status' to 'category'
-        'task_pdf' => 'nullable|file|mimes:pdf|max:2048',
-    ]);
-
-    $contractor = DB::table('users')->where('email', $data['contractor_email'])->first();
-
-    if (!$contractor) {
-        return response()->json(['success' => false, 'message' => 'Contractor not found.']);
+    {
+        // Fetch the project to get its start and end dates
+        $project = DB::table('projects')->where('id', $projectId)->first();
+        
+        if (!$project) {
+            return response()->json(['success' => false, 'message' => 'Project not found.']);
+        }
+    
+        // Validate the input, including custom validation for dates
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'start_date' => [
+                'required',
+                'date',
+                'before_or_equal:due_date', // Start date must be before or equal to due date
+                function ($attribute, $value, $fail) use ($project) {
+                    // Validate that the start date is within the project start and end dates
+                    if ($value < $project->start_date || $value > $project->end_date) {
+                        $fail('The start date must be within the project\'s start and end dates.');
+                    }
+                }
+            ],
+            'due_date' => [
+                'required',
+                'date',
+                'after_or_equal:start_date', // Due date must be after or equal to start date
+                function ($attribute, $value, $fail) use ($project) {
+                    // Validate that the due date is within the project start and end dates
+                    if ($value < $project->start_date || $value > $project->end_date) {
+                        $fail('The due date must be within the project\'s start and end dates.');
+                    }
+                }
+            ],
+            'contractor_email' => 'required|email',
+            'category' => 'required|string|in:under_negotiation,due_date,priority_1,priority_2,completed,verified',
+            'task_pdf' => 'nullable|file|mimes:pdf|max:2048',
+        ]);
+    
+        // Fetch the contractor by email
+        $contractor = DB::table('users')->where('email', $data['contractor_email'])->first();
+    
+        if (!$contractor) {
+            return response()->json(['success' => false, 'message' => 'Contractor not found.']);
+        }
+    
+        $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
+    
+        if ($contractor->role_id != $contractorRoleId) {
+            return response()->json(['success' => false, 'message' => 'This user is not a contractor.']);
+        }
+    
+        $isMainContractor = DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractor->id)
+            ->where('main_contractor', 1)
+            ->exists();
+    
+        if ($isMainContractor) {
+            return response()->json(['success' => false, 'message' => 'The main contractor cannot be assigned to this task.']);
+        }
+    
+        $taskPdfPath = null;
+        if ($request->hasFile('task_pdf')) {
+            $taskPdfPath = $request->file('task_pdf')->store('tasks/pdf', 'public');
+        }
+    
+        $taskId = DB::table('tasks')->insertGetId([
+            'project_id' => $projectId,
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'start_date' => $data['start_date'],
+            'due_date' => $data['due_date'],
+            'category' => 'under_negotiation', // Now it's 'category'
+            'status' => 'pending', // Default task status on creation
+            'task_pdf' => $taskPdfPath,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    
+        DB::table('task_invitations')->insert([
+            'task_id' => $taskId,
+            'contractor_id' => $contractor->id,
+            'invited_by' => Auth::user()->id,
+            'email' => $data['contractor_email'],
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    
+        return response()->json(['success' => true, 'message' => 'Task created and contractor invited successfully.']);
     }
-
-    $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');
-
-    if ($contractor->role_id != $contractorRoleId) {
-        return response()->json(['success' => false, 'message' => 'This user is not a contractor.']);
-    }
-
-    $isMainContractor = DB::table('project_contractor')
-        ->where('project_id', $projectId)
-        ->where('contractor_id', $contractor->id)
-        ->where('main_contractor', 1)
-        ->exists();
-
-    if ($isMainContractor) {
-        return response()->json(['success' => false, 'message' => 'The main contractor cannot be assigned to this task.']);
-    }
-
-    $taskPdfPath = null;
-    if ($request->hasFile('task_pdf')) {
-        $taskPdfPath = $request->file('task_pdf')->store('tasks/pdf', 'public');
-    }
-
-    $taskId = DB::table('tasks')->insertGetId([
-        'project_id' => $projectId,
-        'title' => $data['title'],
-        'description' => $data['description'],
-        'start_date' => $data['start_date'],
-        'due_date' => $data['due_date'],
-        'category' => 'under_negotiation', // Now it's 'category'
-        'status' => 'pending', // Default task status on creation
-        'task_pdf' => $taskPdfPath,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    DB::table('task_invitations')->insert([
-        'task_id' => $taskId,
-        'contractor_id' => $contractor->id,
-        'invited_by' => Auth::user()->id,
-        'email' => $data['contractor_email'],
-        'status' => 'pending',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    return response()->json(['success' => true, 'message' => 'Task created and contractor invited successfully.']);
-}
+    
 
 public function showQuote($projectId)
 {
@@ -325,6 +354,13 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
     $quoteId = $request->input('quote_id');
     $quote = DB::table('task_contractor')->where('id', $quoteId)->first();
 
+    // Fetch the main contractor's approved quote price for the project
+    $mainContractorQuote = DB::table('project_contractor')
+        ->where('project_id', $projectId)
+        ->where('main_contractor', true)
+        ->where('status', 'approved')
+        ->value('quoted_price');
+
     // Get the logged-in user
     $currentUser = Auth::user();
 
@@ -333,8 +369,12 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
         return response()->json(['success' => false, 'message' => 'You cannot respond at this time. Wait for the other party to respond.'], 403);
     }
 
-    // Get the current date
-    $today = now()->toDateString();
+    // Validate the contractor's quote against the main contractor's quote
+    if ($request->action == 'accept' || $request->action == 'suggest') {
+        if ($quote->quoted_price > $mainContractorQuote) {
+            return response()->json(['success' => false, 'message' => 'The quoted price cannot be higher than the main contractor\'s quote.'], 403);
+        }
+    }
 
     // Handle actions (accept, reject, suggest)
     if ($request->action == 'accept') {
@@ -342,7 +382,7 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
         $task = DB::table('tasks')->where('id', $taskId)->first();
 
         // Determine if the task is due today, and set the category accordingly
-        $category = ($task->due_date == $today) ? 'due_date' : 'priority_2';
+        $category = ($task->due_date == now()->toDateString()) ? 'due_date' : 'priority_2';
 
         // Update the task with the contractor who submitted the quote
         DB::table('tasks')
@@ -384,10 +424,15 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
         return response()->json(['success' => true, 'message' => 'Quote rejected successfully.']);
     } else {
         // Main Contractor suggests a new price
+        $newPrice = $request->input('new_price');
+        if ($newPrice > $mainContractorQuote) {
+            return response()->json(['success' => false, 'message' => 'The suggested price cannot be higher than the main contractor\'s quote.'], 403);
+        }
+
         DB::table('task_contractor')
             ->where('id', $quoteId)  // Update by quoteId
             ->update([
-                'quote_suggestion' => $request->input('new_price'),
+                'quote_suggestion' => $newPrice,
                 'quote_pdf' => $request->file('new_pdf')->store('task_quotes', 'public'),
                 'suggested_by' => $currentUser->id,
                 'status' => 'suggested', // Status becomes suggested for Contractor to act next
@@ -482,7 +527,7 @@ public function updateInvitationStatus(Request $request, $invitationId)
 }
 
 
-    public function statistics($projectId)
+public function statistics($projectId)
 {
     // Retrieve project details
     $project = DB::table('projects')->where('id', $projectId)->first();
@@ -516,7 +561,7 @@ public function updateInvitationStatus(Request $request, $invitationId)
         ->groupBy('category')
         ->get();
 
-    // Project Budget Allocation
+    // Project Budget Allocation (Total Budget vs Budget Remaining)
     $projectBudgetData = DB::table('projects')
         ->select('total_budget', 'budget_remaining')
         ->where('id', $projectId)
@@ -531,7 +576,7 @@ public function updateInvitationStatus(Request $request, $invitationId)
         ->groupBy('users.name')
         ->get();
 
-    // Task Completion Percentage
+    // Task Completion Percentage (completed vs total)
     $completedTasksCount = DB::table('tasks')
         ->where('project_id', $projectId)
         ->where('category', 'completed')
@@ -540,13 +585,47 @@ public function updateInvitationStatus(Request $request, $invitationId)
         ->where('project_id', $projectId)
         ->count();
 
+    // Handling role-based data for charts
+
+    // Main Contractor's Quoted Price
+    $mainContractorQuote = DB::table('project_contractor')
+        ->where('project_id', $projectId)
+        ->where('main_contractor', true)
+        ->where('status', 'approved')
+        ->value('quoted_price');
+
+    // For Main Contractor - Tasks Quoted Price
+    $mainContractorTasksQuotedPrice = DB::table('task_contractor')
+        ->join('tasks', 'task_contractor.task_id', '=', 'tasks.id')
+        ->where('tasks.project_id', $projectId)
+        ->where('task_contractor.is_final', true)
+        ->where('task_contractor.status', 'approved')
+        ->where('task_contractor.contractor_id', $project->main_contractor_id)
+        ->sum('task_contractor.quoted_price');
+
+    // Contractor's Task Accepted Price
+    $acceptedTasks = DB::table('task_contractor')
+        ->join('tasks', 'task_contractor.task_id', '=', 'tasks.id')
+        ->where('tasks.project_id', $projectId)
+        ->where('task_contractor.is_final', true)
+        ->where('task_contractor.status', 'approved')
+        ->sum('task_contractor.quoted_price');
+
+    // Supply Ordered Price (Using 'quoted_price' instead of 'total_price')
+    $supplyOrderTotal = DB::table('supply_orders')
+        ->where('project_id', $projectId)
+        ->sum('quoted_price');  // Updated to reflect 'quoted_price' from supply_orders table
+
     // Pass all variables to the view
     return view('tasks.statistics', compact(
         'project', 'taskStatusData', 'taskCategoryData', 'projectBudgetData',
         'contractorAssignmentData', 'completedTasksCount', 'totalTasksCount', 'projectId', 
-        'projectManagerName', 'mainContractorName', 'totalProjectDays'
+        'projectManagerName', 'mainContractorName', 'totalProjectDays', 
+        'mainContractorQuote', 'mainContractorTasksQuotedPrice', 'acceptedTasks', 'supplyOrderTotal'
     ));
 }
+
+
 
     public function updateStatus(Request $request, $taskId)
     {
@@ -706,8 +785,6 @@ public function uploadPhoto(Request $request, $projectId)
     // Redirect back with a success message
     return redirect()->back()->with('success', 'Photo uploaded successfully.');
 }
-
-
 
 
 public function viewFiles($projectId)

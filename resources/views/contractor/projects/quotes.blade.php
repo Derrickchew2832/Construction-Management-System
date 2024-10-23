@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="container mt-4">
-        <h1 class="mb-4">Quote Management</h1>
+        <h3 class="mb-4 text-primary font-weight-bold">Quote Management</h3>
 
         <!-- Include Project Quotes -->
         @include('contractor.projects.project-quotes')

@@ -2,7 +2,7 @@
     <div class="row">
         <!-- Category: Under Negotiation -->
         <div class="col-md-2">
-            <h6 class="text-muted">Under Negotiation (<span class="task-count"
+            <h6 class="text-muted">UnderNegotiation (<span class="task-count"
                     data-category="under_negotiation">{{ $categorizedTasks['under_negotiation']->count() }}</span>)</h6>
             <div class="task-category category-negotiation" data-category="under_negotiation">
                 @if ($categorizedTasks['under_negotiation']->isEmpty())

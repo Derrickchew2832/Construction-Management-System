@@ -4,7 +4,9 @@
 
 @section('content')
     <div class="container mt-4">
-        <h1 class="mb-4">Projects</h1>
+        <!-- Smaller Title for Project Page -->
+        <h2 class="text-primary font-weight-bold mb-4">Projects</h2> <!-- Enhanced styling for the title -->
+
         <div class="d-flex justify-content-end align-items-center mb-3">
             <!-- Sort and Search Input -->
             <div class="d-flex align-items-center">
@@ -13,41 +15,41 @@
             </div>
         </div>
 
+        <!-- Project Cards Section -->
         <div class="row" id="projectCards">
             @foreach ($projects as $project)
                 @if ($project->can_access_management) <!-- Only show the project if contractor is main -->
-                    <div class="col-md-4 mb-4">
-                        <div class="card position-relative h-100">
+                    <div class="col-md-4 mb-4 project-card" 
+                         data-is-favorite="{{ $project->is_favorite ? '1' : '0' }}" 
+                         data-title="{{ strtolower($project->name) }}">
+                        <div class="card position-relative h-100 shadow-sm border-0"> <!-- Added shadow for better appearance -->
                             <!-- Ribbon based on project status -->
                             @if ($project->ribbon === 'Completed')
                                 <div class="ribbon bg-success">Completed</div>
                             @elseif ($project->ribbon === 'In Progress')
                                 <div class="ribbon bg-warning">In Progress</div>
                             @endif
-        
+
                             <div class="card-body">
                                 <!-- Adjusted Font Size for Project Title -->
-                                <h5 class="card-title project-title">{{ $project->name }}</h5>
-                                <p class="card-text">{{ $project->description }}</p>
+                                <h5 class="card-title project-title text-dark font-weight-bold">{{ $project->name }}</h5>
+                                <p class="card-text text-muted">{{ Str::limit($project->description, 100) }}</p> <!-- Limited description length -->
+
+                                <!-- Favorite Button and Project Management -->
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <!-- Display the number of people in the project -->
-                                        <span>{{ $project->members_count ?? 0 }}</span>
-                                        <i class="fas fa-users"></i>
-                                    </div>
                                     <div>
                                         <!-- Favorite Button -->
                                         @php
                                             $isFavorite = $project->is_favorite ? 'fas' : 'far';
                                         @endphp
-                                        <a href="#" class="btn btn-link favorite-btn"
+                                        <a href="#" class="btn btn-link text-warning favorite-btn"
                                             data-project-id="{{ $project->id }}">
                                             <i class="{{ $isFavorite }} fa-star"></i>
                                         </a>
                                     </div>
                                 </div>
-        
-                                <!-- Enter Project Button (Only when project is started and contractor is main) -->
+
+                                <!-- Enter Project Button -->
                                 <a href="{{ route('tasks.index', $project->id) }}"
                                     class="btn btn-outline-primary btn-block">
                                     Enter Project
@@ -58,10 +60,11 @@
                 @endif
             @endforeach
         </div>
-        
+    </div>
 
+    <!-- Additional Styling for Better UI -->
     <style>
-        /* Ribbon CSS */
+        /* Ribbon Styling */
         .ribbon {
             position: absolute;
             top: -5px;
@@ -71,60 +74,77 @@
             color: white;
             text-transform: uppercase;
             border-radius: 3px;
-            z-index: 10; /* Ensure the ribbon is displayed above other elements */
+            z-index: 10;
         }
 
         .ribbon.bg-warning {
-            background-color: #f0ad4e; /* Orange color for In Progress */
+            background-color: #f0ad4e;
         }
 
         .ribbon.bg-success {
-            background-color: #28a745; /* Green for Completed */
+            background-color: #28a745;
         }
 
-        .ribbon.bg-secondary {
-            background-color: #6c757d; /* Grey color for Pending */
-        }
-
-        .ribbon.bg-info {
-            background-color: #17a2b8; /* Blue color for Has Main Contractor */
-        }
-
-        /* Adjusted Font Size for Project Title */
+        /* Project Card Title Styling */
         .project-title {
-            font-size: 1.1rem; /* Make the project title smaller */
+            font-size: 1.1rem;
         }
 
-        /* Sort Button and Search Input Alignment */
+        /* Sort Button and Search Bar Styling */
         .me-3 {
-            margin-right: 1rem; /* Ensure a gap between Sort and Search */
+            margin-right: 1rem;
         }
 
         .sort-btn {
-            height: 38px; /* Match search input height */
-            width: auto; /* Automatically adjust to fit text */
-            white-space: nowrap; /* Ensure the text fits in one row */
+            height: 38px;
+            width: auto;
+            white-space: nowrap;
         }
 
         .search-bar {
-            height: 38px; /* Adjust the height to match sort button */
-            min-width: 200px; /* Ensure the search bar has a minimum width */
+            height: 38px;
+            min-width: 200px;
         }
 
-        .d-flex {
-            display: flex;
+        /* Card Styling */
+        .card {
+            transition: box-shadow 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-body {
+            padding: 1.5rem;
         }
     </style>
 
+    <!-- Sort and Search Scripts -->
     <script>
-        // Sort Functionality
+        let isAscending = true;
+
+        // Sort Functionality with Favorite Projects Sticking to Top
         document.getElementById('sortButton').addEventListener('click', function() {
-            let projectCards = Array.from(document.querySelectorAll('#projectCards .col-md-4'));
+            let projectCards = Array.from(document.querySelectorAll('#projectCards .project-card'));
+
             projectCards.sort(function(a, b) {
-                return a.querySelector('.card-title').textContent.trim().localeCompare(
-                    b.querySelector('.card-title').textContent.trim()
-                );
+                let aIsFavorite = a.getAttribute('data-is-favorite') === '1'; // Check if project is favorite
+                let bIsFavorite = b.getAttribute('data-is-favorite') === '1';
+
+                if (aIsFavorite && !bIsFavorite) return -1; // Favorites stay on top
+                if (!aIsFavorite && bIsFavorite) return 1;
+
+                // Sort alphabetically depending on the current sort order (isAscending)
+                let aTitle = a.getAttribute('data-title');
+                let bTitle = b.getAttribute('data-title');
+                let comparison = aTitle.localeCompare(bTitle);
+
+                return isAscending ? comparison : -comparison; // Reverse the order if not ascending
             });
+
+            isAscending = !isAscending; // Toggle the sorting order
+            document.getElementById('sortButton').textContent = isAscending ? 'Sort A-Z' : 'Sort Z-A';
 
             let projectContainer = document.getElementById('projectCards');
             projectContainer.innerHTML = '';
@@ -133,15 +153,17 @@
             });
         });
 
-        // Search Functionality
+        // Search Functionality with Favorite Projects Sticking to Top
         document.getElementById('searchInput').addEventListener('keyup', function() {
             let searchQuery = this.value.toLowerCase();
-            let projectCards = document.querySelectorAll('#projectCards .col-md-4');
+            let projectCards = document.querySelectorAll('#projectCards .project-card');
 
             projectCards.forEach(function(card) {
-                let title = card.querySelector('.card-title').textContent.toLowerCase();
-                let description = card.querySelector('.card-text').textContent.toLowerCase();
-                if (title.includes(searchQuery) || description.includes(searchQuery)) {
+                let title = card.getAttribute('data-title');
+                let isFavorite = card.getAttribute('data-is-favorite') === '1';
+
+                // Always display favorite projects and filter non-favorite projects based on search
+                if (isFavorite || title.includes(searchQuery)) {
                     card.style.display = 'block';
                 } else {
                     card.style.display = 'none';
@@ -185,6 +207,9 @@
                             icon.classList.remove('fas'); // Remove filled star
                             alert('Project removed from favorites!');
                         }
+
+                        // Ensure favorites stay on top after toggling
+                        document.getElementById('sortButton').click();
                     })
                     .catch(error => {
                         console.error('Error:', error);

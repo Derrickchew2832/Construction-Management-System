@@ -4,16 +4,19 @@
 
 @section('content')
 <div class="container mt-4">
-    <h1>{{ $project->name }}</h1>
-    <p>{{ $project->description }}</p>
-    <p><strong>Location:</strong> {{ $project->location }}</p>
-    <p><strong>Start Date:</strong> {{ $project->start_date }}</p>
-    <p><strong>End Date:</strong> {{ $project->end_date }}</p>
-    <p><strong>Total Budget:</strong> ${{ number_format($project->total_budget, 2) }}</p>
-    <hr>
+    <!-- Project Name as a Title -->
+    <h3 class="text-primary font-weight-bold">{{ $project->name }}</h3> <!-- Smaller title -->
+    <p class="lead text-muted">{{ $project->description }}</p>
+    <div class="mb-4">
+        <p><strong>Location:</strong> {{ $project->location }}</p>
+        <p><strong>Start Date:</strong> {{ \Carbon\Carbon::parse($project->start_date)->format('M d, Y') }}</p> <!-- Formatted Date -->
+        <p><strong>End Date:</strong> {{ \Carbon\Carbon::parse($project->end_date)->format('M d, Y') }}</p>
+        <p><strong>Total Budget:</strong> ${{ number_format($project->total_budget, 2) }}</p>
+    </div>
+    <hr class="mb-4">
 
-    <!-- Documents Section (now below the total budget) -->
-    <h2>Project Documents</h2>
+    <!-- Documents Section -->
+    <h4 class="mb-4">Project Documents</h4> <!-- No color or large heading -->
     @if ($documents->isEmpty())
         <p>No documents have been uploaded yet.</p>
     @else
@@ -28,43 +31,76 @@
         </ul>
     @endif
 
-    <hr>
+    <hr class="my-4">
 
-    <h2>Contractors</h2>
+    <!-- Contractors Section -->
+    <h4 class="mb-4">Contractors</h4> <!-- No color or large heading -->
     @if ($project->contractors->isEmpty())
         <p>No contractors have been invited yet.</p>
     @else
         <ul class="list-group">
             @foreach ($project->contractors as $contractor)
-                <li class="list-group-item">
-                    <strong>{{ $contractor->email }}</strong>
-                    @if ($contractor->status === 'approved')
-                        - <span class="badge badge-success">Approved</span>
-                    @elseif ($contractor->status === 'submitted')
-                        - <span class="badge badge-info">Quote Submitted</span>
-                    @elseif ($contractor->status === 'rejected')
-                        - <span class="badge badge-danger">Rejected</span>
-                    @elseif ($contractor->status === 'suggested')
-                        - <span class="badge badge-warning">Suggestion Made</span>
-                    @else
-                        - <span class="badge badge-secondary">Pending</span>
-                    @endif
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ $contractor->email }}</strong>
+                        @if ($contractor->status === 'approved')
+                            - <span>Approved</span>
+                        @elseif ($contractor->status === 'submitted')
+                            - <span>Quote Submitted</span>
+                        @elseif ($contractor->status === 'rejected')
+                            - <span>Rejected</span>
+                        @elseif ($contractor->status === 'suggested')
+                            - <span>Suggestion Made</span>
+                        @else
+                            - <span>Pending</span>
+                        @endif
 
-                    @if ($contractor->main_contractor)
-                        - <span class="badge badge-primary">Main Contractor</span>
-                    @endif
+                        @if ($contractor->main_contractor)
+                            - <span>Main Contractor</span>
+                        @endif
+                    </div>
+                    <span>{{ \Carbon\Carbon::parse($contractor->updated_at)->format('M d, Y') }}</span> <!-- Date of last update -->
                 </li>
             @endforeach
         </ul>
     @endif
 
-    <hr>
+    <hr class="my-4">
 
-    <h2>Project Status</h2>
+    <!-- Project Status Section -->
+    <h4 class="mb-4">Project Status</h4> <!-- No color or large heading -->
     @if ($project->contractors->contains('main_contractor', true))
         <p><strong>Status:</strong> Project Started - Main Contractor Assigned</p>
     @else
         <p><strong>Status:</strong> Awaiting Main Contractor</p>
     @endif
 </div>
+
+<!-- Additional Styling for a Clean Design -->
+<style>
+    h3 {
+        font-size: 1.5rem; /* Smaller project title */
+    }
+    h4 {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+    .list-group-item {
+        background-color: #f8f9fa;
+        border: none;
+        margin-bottom: 0.5rem;
+        padding: 1rem 1.5rem;
+        border-radius: 0.25rem;
+    }
+    .list-group-item:hover {
+        background-color: #e9ecef;
+    }
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    .hr {
+        margin: 2rem 0;
+    }
+</style>
 @endsection

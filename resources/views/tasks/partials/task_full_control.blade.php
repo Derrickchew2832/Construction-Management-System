@@ -9,7 +9,7 @@
     <div class="row">
         <!-- Category: Under Negotiation -->
         <div class="col-md-2">
-            <h6 class="text-muted">Under Negotiation (<span class="task-count"
+            <h6 class="text-muted">UnderNegotiation (<span class="task-count"
                     data-category="under_negotiation">{{ $categorizedTasks['under_negotiation']->count() }}</span>)</h6>
             <div class="task-category category-negotiation" data-category="under_negotiation">
                 @if ($categorizedTasks['under_negotiation']->isEmpty())
@@ -266,6 +266,10 @@
         let draggedTask = null;
         let currentCategory = null; // Define currentCategory outside the event listener
 
+        // Retrieve the project's start and end dates (these should be set dynamically from the server-side when rendering the page)
+        const projectStartDate = '{{ $project->start_date }}'; // Example: '2024-10-10'
+        const projectEndDate = '{{ $project->end_date }}'; // Example: '2024-12-31'
+
         // Dragging the task card
         $('.task-card').on('dragstart', function(event) {
             draggedTask = $(this); // jQuery object for the dragged element
@@ -466,41 +470,59 @@
         });
 
         $('#taskForm').on('submit', function(e) {
-            e.preventDefault(); // Prevent default form submission
+        e.preventDefault(); 
 
-            // CSRF token is necessary for secure form submission in Laravel
-            let csrfToken = $('meta[name="csrf-token"]').attr('content');
+        // CSRF token is necessary for secure form submission in Laravel
+        let csrfToken = $('meta[name="csrf-token"]').attr('content');
+        var projectId = $(this).data('project-id');
+        var url = '{{ route('tasks.store', ':projectId') }}';
+        url = url.replace(':projectId', projectId); // Replace projectId in the URL
 
-            // Ensure that projectId is being passed correctly in the form
-            var projectId = $(this).data('project-id');
-            var url = '{{ route('tasks.store', ':projectId') }}';
-            url = url.replace(':projectId', projectId); // Replace projectId in the URL
+        // Fetch the values of start date and due date
+        const startDate = $('#start_date').val();
+        const dueDate = $('#due_date').val();
 
-            // Submit the form via AJAX
-            $.ajax({
-                url: url,
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                data: new FormData($('#taskForm')[0]), // Include files in form data
-                contentType: false,
-                processData: false,
-                success: function(response) {
-                    if (response.success) {
-                        alert(response.message); // Display success message
-                        $('#taskForm')[0].reset(); // Clear the form fields after success
-                        location.reload(); // Reload the page after successful creation
-                    } else {
-                        alert(response.message); // Display error message from backend
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error during task submission:', xhr.responseText);
-                    alert('An unexpected error occurred. Please try again.');
+        // Client-side validation to ensure the dates are within the project's range
+        if (startDate < projectStartDate || startDate > projectEndDate) {
+            alert('Start date must be within the project\'s start and end dates.');
+            return;
+        }
+
+        if (dueDate < projectStartDate || dueDate > projectEndDate) {
+            alert('Due date must be within the project\'s start and end dates.');
+            return;
+        }
+
+        if (startDate > dueDate) {
+            alert('Start date cannot be later than due date.');
+            return;
+        }
+
+        // Submit the form via AJAX
+        $.ajax({
+            url: url,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            data: new FormData($('#taskForm')[0]), 
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    $('#taskForm')[0].reset(); 
+                    location.reload(); 
+                } else {
+                    alert(response.message);
                 }
-            });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error during task submission:', xhr.responseText);
+                alert('An unexpected error occurred. Please try again.');
+            }
         });
+    });
 
     });
 </script>

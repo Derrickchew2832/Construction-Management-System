@@ -33,7 +33,7 @@
 
     <!-- Second row for the other graphs with spacing -->
     <div class="row">
-        <!-- Project Budget Allocation -->
+        <!-- Project Budget Allocation (Depending on user role) -->
         <div class="col-md-6 mb-4">
             <div class="chart-container text-center" style="position: relative; height:300px; width:100%;">
                 <canvas id="projectBudgetChart"></canvas>
@@ -49,7 +49,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <!-- Include Chart.js -->
@@ -138,18 +137,26 @@
         }
     });
 
-    // Project Budget Allocation Chart
+    // Project Budget Allocation Chart based on the user role
     var projectBudgetCtx = document.getElementById('projectBudgetChart').getContext('2d');
     var projectBudgetChart = new Chart(projectBudgetCtx, {
         type: 'pie',
         data: {
-            labels: ['Allocated Budget', 'Remaining Budget'],
+            labels: ['Task Quoted', 'Remaining Budget'],
             datasets: [{
-                data: [
-                    {{ $projectBudgetData->total_budget - $projectBudgetData->budget_remaining }},
-                    {{ $projectBudgetData->budget_remaining }}
-                ],
-                backgroundColor: ['#e74c3c', '#2ecc71'],
+                @if(Auth::user()->role == 'project_manager')
+                // For Project Manager - Display Total Budget and Quoted Price of the Main Contractor
+                data: [{{ $mainContractorQuote }}, {{ $projectBudgetData->total_budget - $mainContractorQuote }}],
+                backgroundColor: ['#3498db', '#2ecc71'],
+                @elseif(Auth::user()->id == $project->main_contractor_id)
+                // For Main Contractor - Display Quoted Price and Total of Assigned Tasks
+                data: [{{ $mainContractorTasksQuotedPrice }}, {{ $mainContractorQuote - $mainContractorTasksQuotedPrice }}],
+                backgroundColor: ['#e74c3c', '#3498db'],
+                @else
+                // For Contractors who accepted tasks - Show Quoted Price and Supply Ordered
+                data: [{{ $acceptedTasks }}, {{ $supplyOrderTotal }}],
+                backgroundColor: ['#2ecc71', '#f39c12'],
+                @endif
             }]
         },
         options: {
@@ -157,18 +164,26 @@
             maintainAspectRatio: false,
             title: {
                 display: true,
-                text: 'Project Budget Allocation',
+                text: 'Project Budget Allocation (Total Budget vs Task Quoted)',
                 fontSize: 14
+            },
+            plugins: {
+                datalabels: {
+                    display: true,
+                    formatter: function(value, context) {
+                        return '$' + value; // Display the values as currency
+                    }
+                }
             }
         }
     });
 
-    // Number of Contractors Assigned Chart
+    // Number of Contractors Assigned Chart (whole numbers)
     var contractorAssignmentCtx = document.getElementById('contractorAssignmentChart').getContext('2d');
     var contractorAssignmentChart = new Chart(contractorAssignmentCtx, {
         type: 'bar',
         data: {
-            labels: @json($contractorAssignmentData->pluck('contractor_name')), // Updated to display contractor names
+            labels: @json($contractorAssignmentData->pluck('contractor_name')),
             datasets: [{
                 label: 'Number of Tasks Assigned',
                 data: @json($contractorAssignmentData->pluck('total_tasks')),
@@ -185,7 +200,8 @@
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    stepSize: 1 // Ensure whole numbers are displayed
                 }
             }
         }

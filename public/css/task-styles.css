@@ -139,51 +139,7 @@
     overflow: visible; /* Ensure email is fully visible */
 }
 
-/* Button Styling for Create Task Button */
-.btn-create-task {
-    padding: 6px 12px; /* Original padding for consistency */
-    font-size: 0.8rem; /* Original font size for visibility */
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px; /* Rounded corners for a modern look */
-    transition: background-color 0.3s, box-shadow 0.3s;
-}
 
-.btn-create-task:hover, .modal-footer .btn-primary:hover, #confirmModal .modal-footer .btn-primary:hover {
-    background-color: #0056b3;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2); /* Increased shadow effect on hover */
-}
-
-/* Modal Form Styling */
-#taskForm {
-    padding: 15px;
-}
-
-#taskForm label {
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: #333;
-}
-
-#taskForm input,
-#taskForm textarea,
-#taskForm select {
-    width: 100%;
-    padding: 6px;
-    font-size: 0.8rem;
-    margin-bottom: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    transition: border-color 0.3s ease;
-}
-
-#taskForm input:focus,
-#taskForm textarea:focus,
-#taskForm select:focus {
-    border-color: #007bff;
-    outline: none;
-}
 
 /* Modal Styling */
 .modal-content {
@@ -227,28 +183,6 @@
     color: white;
     border: none;
     transition: background-color 0.3s ease, box-shadow 0.3s;
-}
-
-/* Styling for "Create New Task" Modal */
-#createTaskModal .modal-header {
-    background-color: #007bff;
-    color: #ffffff;
-}
-
-#createTaskModal .modal-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-}
-
-/* Form Element Styling */
-#taskForm input[type="date"] {
-    padding: 8px;
-    font-size: 0.8rem;
-}
-
-#taskForm textarea {
-    resize: vertical;
-    min-height: 80px; /* Original minimum height */
 }
 
 /* Error Styling */

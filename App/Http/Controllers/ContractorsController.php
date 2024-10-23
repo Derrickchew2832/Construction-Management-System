@@ -189,14 +189,16 @@ public function submitQuote(Request $request, $projectId)
 }
 
 
-    public function respondToSuggestion(Request $request, $projectId)
-    {
-        $action = $request->input('action');
-        $quoteId = $request->input('quote_id');
-        $contractorId = Auth::id(); // Get the authenticated contractor's user ID
-    
-        if ($action == 'accept') {
-            // Accept the quote and set the contractor as the main contractor
+public function respondToSuggestion(Request $request, $projectId)
+{
+    $action = $request->input('action');
+    $quoteId = $request->input('quote_id');
+    $contractorId = Auth::id(); // Get the authenticated contractor's user ID
+
+    if ($action == 'accept') {
+        // Accept the quote and set the contractor as the main contractor
+        DB::transaction(function () use ($quoteId, $projectId, $contractorId) {
+            // Update the accepted quote status
             DB::table('project_contractor')
                 ->where('id', $quoteId)
                 ->update([
@@ -205,56 +207,77 @@ public function submitQuote(Request $request, $projectId)
                     'main_contractor' => true,
                     'updated_at' => now(),
                 ]);
-    
-            // Update the project status to 'started' and assign the main contractor
+
+            // Update the project to reflect that the contractor is now the main contractor
             DB::table('projects')
                 ->where('id', $projectId)
                 ->update([
-                    'status' => 'started', // Change project status to 'started'
-                    'main_contractor_id' => $contractorId, // Set contractor as main contractor
+                    'status' => 'started', // Set project status to 'started'
+                    'main_contractor_id' => $contractorId, // Set contractor as the main contractor
                     'updated_at' => now(),
                 ]);
-    
-            return response()->json(['success' => true, 'message' => 'You have accepted the quote, and the project has been updated.']);
-        } elseif ($action == 'reject') {
-            // Reject the suggestion and mark it as final
+
+            // Reject all other pending quotes for the project
             DB::table('project_contractor')
-                ->where('id', $quoteId)
+                ->where('project_id', $projectId)
+                ->where('id', '!=', $quoteId) // Reject all other quotes
                 ->update([
                     'status' => 'rejected',
                     'is_final' => true,
                     'updated_at' => now(),
                 ]);
-    
-            return response()->json(['success' => true, 'message' => 'You have rejected the quote.']);
-        } elseif ($action == 'suggest') {
-            // Resubmit the quote with new data
-            $data = $request->validate([
-                'new_price' => 'required|numeric|min:0',
-                'new_pdf' => 'required|file|mimes:pdf|max:2048',
-                'description' => 'required|string',
-            ]);
-    
-            // Save the new PDF file
-            $pdfPath = $request->file('new_pdf')->store('quotes', 'public');
-    
-            // Update the status to 'submitted' after suggesting a new price
-            DB::table('project_contractor')
-                ->where('id', $quoteId)
+
+            // Update the project invitations to 'closed' status
+            DB::table('project_invitations')
+                ->where('project_id', $projectId)
+                ->where('contractor_id', '!=', $contractorId) // Close invitations for all other contractors
                 ->update([
-                    'quoted_price' => $data['new_price'],
-                    'quote_pdf' => $pdfPath,
-                    'quote_suggestion' => $data['description'],
-                    'status' => 'submitted', // Change status to 'submitted' after suggesting a new price
-                    'suggested_by' => 'contractor', // The logged-in user who suggested the new quote
+                    'status' => 'closed', // Mark invitations as closed
                     'updated_at' => now(),
                 ]);
-    
-            return response()->json(['success' => true, 'message' => 'Your new quote has been submitted for review.']);
-        }
-    
-        return response()->json(['success' => false, 'message' => 'Invalid action.']);
+        });
+
+        return response()->json(['success' => true, 'message' => 'You have accepted the quote, and the project has been updated.']);
+    } elseif ($action == 'reject') {
+        // Reject the suggestion and mark it as final
+        DB::table('project_contractor')
+            ->where('id', $quoteId)
+            ->update([
+                'status' => 'rejected',
+                'is_final' => true,
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'You have rejected the quote.']);
+    } elseif ($action == 'suggest') {
+        // Resubmit the quote with new data
+        $data = $request->validate([
+            'new_price' => 'required|numeric|min:0',
+            'new_pdf' => 'required|file|mimes:pdf|max:2048',
+            'description' => 'required|string',
+        ]);
+
+        // Save the new PDF file
+        $pdfPath = $request->file('new_pdf')->store('quotes', 'public');
+
+        // Update the status to 'submitted' after suggesting a new price
+        DB::table('project_contractor')
+            ->where('id', $quoteId)
+            ->update([
+                'quoted_price' => $data['new_price'],
+                'quote_pdf' => $pdfPath,
+                'quote_suggestion' => $data['description'],
+                'status' => 'submitted', // Change status to 'submitted' after suggesting a new price
+                'suggested_by' => 'contractor', // The logged-in user who suggested the new quote
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true, 'message' => 'Your new quote has been submitted for review.']);
     }
+
+    return response()->json(['success' => false, 'message' => 'Invalid action.']);
+}
+
     
     public function toggleFavorite(Request $request, $projectId)
     {
@@ -290,43 +313,59 @@ public function submitQuote(Request $request, $projectId)
         return view('contractor.profile', compact('user'));
     }
 
+    // Update contractor profile
     public function updateProfile(Request $request)
     {
-        $data = $request->validate([
+        $user = Auth::user();
+
+        // Validate input with custom error messages
+        $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . Auth::id(),
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+        ], [
+            'name.required' => 'Please enter your name.',
+            'email.required' => 'Please enter a valid email address.',
+            'email.unique' => 'This email address is already in use.',
         ]);
 
-        DB::table('users')->where('id', Auth::id())->update([
-            'name' => $data['name'],
-            'email' => $data['email'],
+        // Update the user's name and email
+        DB::table('users')->where('id', $user->id)->update([
+            'name' => $request->name,
+            'email' => $request->email,
             'updated_at' => now(),
         ]);
 
-        return redirect()->route('contractor.profile.edit')->with('success', 'Profile updated successfully');
+        // Redirect back with a success message
+        return redirect()->route('contractor.profile.edit')->with('success', 'Profile updated successfully.');
     }
 
+    // Change contractor's password page
     public function changePassword()
     {
         return view('contractor.change_password');
     }
 
+    // Update contractor's password
     public function updatePassword(Request $request)
     {
-        $validated = $request->validateWithBag('updatePassword', [
-            'password' => [
-                'required',
-                'confirmed',
-                \Illuminate\Validation\Rules\Password::min(8)->letters()->mixedCase()->numbers()->symbols(),
-            ],
+        // Validate the password fields with custom error messages
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.required' => 'Please enter a new password.',
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'Passwords do not match.',
         ]);
 
-        DB::table('users')->where('id', Auth::id())->update([
-            'password' => Hash::make($validated['password']),
+        // Update the password
+        $user = Auth::user();
+        DB::table('users')->where('id', $user->id)->update([
+            'password' => Hash::make($request->password),
             'updated_at' => now(),
         ]);
 
-        return redirect()->route('contractor.profile.edit')->with('success', 'Password updated successfully');
+        // Redirect back with a success message
+        return redirect()->route('contractor.profile.edit')->with('status', 'password-updated');
     }
 
     public function logout()

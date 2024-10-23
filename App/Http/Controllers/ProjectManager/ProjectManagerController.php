@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class ProjectManagerController extends Controller
 {
@@ -272,8 +273,6 @@ public function updateProject(Request $request, $projectId)
 }
 
 
-
-
     public function deleteProject($projectId)
     {
         DB::table('projects')->where('id', $projectId)->delete();
@@ -401,89 +400,117 @@ public function storeInvite(Request $request, $projectId)
     }
 
     public function manageQuotes()
-    {
-        $quotes = DB::table('project_contractor')
-            ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
-            ->join('users', 'project_contractor.contractor_id', '=', 'users.id')
-            ->select(
-                'project_contractor.*', 
-                'users.name as contractor_name', 
-                'projects.name as project_name', 
-                'projects.id as project_id',
-                'project_contractor.status as quote_status',
-                'project_contractor.quote_suggestion'
-            )
-            ->get();
-
-        return view('project_manager.projects.quotes', compact('quotes'));
-    }
-
-    public function approveQuote($projectId, $contractorId)
 {
-    Log::info('approveQuote method called', ['projectId' => $projectId, 'contractorId' => $contractorId]);
+    // Fetch the projects managed by the current logged-in project manager
+    $projects = DB::table('projects')
+        ->where('project_manager_id', Auth::id()) // Filter by project manager ID
+        ->get();
 
-    // Fetch the quoted price for the contractor's quote
+    // Fetch the quotes related to the projects managed by the current project manager
+    $quotes = DB::table('project_contractor')
+        ->join('projects', 'project_contractor.project_id', '=', 'projects.id')
+        ->join('users', 'project_contractor.contractor_id', '=', 'users.id')
+        ->where('projects.project_manager_id', Auth::id()) // Filter quotes by the project manager ID
+        ->select(
+            'project_contractor.*', 
+            'users.name as contractor_name', 
+            'projects.name as project_name', 
+            'projects.id as project_id',
+            'projects.budget_remaining', // Include remaining budget
+            'project_contractor.status as quote_status',
+            'project_contractor.quote_suggestion'
+        )
+        ->get();
+
+    return view('project_manager.projects.quotes', compact('quotes', 'projects'));
+}
+
+
+
+public function approveQuote($projectId, $contractorId)
+{
+    // Fetch the contractor's quote
     $quote = DB::table('project_contractor')
         ->where('project_id', $projectId)
         ->where('contractor_id', $contractorId)
         ->first();
 
     if (!$quote || !$quote->quoted_price) {
-        Log::error('Quote not found or quoted price missing', ['projectId' => $projectId, 'contractorId' => $contractorId]);
         return redirect()->route('project_manager.projects.quotes', $projectId)
             ->with('error', 'Quote not found or quoted price is missing.');
     }
-
-    Log::info('Quote found', ['quoted_price' => $quote->quoted_price]);
 
     // Fetch the project
     $project = DB::table('projects')->where('id', $projectId)->first();
 
     if (!$project) {
-        Log::error('Project not found', ['projectId' => $projectId]);
         return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
     }
 
-    Log::info('Project details', ['total_budget' => $project->total_budget, 'budget_remaining' => $project->budget_remaining]);
-
-    // Calculate the new remaining budget: total_budget - quoted_price
+    // Calculate the new remaining budget
     $newRemainingBalance = $project->budget_remaining - $quote->quoted_price;
 
-    Log::info('Calculated new remaining balance', ['newRemainingBalance' => $newRemainingBalance]);
-
-    // Ensure the remaining budget does not go negative
+    // Prevent approval if the new remaining balance is negative
     if ($newRemainingBalance < 0) {
-        Log::error('Quoted price exceeds the total budget', ['newRemainingBalance' => $newRemainingBalance]);
-        return redirect()->route('project_manager.management_board', $projectId)
-            ->with('error', 'Quoted price exceeds the total budget.');
+        // Redirect back with an error message
+        return redirect()->route('project_manager.projects.quotes', $projectId)
+            ->with('error', 'The quoted price exceeds the available project budget. Please reject or suggest a new price.');
     }
 
-    // Update the project's remaining budget in the database
-    DB::table('projects')
-        ->where('id', $projectId)
-        ->update([
+    // Perform updates in a transaction to ensure data consistency
+    DB::transaction(function() use ($projectId, $contractorId, $newRemainingBalance) {
+        // Update project's remaining budget
+        DB::table('projects')->where('id', $projectId)->update([
             'budget_remaining' => $newRemainingBalance,
             'status' => 'started',
             'updated_at' => now(),
         ]);
 
-    Log::info('Project budget updated', ['budget_remaining' => $newRemainingBalance]);
+        // Approve the contractor as the main contractor
+        DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractorId)
+            ->update([
+                'status' => 'approved',
+                'main_contractor' => true,
+                'updated_at' => now(),
+            ]);
 
-    // Approve the contractor as the main contractor
-    DB::table('project_contractor')
-        ->where('project_id', $projectId)
-        ->where('contractor_id', $contractorId)
-        ->update([
-            'status' => 'approved',
-            'main_contractor' => true,
-            'updated_at' => now(),
-        ]);
+        // Reject all other pending quotes for the project
+        DB::table('project_contractor')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', '!=', $contractorId) // Reject all other contractors
+            ->update([
+                'status' => 'rejected',
+                'is_final' => true,
+                'updated_at' => now(),
+            ]);
 
-    Log::info('Contractor approved as main contractor', ['contractorId' => $contractorId]);
+        // Update the accepted contractor's invitation status to 'accepted'
+        DB::table('project_invitations')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractorId)
+            ->update([
+                'status' => 'accepted',
+                'updated_at' => now(),
+            ]);
 
-    return redirect()->route('project_manager.management_board', $projectId)
-        ->with('success', 'Quote approved, contractor promoted to main contractor, and budget updated.');
+        // Reject all other pending invitations for the project
+        DB::table('project_invitations')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', '!=', $contractorId) // Only close invitations not for the selected contractor
+            ->where('status', 'pending') // Only close pending invitations
+            ->update([
+                'status' => 'closed',  // Mark invitations as closed
+                'updated_at' => now(),
+            ]);
+    });
+
+    return redirect()->route('project_manager.projects.quotes', $projectId)
+        ->with('success', 'Quote approved, contractor promoted to main contractor, and project started. All other invitations closed.');
 }
+
+
 
 
     public function rejectQuote($projectId, $contractorId)
@@ -498,31 +525,37 @@ public function storeInvite(Request $request, $projectId)
 
     public function suggestPrice(Request $request, $projectId)
 {
-    Log::info('Suggest Price Request', [
-        'project_id' => $projectId,
-        'new_price' => $request->input('new_price'),
-        'new_quote' => $request->input('new_quote'),
-        'quote_id' => $request->input('quote_id'),
-        'contractor_id' => $request->input('contractor_id'),
-        'has_new_pdf' => $request->hasFile('new_pdf')
-    ]);
+    // Fetch the project
+    $project = DB::table('projects')->where('id', $projectId)->first();
 
-    if ($request->input('contractor_id') === null) {
-        Log::error('contractor_id is null, cannot proceed with the update');
+    if (!$project) {
         return redirect()->route('project_manager.projects.quotes', ['project' => $projectId])
-            ->with('error', 'Contractor ID is missing. Please try again.');
+            ->with('error', 'Project not found.');
     }
 
-    try {
-        $newPrice = $request->input('new_price');
-        $newQuote = $request->input('new_quote');
-        $quoteId = $request->input('quote_id');
-        $contractorId = $request->input('contractor_id');
+    // Fetch the current quote
+    $quote = DB::table('project_contractor')->where('id', $request->input('quote_id'))->first();
 
-        // Prepare the update data
+    if (!$quote) {
+        return redirect()->route('project_manager.projects.quotes', ['project' => $projectId])
+            ->with('error', 'Quote not found.');
+    }
+
+    // Calculate the new remaining budget after suggesting the new price
+    $newPrice = $request->input('new_price');
+    $newRemainingBudget = $project->budget_remaining - $newPrice;
+
+    // Prevent suggestion if the new remaining balance is negative
+    if ($newRemainingBudget < 0) {
+        return redirect()->route('project_manager.projects.quotes', ['project' => $projectId])
+            ->with('error', 'The suggested price exceeds the available project budget. Please suggest a lower price.');
+    }
+
+    // Update the quote details
+    DB::transaction(function() use ($request, $newPrice) {
         $updateData = [
             'quoted_price' => $newPrice,
-            'quote_suggestion' => $newQuote, // Update the suggestion
+            'quote_suggestion' => $request->input('new_quote'),
             'status' => 'suggested',
             'suggested_by' => 'project_manager',
             'updated_at' => now(),
@@ -531,64 +564,37 @@ public function storeInvite(Request $request, $projectId)
         // Handle the uploaded PDF file if it exists
         if ($request->hasFile('new_pdf')) {
             $filePath = $request->file('new_pdf')->store('quotes', 'public');
-            $updateData['quote_pdf'] = $filePath; // Update the quote PDF path
-            Log::info('File uploaded successfully', ['file_path' => $filePath]);
+            $updateData['quote_pdf'] = $filePath;
         }
 
-        // Update the existing quote in the database
-        $updateCount = DB::table('project_contractor')
-            ->where('id', $quoteId)
-            ->where('contractor_id', $contractorId)
+        // Update the quote in the database
+        DB::table('project_contractor')
+            ->where('id', $request->input('quote_id'))
+            ->where('contractor_id', $request->input('contractor_id'))
             ->update($updateData);
+    });
 
-        Log::info('Database update', [
-            'quote_id' => $quoteId,
-            'contractor_id' => $contractorId,
-            'updated_rows' => $updateCount
-        ]);
-
-        if ($updateCount === 0) {
-            Log::warning('No rows were updated, check if the query matched any records.');
-        }
-
-        return redirect()->route('project_manager.projects.quotes', ['project' => $projectId])
-            ->with('success', 'New price and suggestion updated successfully. Waiting for contractor response.');
-    } catch (\Exception $e) {
-        Log::error('Error in suggestPrice', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return redirect()->route('project_manager.projects.quotes', ['project' => $projectId])
-            ->with('error', 'An error occurred while suggesting the new price. Please try again.');
-    }
+    return redirect()->route('project_manager.projects.quotes', ['project' => $projectId])
+        ->with('success', 'New price and suggestion updated successfully. Waiting for contractor response.');
 }
 
-
-    public function handleQuoteAction(Request $request)
+public function handleQuoteAction(Request $request)
 {
+    // Extract the action (approve/reject/suggest) and quote ID from the request
     $action = $request->input('action');
     $quoteId = $request->input('quote_id');
-
-    Log::info('handleQuoteAction called', [
-        'action' => $action,
-        'quote_id' => $quoteId
-    ]);
 
     // Fetch the quote details
     $quote = DB::table('project_contractor')->where('id', $quoteId)->first();
 
     if (!$quote) {
-        Log::error('Quote not found', ['quote_id' => $quoteId]);
+        // If the quote doesn't exist, return with an error
         return redirect()->route('project_manager.projects.quotes')->with('error', 'Quote not found.');
     }
 
-    Log::info('Quote found', ['project_id' => $quote->project_id, 'contractor_id' => $quote->contractor_id]);
-
     // Approve action
     if ($action === 'approve') {
-        Log::info('Approving quote', ['quote_id' => $quoteId]);
-
+        // Update the contractor's quote to 'approved'
         DB::table('project_contractor')->where('id', $quoteId)->update([
             'status' => 'approved',
             'is_final' => true,
@@ -596,51 +602,40 @@ public function storeInvite(Request $request, $projectId)
             'updated_at' => now(),
         ]);
 
-        Log::info('Quote status updated to approved', ['quote_id' => $quoteId]);
-
-        // Fetch the project to update the budget remaining
+        // Fetch the project to update the remaining budget
         $project = DB::table('projects')->where('id', $quote->project_id)->first();
 
         if (!$project) {
-            Log::error('Project not found', ['project_id' => $quote->project_id]);
             return redirect()->route('project_manager.projects.quotes')->with('error', 'Project not found.');
         }
 
-        Log::info('Project found', ['total_budget' => $project->total_budget, 'budget_remaining' => $project->budget_remaining]);
-
-        // Calculate new remaining budget: total budget minus quoted price
+        // Calculate the new remaining budget after approval
         $newRemainingBalance = $project->budget_remaining - $quote->quoted_price;
-
-        Log::info('Calculated new remaining balance', [
-            'total_budget' => $project->total_budget,
-            'quoted_price' => $quote->quoted_price,
-            'budget_remaining_before' => $project->budget_remaining,
-            'budget_remaining_after' => $newRemainingBalance
-        ]);
 
         // Ensure the remaining budget does not go negative
         if ($newRemainingBalance < 0) {
-            Log::error('Quoted price exceeds the remaining budget', ['new_remaining_balance' => $newRemainingBalance]);
-            return redirect()->route('project_manager.management_board', $quote->project_id)
+            return redirect()->route('project_manager.projects.quotes', $quote->project_id)
                 ->with('error', 'Quoted price exceeds the remaining budget.');
         }
 
-        // Update project's remaining budget in the database
-        $updated = DB::table('projects')->where('id', $quote->project_id)->update([
+        // Update the project's remaining budget and assign the main contractor
+        DB::table('projects')->where('id', $quote->project_id)->update([
             'budget_remaining' => $newRemainingBalance,
             'status' => 'started',
             'main_contractor_id' => $quote->contractor_id,
             'updated_at' => now(),
         ]);
 
-        // Log the database update success or failure
-        if ($updated) {
-            Log::info('Project budget remaining successfully updated', ['project_id' => $quote->project_id, 'new_remaining_balance' => $newRemainingBalance]);
-        } else {
-            Log::error('Failed to update project budget remaining', ['project_id' => $quote->project_id]);
-        }
+        // Update the accepted contractor's invitation status to 'accepted'
+        DB::table('project_invitations')
+            ->where('project_id', $quote->project_id)
+            ->where('contractor_id', $quote->contractor_id)
+            ->update([
+                'status' => 'accepted',
+                'updated_at' => now(),
+            ]);
 
-        // Reject all other quotes for the project
+        // Reject all other pending quotes for the project
         DB::table('project_contractor')
             ->where('project_id', $quote->project_id)
             ->where('id', '!=', $quoteId)
@@ -650,36 +645,44 @@ public function storeInvite(Request $request, $projectId)
                 'updated_at' => now(),
             ]);
 
-        Log::info('Other quotes rejected for project', ['project_id' => $quote->project_id]);
+        // Close any other pending invitations
+        DB::table('project_invitations')
+            ->where('project_id', $quote->project_id)
+            ->where('contractor_id', '!=', $quote->contractor_id)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'closed',
+                'updated_at' => now(),
+            ]);
 
-        return redirect()->route('project_manager.projects.quotes')->with('success', 'Quote approved and contractor assigned as main contractor. Invitations closed.');
+        // Return with success message
+        return redirect()->route('project_manager.projects.quotes')
+            ->with('success', 'Quote approved and contractor assigned as main contractor. Invitations closed.');
     }
 
     // Reject action
     elseif ($action === 'reject') {
-        Log::info('Rejecting quote', ['quote_id' => $quoteId]);
-
+        // Update the quote status to 'rejected'
         DB::table('project_contractor')->where('id', $quoteId)->update([
             'status' => 'rejected',
             'is_final' => true,
             'updated_at' => now(),
         ]);
 
-        Log::info('Quote status updated to rejected', ['quote_id' => $quoteId]);
-
+        // Return with success message
         return redirect()->route('project_manager.projects.quotes')->with('success', 'Quote rejected and negotiation closed.');
     }
 
     // Suggest action
     elseif ($action === 'suggest') {
-        Log::info('Suggesting new price for quote', ['quote_id' => $quoteId]);
+        // Redirect to the suggest price method for handling price suggestions
         return $this->suggestPrice($request, $quote->project_id);
     }
 
-    // Invalid action
-    Log::error('Invalid action provided', ['action' => $action]);
+    // Invalid action provided
     return redirect()->route('project_manager.projects.quotes')->with('error', 'Invalid action.');
 }
+
 
 
     public function toggleFavorite(Request $request, $projectId)
@@ -763,26 +766,31 @@ public function storeInvite(Request $request, $projectId)
     }
 
 
-    public function managementBoard($projectId)
-    {
-        // Fetch project details
-        $project = DB::table('projects')->where('id', $projectId)->first();
+public function managementBoard($projectId)
+{
+    // Fetch project details
+    $project = DB::table('projects')->where('id', $projectId)->first();
 
-        if (!$project) {
-            return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
-        }
-
-        // Check if the project has a main contractor
-        $main_contractor = DB::table('users')
-            ->join('project_contractor', 'users.id', '=', 'project_contractor.contractor_id')
-            ->where('project_contractor.project_id', $projectId)
-            ->where('project_contractor.main_contractor', true)
-            ->select('users.name', 'users.email')
-            ->first();
-
-        // Fetch tasks related to the project
-        $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
-
-        return view('project_manager.management_board', compact('project', 'tasks', 'main_contractor'));
+    if (!$project) {
+        return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
     }
+
+    // Convert the dates to Carbon instances
+    $project->start_date = Carbon::parse($project->start_date);
+    $project->end_date = Carbon::parse($project->end_date);
+
+    // Check if the project has a main contractor
+    $main_contractor = DB::table('users')
+        ->join('project_contractor', 'users.id', '=', 'project_contractor.contractor_id')
+        ->where('project_contractor.project_id', $projectId)
+        ->where('project_contractor.main_contractor', true)
+        ->select('users.name', 'users.email')
+        ->first();
+
+    // Fetch tasks related to the project
+    $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
+
+    return view('project_manager.management_board', compact('project', 'tasks', 'main_contractor'));
+}
+
 }
