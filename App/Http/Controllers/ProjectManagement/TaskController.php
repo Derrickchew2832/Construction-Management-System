@@ -425,14 +425,22 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
     } else {
         // Main Contractor suggests a new price
         $newPrice = $request->input('new_price');
+        $quoteSuggestion = $request->input('quote_description');
+
         if ($newPrice > $mainContractorQuote) {
             return response()->json(['success' => false, 'message' => 'The suggested price cannot be higher than the main contractor\'s quote.'], 403);
         }
 
+        // Log the values being updated
+        \Log::info("Updating quote with ID: " . $quoteId);
+        \Log::info("New quoted price: " . $newPrice);
+        \Log::info("Quote suggestion: " . $quoteSuggestion);
+
         DB::table('task_contractor')
             ->where('id', $quoteId)  // Update by quoteId
             ->update([
-                'quote_suggestion' => $newPrice,
+                'quoted_price' => $newPrice, // Update quoted price
+                'quote_suggestion' => $quoteSuggestion, // Update the quote suggestion text
                 'quote_pdf' => $request->file('new_pdf')->store('task_quotes', 'public'),
                 'suggested_by' => $currentUser->id,
                 'status' => 'suggested', // Status becomes suggested for Contractor to act next
@@ -443,6 +451,7 @@ public function respondToTaskQuote(Request $request, $projectId, $taskId)
         return response()->json(['success' => true, 'message' => 'Quote suggestion submitted successfully.']);
     }
 }
+
 
 
 public function inviteClientForm($projectId)

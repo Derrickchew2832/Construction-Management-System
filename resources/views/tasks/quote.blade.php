@@ -4,6 +4,15 @@
     <div class="container-fluid">
         <!-- Task Quote Header -->
         <h5 class="sub-section-heading mb-4">Received Task Quotes</h5>
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <!-- Table to Display Received Quotes -->
         @if ($tasks && $tasks->isNotEmpty())
@@ -41,23 +50,25 @@
                                 </td>
 
                                 <td>
-                                    <!-- Buttons for Accept, Reject, Suggest -->
-                                    <button class="btn btn-warning btn-sm open-modal" 
-                                        data-task-id="{{ $task->id }}"
-                                        data-task-title="{{ $task->title }}"
-                                        data-task-description="{{ $task->description }}"
-                                        data-task-start="{{ $task->start_date }}"
-                                        data-task-due="{{ $task->due_date }}"
-                                        data-quote-price="{{ number_format($task->quote->quoted_price, 2) }}"
-                                        data-quote-suggestion="{{ $task->quote->quote_suggestion }}"
-                                        data-quote-document="{{ Storage::url($task->quote->quote_pdf) }}"
-                                        data-quote-id="{{ $task->quote->id }}">
-                                        View Suggestion
-                                    </button>
-                                    <button class="btn btn-success btn-sm"
-                                        onclick="submitAction('accept', '{{ $task->quote->id }}', '{{ $task->id }}')">Accept</button>
-                                    <button class="btn btn-danger btn-sm"
-                                        onclick="submitAction('reject', '{{ $task->quote->id }}', '{{ $task->id }}')">Reject</button>
+                                    @if ($task->quote->status === 'suggested')
+                                        <span class="text-warning">Waiting for reply</span>
+                                    @else
+                                        <!-- Buttons for Accept, Reject, Suggest -->
+                                        <button class="btn btn-warning btn-sm open-modal" data-task-id="{{ $task->id }}"
+                                            data-task-title="{{ $task->title }}"
+                                            data-task-description="{{ $task->description }}"
+                                            data-task-start="{{ $task->start_date }}" data-task-due="{{ $task->due_date }}"
+                                            data-quote-price="{{ number_format($task->quote->quoted_price, 2) }}"
+                                            data-quote-suggestion="{{ $task->quote->quote_suggestion }}"
+                                            data-quote-document="{{ Storage::url($task->quote->quote_pdf) }}"
+                                            data-quote-id="{{ $task->quote->id }}">
+                                            View Suggestion
+                                        </button>
+                                        <button class="btn btn-success btn-sm"
+                                            onclick="submitAction('accept', '{{ $task->quote->id }}', '{{ $task->id }}')">Accept</button>
+                                        <button class="btn btn-danger btn-sm"
+                                            onclick="submitAction('reject', '{{ $task->quote->id }}', '{{ $task->id }}')">Reject</button>
+                                    @endif
                                 </td>
                             </tr>
                         @endif
@@ -100,7 +111,8 @@
                         <h6><strong>Quote Details</strong></h6>
                         <p><strong>Quoted Price:</strong> $<span id="modalQuotePrice"></span></p>
                         <p><strong>Quote Suggestion:</strong> <span id="modalQuoteSuggestion"></span></p>
-                        <p><strong>Quote Document:</strong> <a href="#" id="modalQuoteDocument" target="_blank">View Document</a></p>
+                        <p><strong>Quote Document:</strong> <a href="#" id="modalQuoteDocument" target="_blank">View
+                                Document</a></p>
 
                         <hr>
 
@@ -108,7 +120,8 @@
                         <h6><strong>Suggest New Price</strong></h6>
                         <div class="form-group">
                             <label for="new_price">New Suggested Price:</label>
-                            <input type="number" name="new_price" id="new_price" class="form-control" step="0.01" required>
+                            <input type="number" name="new_price" id="new_price" class="form-control" step="0.01"
+                                required>
                         </div>
                         <div class="form-group">
                             <label for="quote_description">Quote Description:</label>
@@ -116,7 +129,8 @@
                         </div>
                         <div class="form-group">
                             <label for="new_pdf">Upload New Quote (PDF):</label>
-                            <input type="file" name="new_pdf" id="new_pdf" class="form-control-file" accept="application/pdf" required>
+                            <input type="file" name="new_pdf" id="new_pdf" class="form-control-file"
+                                accept="application/pdf" required>
                         </div>
                     </div>
 
@@ -137,8 +151,8 @@
         $(document).ready(function() {
             // Trigger the modal with task and quote details
             $('.open-modal').on('click', function(event) {
-                var button = $(this);  // Correctly reference the clicked button
-                
+                var button = $(this);
+
                 // Extract the data attributes from the clicked button
                 var taskId = button.data('task-id');
                 var taskTitle = button.data('task-title');
@@ -153,10 +167,8 @@
                 // Debugging logs
                 console.log('Task ID:', taskId);
                 console.log('Task Title:', taskTitle);
-                console.log('Task Description:', taskDescription);
                 console.log('Quote Price:', quotePrice);
-                console.log('Quote Suggestion:', quoteSuggestion);
-                console.log('Quote Document:', quoteDocument);
+                console.log('Quote ID:', quoteId);
 
                 // Update modal content with the data
                 var modal = $('#quoteModal');
@@ -169,12 +181,12 @@
                 modal.find('#modalTaskDue').text(taskDue || 'No due date available');
                 modal.find('#modalQuotePrice').text(quotePrice || 'No price available');
                 modal.find('#modalQuoteSuggestion').text(quoteSuggestion || 'No suggestion provided');
-                modal.find('#modalQuoteDocument').attr('href', quoteDocument || '#').text(quoteDocument ? 'View Document' : 'No document available');
-                
+                modal.find('#modalQuoteDocument').attr('href', quoteDocument || '#').text(quoteDocument ?
+                    'View Document' : 'No document available');
+
                 modal.modal('show'); // Show the modal programmatically
             });
 
-            // Handle Accept and Reject actions
             function submitAction(action, quoteId, taskId) {
                 if (confirm('Are you sure you want to ' + action + ' this quote?')) {
                     fetch(`/projects/{{ $projectId }}/tasks/${taskId}/quote/respond`, {
@@ -202,7 +214,6 @@
                 }
             }
 
-            // Bind submitAction function globally to handle Accept and Reject button clicks
             window.submitAction = submitAction;
 
             $('#quoteActionForm').on('submit', function(e) {
@@ -210,7 +221,7 @@
 
                 let formData = new FormData(this);
                 let taskId = document.getElementById('modalTaskId').value;
-                let projectId = '{{ $projectId }}'; 
+                let projectId = '{{ $projectId }}';
 
                 fetch(`/projects/${projectId}/tasks/${taskId}/quote/respond`, {
                         method: 'POST',
@@ -221,6 +232,7 @@
                     })
                     .then(response => response.json())
                     .then(data => {
+                        console.log("Submitted New Price:", formData.get('new_price')); // Log new price
                         alert(data.message);
                         if (data.success) {
                             window.location.reload();

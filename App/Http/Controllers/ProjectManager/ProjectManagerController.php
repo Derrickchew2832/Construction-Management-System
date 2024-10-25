@@ -121,7 +121,8 @@ class ProjectManagerController extends Controller
                 'users.email',  
                 'project_invitations.status',
                 'project_contractor.main_contractor', 
-                'project_contractor.status as quote_status'
+                'project_contractor.status as quote_status',
+                'project_contractor.updated_at'
             )
             ->get();
 
@@ -416,7 +417,7 @@ public function storeInvite(Request $request, $projectId)
             'users.name as contractor_name', 
             'projects.name as project_name', 
             'projects.id as project_id',
-            'projects.budget_remaining', // Include remaining budget
+            'projects.budget_remaining', 
             'project_contractor.status as quote_status',
             'project_contractor.quote_suggestion'
         )
