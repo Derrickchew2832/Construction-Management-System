@@ -15,105 +15,100 @@ class ContractorsController extends Controller
     }
 
     public function indexProjects(Request $request)
-{
-    $contractorId = Auth::id(); // Get the logged-in contractor's ID
-
-    // Fetch projects where the contractor is the main contractor and the project status is 'started'
-    $mainContractorProjects = DB::table('projects')
-        ->leftJoin('project_user', 'projects.id', '=', 'project_user.project_id') // Join to count members (project manager, contractors)
-        ->where('main_contractor_id', $contractorId)
-        ->where('projects.status', 'started') // Only show projects with 'started' status
-        ->select(
-            'projects.id',
-            'projects.name',
-            'projects.description',
-            'projects.start_date',
-            'projects.end_date',
-            'projects.total_budget',
-            'projects.budget_remaining',
-            'projects.location',
-            'projects.status',
-            DB::raw('IFNULL(projects.is_favorite, 0) as is_favorite'), // Ensure is_favorite exists and defaults to 0
-            'projects.main_contractor_id',
-            DB::raw('COUNT(DISTINCT project_user.user_id) as members_count') // Count members (project manager, contractors)
-        )
-        ->groupBy(
-            'projects.id',
-            'projects.name',
-            'projects.description',
-            'projects.start_date',
-            'projects.end_date',
-            'projects.total_budget',
-            'projects.budget_remaining',
-            'projects.location',
-            'projects.status',
-            'projects.is_favorite',
-            'projects.main_contractor_id'
-        )
-        ->get();
-
-    // Fetch projects where the contractor has accepted tasks
-    $acceptedTaskProjects = DB::table('projects')
-        ->join('tasks', 'projects.id', '=', 'tasks.project_id') // Join tasks to projects
-        ->join('task_contractor', 'tasks.id', '=', 'task_contractor.task_id') // Join task_contractor to filter accepted tasks
-        ->where('task_contractor.contractor_id', $contractorId)
-        ->where('task_contractor.status', 'approved') // Only show projects where tasks were accepted by the contractor
-        ->select(
-            'projects.id',
-            'projects.name',
-            'projects.description',
-            'projects.start_date',
-            'projects.end_date',
-            'projects.total_budget',
-            'projects.budget_remaining',
-            'projects.location',
-            'projects.status',
-            DB::raw('0 as is_favorite'), // Default is_favorite to 0 for accepted task projects
-            DB::raw('0 as members_count'), // Initialize members_count to 0 for accepted task projects
-            DB::raw('COUNT(DISTINCT tasks.id) as accepted_task_count') // Count accepted tasks
-        )
-        ->groupBy(
-            'projects.id',
-            'projects.name',
-            'projects.description',
-            'projects.start_date',
-            'projects.end_date',
-            'projects.total_budget',
-            'projects.budget_remaining',
-            'projects.location',
-            'projects.status'
-        )
-        ->get();
-
-    // Merge both collections of projects (main contractor projects + accepted task projects)
-    $projects = $mainContractorProjects->merge($acceptedTaskProjects);
-
-    // Loop through projects to handle project-specific logic
-    foreach ($projects as $project) {
-        // Check if main contractor exists for the project
-        $mainContractorExists = DB::table('project_contractor')
-            ->where('project_id', $project->id)
-            ->where('main_contractor', true)
-            ->exists();
-
-        // Count Project Manager and Main Contractor if main contractor exists
-        if ($mainContractorExists) {
-            $project->members_count += 2; // Count Project Manager and Main Contractor
+    {
+        $contractorId = Auth::id(); // Get the logged-in contractor's ID
+    
+        // Fetch projects where the contractor is the main contractor and the project status is 'started' or 'completed'
+        $mainContractorProjects = DB::table('projects')
+            ->leftJoin('project_user', 'projects.id', '=', 'project_user.project_id') // Join to count members (project manager, contractors)
+            ->where('main_contractor_id', $contractorId)
+            ->whereIn('projects.status', ['started', 'completed']) // Include both 'started' and 'completed' statuses
+            ->select(
+                'projects.id',
+                'projects.name',
+                'projects.description',
+                'projects.start_date',
+                'projects.end_date',
+                'projects.total_budget',
+                'projects.budget_remaining',
+                'projects.location',
+                'projects.status',
+                DB::raw('IFNULL(projects.is_favorite, 0) as is_favorite'), // Ensure is_favorite exists and defaults to 0
+                'projects.main_contractor_id',
+                DB::raw('COUNT(DISTINCT project_user.user_id) as members_count') // Count members (project manager, contractors)
+            )
+            ->groupBy(
+                'projects.id',
+                'projects.name',
+                'projects.description',
+                'projects.start_date',
+                'projects.end_date',
+                'projects.total_budget',
+                'projects.budget_remaining',
+                'projects.location',
+                'projects.status',
+                'projects.is_favorite',
+                'projects.main_contractor_id'
+            )
+            ->get();
+    
+        // Fetch projects where the contractor has accepted tasks
+        $acceptedTaskProjects = DB::table('projects')
+            ->join('tasks', 'projects.id', '=', 'tasks.project_id') // Join tasks to projects
+            ->join('task_contractor', 'tasks.id', '=', 'task_contractor.task_id') // Join task_contractor to filter accepted tasks
+            ->where('task_contractor.contractor_id', $contractorId)
+            ->whereIn('task_contractor.status', ['approved', 'completed']) // Include both 'approved' and 'completed' statuses
+            ->select(
+                'projects.id',
+                'projects.name',
+                'projects.description',
+                'projects.start_date',
+                'projects.end_date',
+                'projects.total_budget',
+                'projects.budget_remaining',
+                'projects.location',
+                'projects.status',
+                DB::raw('0 as is_favorite'), // Default is_favorite to 0 for accepted task projects
+                DB::raw('COUNT(DISTINCT tasks.id) as accepted_task_count') // Count accepted tasks
+            )
+            ->groupBy(
+                'projects.id',
+                'projects.name',
+                'projects.description',
+                'projects.start_date',
+                'projects.end_date',
+                'projects.total_budget',
+                'projects.budget_remaining',
+                'projects.location',
+                'projects.status'
+            )
+            ->get();
+    
+        // Merge both collections of projects (main contractor projects + accepted task projects)
+        $projects = $mainContractorProjects->merge($acceptedTaskProjects);
+    
+        // Loop through projects to handle project-specific logic
+        foreach ($projects as $project) {
+            // Check if main contractor exists for the project
+            $mainContractorExists = DB::table('project_contractor')
+                ->where('project_id', $project->id)
+                ->where('main_contractor', true)
+                ->exists();
+    
+            // Define ribbon status based on project status
+            if ($project->status === 'completed') {
+                $project->ribbon = 'Completed';
+            } elseif ($project->status === 'started') {
+                $project->ribbon = 'In Progress';
+            }
+    
+            // Manage access rights for the project based on project status or if the contractor has accepted a task
+            $project->can_access_management = (($project->status === 'started' || $project->status === 'completed') && ($mainContractorExists || $project->accepted_task_count > 0));
         }
-
-        // Define ribbon status based on project status
-        if ($project->status === 'completed') {
-            $project->ribbon = 'Completed';
-        } elseif ($project->status === 'started') {
-            $project->ribbon = 'In Progress';
-        }
-
-        // Manage access rights for the project based on project status or if the contractor has accepted a task
-        $project->can_access_management = ($project->status === 'started' && ($mainContractorExists || $project->accepted_task_count > 0));
+    
+        return view('contractor.projects.index', compact('projects'));
     }
-
-    return view('contractor.projects.index', compact('projects'));
-}
+    
 
     public function showQuotes(Request $request)
 {

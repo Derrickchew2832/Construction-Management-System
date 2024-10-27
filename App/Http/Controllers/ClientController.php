@@ -141,5 +141,17 @@ public function updateFavoriteStatus(Request $request, $projectId)
         return response()->json(['error' => 'Unable to update favorite status. Please try again later.'], 500);
     }
 }
+public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|confirmed|min:6',
+        ]);
+
+        $user = auth()->user();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return redirect()->route('client.profile')->with('success', 'Password updated successfully.');
+    }
 
 }

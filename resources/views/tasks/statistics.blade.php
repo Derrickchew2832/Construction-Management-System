@@ -33,21 +33,25 @@
 
     <!-- Second row for the other graphs with spacing -->
     <div class="row">
-        <!-- Project Budget Allocation (Depending on user role) -->
+        <!-- Project Budget Allocation (Only for Main Contractor) -->
+        @if(Auth::user()->id == $project->main_contractor_id)
         <div class="col-md-6 mb-4">
             <div class="chart-container text-center" style="position: relative; height:300px; width:100%;">
                 <canvas id="projectBudgetChart"></canvas>
                 <p>Project Budget Allocation</p>
             </div>
         </div>
+        @endif
 
-        <!-- Number of Contractors Assigned -->
+        <!-- Number of Contractors Assigned (Only for Main Contractor) -->
+        @if(Auth::user()->id == $project->main_contractor_id)
         <div class="col-md-6 mb-4">
             <div class="chart-container text-center" style="position: relative; height:300px; width:100%;">
                 <canvas id="contractorAssignmentChart"></canvas>
                 <p>Number of Contractors Assigned</p>
             </div>
         </div>
+        @endif
     </div>
 </div>
 
@@ -137,26 +141,16 @@
         }
     });
 
-    // Project Budget Allocation Chart based on the user role
+    // Project Budget Allocation Chart (only for Main Contractor)
+    @if(Auth::user()->id == $project->main_contractor_id)
     var projectBudgetCtx = document.getElementById('projectBudgetChart').getContext('2d');
     var projectBudgetChart = new Chart(projectBudgetCtx, {
         type: 'pie',
         data: {
-            labels: ['Task Quoted', 'Remaining Budget'],
+            labels: ['Total Project Quoted Price', 'Total Tasks Quoted Price'],
             datasets: [{
-                @if(Auth::user()->role == 'project_manager')
-                // For Project Manager - Display Total Budget and Quoted Price of the Main Contractor
-                data: [{{ $mainContractorQuote }}, {{ $projectBudgetData->total_budget - $mainContractorQuote }}],
-                backgroundColor: ['#3498db', '#2ecc71'],
-                @elseif(Auth::user()->id == $project->main_contractor_id)
-                // For Main Contractor - Display Quoted Price and Total of Assigned Tasks
-                data: [{{ $mainContractorTasksQuotedPrice }}, {{ $mainContractorQuote - $mainContractorTasksQuotedPrice }}],
+                data: [{{ $mainContractorQuote ?? 0 }}, {{ $mainContractorTasksQuotedPrice ?? 0 }}],
                 backgroundColor: ['#e74c3c', '#3498db'],
-                @else
-                // For Contractors who accepted tasks - Show Quoted Price and Supply Ordered
-                data: [{{ $acceptedTasks }}, {{ $supplyOrderTotal }}],
-                backgroundColor: ['#2ecc71', '#f39c12'],
-                @endif
             }]
         },
         options: {
@@ -164,21 +158,21 @@
             maintainAspectRatio: false,
             title: {
                 display: true,
-                text: 'Project Budget Allocation (Total Budget vs Task Quoted)',
+                text: 'Project Budget Allocation (Main Contractor)',
                 fontSize: 14
             },
             plugins: {
                 datalabels: {
                     display: true,
                     formatter: function(value, context) {
-                        return '$' + value; // Display the values as currency
+                        return '$' + value; // Display values as currency
                     }
                 }
             }
         }
     });
 
-    // Number of Contractors Assigned Chart (whole numbers)
+    // Number of Contractors Assigned Chart (only for Main Contractor)
     var contractorAssignmentCtx = document.getElementById('contractorAssignmentChart').getContext('2d');
     var contractorAssignmentChart = new Chart(contractorAssignmentCtx, {
         type: 'bar',
@@ -206,5 +200,6 @@
             }
         }
     });
+    @endif
 </script>
 @endsection

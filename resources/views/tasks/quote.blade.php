@@ -50,7 +50,9 @@
                                 </td>
 
                                 <td>
-                                    @if ($task->quote->status === 'suggested')
+                                    @if ($task->quote->status === 'approved')
+                                        <span class="text-success">Quote Accepted</span>
+                                    @elseif ($task->quote->status === 'suggested')
                                         <span class="text-warning">Waiting for reply</span>
                                     @else
                                         <!-- Buttons for Accept, Reject, Suggest -->
@@ -70,6 +72,7 @@
                                             onclick="submitAction('reject', '{{ $task->quote->id }}', '{{ $task->id }}')">Reject</button>
                                     @endif
                                 </td>
+                                
                             </tr>
                         @endif
                     @endforeach

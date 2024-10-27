@@ -205,7 +205,6 @@
                     </a>
                 </li>
                 
-                
 
                 <!-- Role-specific options -->
                 @php
@@ -376,11 +375,7 @@
         setInterval(updateDateTime, 1000);
 
 
-
-        document.getElementById('endProjectBtn').addEventListener('click', function() {
-            $('#endProjectModal').modal('show'); // Show the confirmation modal
-        });
-
+       
         document.getElementById('confirmEndProjectBtn').addEventListener('click', function() {
             const projectId = '{{ $project->id }}';
 

@@ -58,7 +58,7 @@
                             <td>{{ $order->supplier_name }}</td>
                             <td>{{ ucfirst($order->status) }}</td>
                             <td>
-                                @if ($order->status == 'Shipped')
+                                @if ($order->status == 'shipped')
                                     <button type="button" class="btn btn-primary" data-toggle="modal"
                                         data-target="#orderReceivedModal-{{ $order->id }}">
                                         Confirm Received
@@ -154,7 +154,7 @@
                         </form>
                     </div>
 
-                    <!-- Order Summary and Details (Initially hidden) -->
+                    <!-- Order Summary (Initially hidden) -->
                     <div id="order-summary-section" class="d-none">
                         <h5>Order Summary</h5>
                         <table class="table table-bordered">
@@ -198,7 +198,7 @@
             var quotedPrice = {{ $quotedPrice ?? 0 }};
             var totalSupplyOrderPrice = {{ $totalSupplyOrderPrice ?? 0 }};
 
-            // Draw the pie chart (smaller)
+            // Draw the pie chart
             var ctx = document.getElementById('financePieChart').getContext('2d');
             var budgetPieChart = new Chart(ctx, {
                 type: 'pie',
@@ -212,7 +212,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true, 
+                    maintainAspectRatio: true,
                     plugins: {
                         legend: {
                             position: 'top',
@@ -236,11 +236,9 @@
             // Attach click event to supplier selection dynamically using event delegation
             $(document).on('click', '.supplier-option', function() {
                 var supplierId = $(this).data('supplier-id');
-                var projectId = '{{ $projectId }}'; // Ensuring projectId is available in JS
+                var projectId = '{{ $projectId }}';
 
                 console.log('Supplier clicked, Supplier ID:', supplierId);
-                console.log('AJAX URL:', '/projects/' + projectId + '/supplieritems/' + supplierId); // Debug URL
-
                 fetchSupplyItems(supplierId, projectId);
             });
 

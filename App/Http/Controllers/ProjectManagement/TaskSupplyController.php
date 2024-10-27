@@ -21,7 +21,7 @@ class TaskSupplyController extends Controller
             return back()->with('error', 'Project not found.');
         }
     
-        // Fetch the project manager's name (assuming project_manager_id exists in projects table)
+        // Fetch the project manager's name
         $projectManager = DB::table('users')->where('id', $project->project_manager_id)->first();
         $projectManagerName = $projectManager ? $projectManager->name : 'Unknown';
     
@@ -53,7 +53,7 @@ class TaskSupplyController extends Controller
         $totalSupplyOrderPrice = DB::table('supply_orders')
             ->where('project_id', $projectId)
             ->where('contractor_id', $contractorId)
-            ->where('status', 'Received')  // Only count orders that have been confirmed/received
+            ->where('status', 'Received')
             ->sum('quoted_price');
     
         // Calculate the remaining money
@@ -66,19 +66,18 @@ class TaskSupplyController extends Controller
             })
             ->get();
     
-        // Fetch supply orders for the project, joining the supply_items and users tables to get item_name and supplier_name
+        // Fetch supply orders for the project
         $orders = DB::table('supply_orders')
             ->join('supply_items', 'supply_orders.supply_item_id', '=', 'supply_items.id')
-            ->join('users', 'supply_orders.supplier_id', '=', 'users.id')  // Join users table to get supplier name
+            ->join('users', 'supply_orders.supplier_id', '=', 'users.id')
             ->where('supply_orders.project_id', $projectId)
-            ->where('supply_orders.contractor_id', $contractorId)  // Only fetch orders for this contractor
-            ->select('supply_orders.*', 'supply_items.name as item_name', 'users.name as supplier_name')  // Fetch supplier's name
+            ->where('supply_orders.contractor_id', $contractorId)
+            ->select('supply_orders.*', 'supply_items.name as item_name', 'users.name as supplier_name')
             ->get();
     
-        // Pass all necessary data to the view
         return view('tasks.supply_order', compact(
             'project',
-            'task', // Pass task data if needed
+            'task',
             'quotedPrice',
             'totalSupplyOrderPrice',
             'remainingMoney',
@@ -87,13 +86,12 @@ class TaskSupplyController extends Controller
             'projectId',
             'projectManagerName',
             'mainContractorName',
-            'totalProjectDays' // Pass total project days to the view
+            'totalProjectDays'
         ));
     }
     
     public function getSupplierItems($projectId, $supplierId)
     {
-        // Fetch items with stock quantity
         $supplyItems = DB::table('supply_items')
             ->where('supplier_id', $supplierId)
             ->where('stock_quantity', '>', 0)
@@ -108,13 +106,13 @@ class TaskSupplyController extends Controller
         // Ensure only the correct contractor can place an order
         $contractorId = auth()->user()->id;
 
-        // Validate that the contractor is part of the task, not just the project
+        // Validate that the contractor is assigned to at least one task within the project
         $isValidContractor = DB::table('task_contractor')
             ->where('contractor_id', $contractorId)
-            ->where('task_id', function ($query) use ($projectId) {
+            ->whereIn('task_id', function ($query) use ($projectId) {
                 $query->select('id')
-                    ->from('tasks')
-                    ->where('project_id', $projectId);
+                      ->from('tasks')
+                      ->where('project_id', $projectId);
             })
             ->exists();
 
@@ -122,7 +120,7 @@ class TaskSupplyController extends Controller
             return response()->json(['error' => 'Unauthorized contractor'], 403);
         }
 
-        // Continue with placing the order
+        // Validate order input
         $validated = $request->validate([
             'delivery_address' => 'required|string',
             'items' => 'required|array',
@@ -135,6 +133,37 @@ class TaskSupplyController extends Controller
         $contractor = DB::table('users')->where('id', $contractorId)->first();
         $companyName = $contractor->name;
 
+        // Calculate total amount for new order
+        $newOrderTotal = 0;
+        foreach ($request->items as $item) {
+            $supplyItem = DB::table('supply_items')->where('id', $item['item_id'])->first();
+            $newOrderTotal += $supplyItem->price * $item['quantity'];
+        }
+
+        // Check current total order cost for the project and contractor
+        $currentOrderTotal = DB::table('supply_orders')
+            ->where('project_id', $projectId)
+            ->where('contractor_id', $contractorId)
+            ->sum('quoted_price');
+
+        // Calculate the new total with the new order
+        $totalAfterNewOrder = $currentOrderTotal + $newOrderTotal;
+
+        // Ensure the new order doesn't exceed the quoted price
+        $quotedPrice = DB::table('task_contractor')
+            ->where('contractor_id', $contractorId)
+            ->whereIn('task_id', function ($query) use ($projectId) {
+                $query->select('id')
+                      ->from('tasks')
+                      ->where('project_id', $projectId);
+            })
+            ->value('quoted_price');
+
+        if ($totalAfterNewOrder > $quotedPrice) {
+            return response()->json(['error' => 'Order exceeds quoted price limit. Please reduce the order amount.'], 400);
+        }
+
+        // Place the order
         foreach ($request->items as $item) {
             $supplyItem = DB::table('supply_items')->where('id', $item['item_id'])->first();
 
@@ -161,15 +190,15 @@ class TaskSupplyController extends Controller
     {
         // Validate the received image if it's required
         $request->validate([
-            'received_image' => 'required|image|max:2048', // example validation for the image
+            'received_image' => 'required|image|max:2048',
         ]);
 
-        // Find the order by ID and update its status to 'received'
+        // Update the order status to 'Received'
         DB::table('supply_orders')
             ->where('id', $orderId)
             ->update([
-                'status' => 'Received',
-                'received_image' => $request->file('received_image')->store('received_images', 'public'), // save image path
+                'status' => 'received', 
+                'received_image' => $request->file('received_image')->store('received_images', 'public'),
                 'updated_at' => now(),
             ]);
 

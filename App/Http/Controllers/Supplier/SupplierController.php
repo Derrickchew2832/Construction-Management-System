@@ -43,7 +43,7 @@ class SupplierController extends Controller
     public function updateQuote(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:Accepted,Rejected',
+            'status' => 'required|in:accepted,rejected',
         ]);
 
         // Fetch the supply order
@@ -52,7 +52,7 @@ class SupplierController extends Controller
             ->first();
 
         // Handle acceptance
-        if ($request->status == 'Accepted') {
+        if ($request->status == 'accepted') {
             // Fetch the corresponding supply item
             $item = DB::table('supply_items')
                 ->where('id', $order->supply_item_id)
@@ -73,7 +73,7 @@ class SupplierController extends Controller
             DB::table('supply_orders')
                 ->where('id', $id)
                 ->update([
-                    'status' => 'Accepted',
+                    'status' => 'accepted',
                     'updated_at' => now(),
                 ]);
 
@@ -82,11 +82,11 @@ class SupplierController extends Controller
         }
 
         // Handle rejection
-        if ($request->status == 'Rejected') {
+        if ($request->status == 'rejected') {
             DB::table('supply_orders')
                 ->where('id', $id)
                 ->update([
-                    'status' => 'rejected',
+                    'status' => 'Rejected',
                     'updated_at' => now(),
                 ]);
 
@@ -113,10 +113,48 @@ class SupplierController extends Controller
             ->update([
                 'delivery_form' => $deliveryFormPath,
                 'delivery_image' => $deliveryImagePath,
-                'status' => 'uShipped',
+                'status' => 'shipped',
                 'updated_at' => now(),
             ]);
 
         return redirect()->route('supplier.quotes.dashboard')->with('success', 'Delivery started successfully!');
+    }
+
+    public function editProfile()
+    {
+        $user = Auth::user();
+        return view('supplier.profile', compact('user'));
+    }
+
+    // Update the profile information
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . Auth::id(),
+        ]);
+
+        $user = Auth::user();
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        return redirect()->route('supplier.profile')->with('success', 'Profile updated successfully.');
+    }
+
+    // Update the password
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('supplier.profile')->with('status', 'password-updated');
     }
 }

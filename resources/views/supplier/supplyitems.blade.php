@@ -1,27 +1,35 @@
 @extends('layouts.supplierapp')
 
+@section('title', 'Supply Items')
+
 @section('content')
-    <div class="container">
+    <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Supply Items</h2>
-            <button class="btn btn-primary" data-toggle="modal" data-target="#addSupplyModal">Add Item</button>
+            <h2 class="text-primary font-weight-bold">Supply Items</h2>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#addSupplyModal">+ Add Item</button>
         </div>
 
         <!-- Success and Error Messages -->
         @if (session('success'))
-            <div class="alert alert-success">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
                 {{ session('success') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
         @endif
 
         <!-- Display validation errors -->
         @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <ul class="mb-0">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
         @endif
 
@@ -29,104 +37,105 @@
         @if ($supplyItems->isEmpty())
             <div class="alert alert-info">No supply items available. Click the "Add Supply Item" button to add new supplies.</div>
         @else
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Supply Number </th>
-                        <th>Item Name</th>
-                        <th>Price (per unit)</th>
-                        <th>Stock Quantity</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($supplyItems as $item)
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mt-4">
+                    <thead class="thead-light">
                         <tr>
-                            <td>{{ $item->supplier_item_number }}</td>
-                            <td>{{ $item->name }}</td>
-                            <td>${{ number_format($item->price, 2) }}</td>
-                            <td>{{ $item->stock_quantity }}</td>
-                            <td>
-                                @if ($item->stock_quantity == 0)
-                                    <span class="badge badge-danger">Out of Stock</span>
-                                @elseif($item->stock_quantity <= 10)
-                                    <span class="badge badge-warning">Low Stock</span>
-                                @else
-                                    <span class="badge badge-success">In Stock</span>
-                                @endif
-                            </td>
-                            <td>
-                                <!-- Edit Button with unique modal trigger -->
-                                <button class="btn btn-sm btn-link text-primary" data-toggle="modal"
-                                    data-target="#editSupplyModal-{{ $item->id }}">
-                                    Edit
-                                </button>
-
-                                <!-- Delete Button -->
-                                <form action="{{ route('supplier.supplyitems.delete', $item->id) }}" method="POST"
-                                    style="display:inline-block;" onsubmit="return confirmDelete()">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-link text-danger">Delete</button>
-                                </form>
-                            </td>
+                            <th>Supply Number</th>
+                            <th>Item Name</th>
+                            <th>Price (per unit)</th>
+                            <th>Stock Quantity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
                         </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($supplyItems as $item)
+                            <tr>
+                                <td>{{ $item->supplier_item_number }}</td>
+                                <td>{{ $item->name }}</td>
+                                <td>RM {{ number_format($item->price, 2) }}</td>
+                                <td>{{ $item->stock_quantity }}</td>
+                                <td>
+                                    @if ($item->stock_quantity == 0)
+                                        <span class="badge badge-danger">Out of Stock</span>
+                                    @elseif($item->stock_quantity <= 10)
+                                        <span class="badge badge-warning">Low Stock</span>
+                                    @else
+                                        <span class="badge badge-success">In Stock</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <!-- Edit Button with unique modal trigger -->
+                                    <button class="btn btn-sm btn-outline-primary" data-toggle="modal"
+                                        data-target="#editSupplyModal-{{ $item->id }}">
+                                        Edit
+                                    </button>
 
-                        <!-- Edit Supply Item Modal for each item -->
-                        <div class="modal fade" id="editSupplyModal-{{ $item->id }}" tabindex="-1"
-                            aria-labelledby="editSupplyModalLabel-{{ $item->id }}" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="editSupplyModalLabel-{{ $item->id }}">Edit Supply Item</h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <form action="{{ route('supplier.supplyitems.update', $item->id) }}" method="POST">
+                                    <!-- Delete Button -->
+                                    <form action="{{ route('supplier.supplyitems.delete', $item->id) }}" method="POST"
+                                        style="display:inline-block;" onsubmit="return confirmDelete()">
                                         @csrf
-                                        @method('PUT') <!-- Hidden field to override the method to PUT -->
-
-                                        <div class="modal-body">
-                                            <div class="form-group">
-                                                <label for="edit_name_{{ $item->id }}">Item Name</label>
-                                                <input type="text" id="edit_name_{{ $item->id }}" name="name"
-                                                    class="form-control" value="{{ $item->name }}" required>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label for="edit_description_{{ $item->id }}">Description</label>
-                                                <textarea id="edit_description_{{ $item->id }}" name="description"
-                                                    class="form-control">{{ $item->description }}</textarea>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label for="edit_price_{{ $item->id }}">Price (per unit)</label>
-                                                <input type="number" id="edit_price_{{ $item->id }}" step="0.01"
-                                                    name="price" class="form-control" value="{{ $item->price }}" required>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label for="edit_stock_quantity_{{ $item->id }}">Stock Quantity</label>
-                                                <input type="number" id="edit_stock_quantity_{{ $item->id }}"
-                                                    name="stock_quantity" class="form-control"
-                                                    value="{{ $item->stock_quantity }}" required min="1">
-                                            </div>
-                                        </div>
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                            <button type="submit" class="btn btn-primary">Update Supply Item</button>
-                                        </div>
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                     </form>
+                                </td>
+                            </tr>
+
+                            <!-- Edit Supply Item Modal for each item -->
+                            <div class="modal fade" id="editSupplyModal-{{ $item->id }}" tabindex="-1"
+                                aria-labelledby="editSupplyModalLabel-{{ $item->id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="editSupplyModalLabel-{{ $item->id }}">Edit Supply Item</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <form action="{{ route('supplier.supplyitems.update', $item->id) }}" method="POST">
+                                            @csrf
+                                            @method('PUT') <!-- Hidden field to override the method to PUT -->
+
+                                            <div class="modal-body">
+                                                <div class="form-group">
+                                                    <label for="edit_name_{{ $item->id }}">Item Name</label>
+                                                    <input type="text" id="edit_name_{{ $item->id }}" name="name"
+                                                        class="form-control" value="{{ $item->name }}" required>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="edit_description_{{ $item->id }}">Description</label>
+                                                    <textarea id="edit_description_{{ $item->id }}" name="description"
+                                                        class="form-control">{{ $item->description }}</textarea>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="edit_price_{{ $item->id }}">Price (per unit)</label>
+                                                    <input type="number" id="edit_price_{{ $item->id }}" step="0.01"
+                                                        name="price" class="form-control" value="{{ $item->price }}" required>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="edit_stock_quantity_{{ $item->id }}">Stock Quantity</label>
+                                                    <input type="number" id="edit_stock_quantity_{{ $item->id }}"
+                                                        name="stock_quantity" class="form-control"
+                                                        value="{{ $item->stock_quantity }}" required min="1">
+                                                </div>
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                <button type="submit" class="btn btn-primary">Update Supply Item</button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    @endforeach
-
-                </tbody>
-            </table>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         @endif
     </div>
 

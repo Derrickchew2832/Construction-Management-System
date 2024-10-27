@@ -42,7 +42,11 @@ Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('p
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminUserController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [AdminUserController::class, 'index'])->name('projects');
+    Route::get('/project/{id}', [AdminUserController::class, 'showProjects'])->name('project.details');
+    Route::get('projects/{id}/edit', [AdminUserController::class, 'editProject'])->name('projects.edit');
+    Route::put('/projects/{id}', [AdminUserController::class, 'updateProject'])->name('project.update');
+    Route::delete('/projects/{id}', [AdminUserController::class, 'deleteProject'])->name('project.delete');
     Route::get('/approve', [AdminUserController::class, 'approvePage'])->name('approvePage');
     Route::post('/approve/{id}', [AdminUserController::class, 'approveUser'])->name('approve');
     Route::post('/reject/{id}', [AdminUserController::class, 'rejectUser'])->name('reject');
@@ -137,9 +141,10 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     
     // Submit Delivery Details
     Route::post('/order/{id}/delivery', [SupplierController::class, 'submitDelivery'])->name('order.delivery.submit');
-    // Supplier profile management
-    Route::get('/profile', [SupplierController::class, 'editProfile'])->name('profile');
-    Route::put('/profile', [SupplierController::class, 'updateProfile'])->name('profile.update');
+     // Supplier profile management
+     Route::get('/profile', [SupplierController::class, 'editProfile'])->name('profile');
+     Route::put('/profile', [SupplierController::class, 'updateProfile'])->name('profile.update');
+     Route::post('/profile/password', [SupplierController::class, 'updatePassword'])->name('profile.updatePassword');
 
     // Supply Items routes
     Route::get('/supplyitems', [SupplyItemController::class, 'supplyIndex'])->name('supplyitems.index');
@@ -152,16 +157,22 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
 });
 
 
-// Client Routes
 Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->group(function () {
+    // Dashboard route
     Route::get('/dashboard', [ClientController::class, 'dashboard'])->name('dashboard');
+
+    // Project routes
     Route::get('/projects/dashboard', [ClientController::class, 'projects'])->name('projects.dashboard');
-    Route::get('/invitations', [ClientController::class, 'invitations'])->name('invitations');
-    Route::get('/profile', [ClientController::class, 'editProfile'])->name('profile');
-    Route::put('/profile', [ClientController::class, 'updateProfile'])->name('profile.update');
-    Route::put('/invitation/{invitationId}', [ClientController::class, 'updateInvitationStatus'])->name('invitation.update');
     Route::post('/projects/{projectId}/favorite', [ClientController::class, 'updateFavoriteStatus'])->name('projects.favorite');
 
+    // Invitation routes
+    Route::get('/invitations', [ClientController::class, 'invitations'])->name('invitations');
+    Route::put('/invitation/{invitationId}', [ClientController::class, 'updateInvitationStatus'])->name('invitation.update');
+
+    // Profile management routes
+    Route::get('/profile', [ClientController::class, 'editProfile'])->name('profile');
+    Route::put('/profile', [ClientController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/profile/password', [ClientController::class, 'updatePassword'])->name('profile.updatePassword');
 });
 
 
@@ -193,6 +204,9 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
         Route::get('/tasks/{taskId}/details', [TaskController::class, 'viewTaskDetails'])->name('details');
         Route::post('/tasks/{taskId}/update-status', [TaskController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/tasks/{task}/update-category', [TaskController::class, 'updateCategory'])->name('updateCategory');
+        Route::get('/tasks/{taskId}/edit-task', [TaskController::class, 'editTask'])->name('editTask');
+        Route::put('/tasks/{taskId}/update-task', [TaskController::class, 'updateTask'])->name('updateTask');
+        Route::delete('/tasks/{taskId}/delete-task', [TaskController::class, 'deleteTask'])->name('deleteTask');
 
         // Supply order routes
         Route::get('/supply_order', [TaskSupplyController::class, 'showSuppliers'])->name('supply_order');
@@ -201,12 +215,13 @@ Route::middleware(['auth', 'role:project_manager,contractor,client'])
 
         // New route for marking order as received
         Route::put('/orders/{orderId}/received', [TaskSupplyController::class, 'OrderReceived'])->name('order.received');
-        
-
         Route::get('/photos', [TaskController::class, 'viewPhotos'])->name('photos.view');
         Route::post('/photos/upload', [TaskController::class, 'uploadPhoto'])->name('photos.upload');
         Route::get('/files', [TaskController::class, 'viewFiles'])->name('files.view');
         Route::post('/files/upload', [TaskController::class, 'uploadFile'])->name('files.upload');
+        Route::delete('/files/{fileId}/delete', [TaskController::class, 'deleteFile'])->name('files.delete');
+        Route::delete('/photos/{photoId}/delete', [TaskController::class, 'deletePhoto'])->name('photos.delete');
+
         Route::post('/end', [TaskController::class, 'endProject'])->name('endProject');
     });
 

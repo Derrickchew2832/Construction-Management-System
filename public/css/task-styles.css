@@ -220,3 +220,20 @@
     background-color: #6c757d;
     color: white;
 }
+
+/* Disabled Button Styling */
+.disabled-btn {
+    background-color: grey !important;
+    border-color: grey !important;
+    color: white !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* Disabled Drag-and-Drop */
+.disabled-drag {
+    pointer-events: none;
+    cursor: default;
+    opacity: 0.6;
+}
+

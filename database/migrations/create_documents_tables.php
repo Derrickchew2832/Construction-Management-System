@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('task_id')->nullable(); // Link to task (optional)
             $table->unsignedBigInteger('uploaded_by'); // User ID who uploaded the document
             $table->string('file_path'); // Path to the document file
+            $table->string('original_name'); // Original name of the uploaded file
             $table->text('description')->nullable(); // Optional description for the document
             $table->timestamps();
 

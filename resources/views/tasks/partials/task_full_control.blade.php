@@ -10,7 +10,8 @@
         <!-- Category: Under Negotiation -->
         <div class="col-md-2">
             <h6 class="text-muted">UnderNegotiation (<span class="task-count"
-                    data-category="under_negotiation">{{ $categorizedTasks['under_negotiation']->count() }}</span>)</h6>
+                    data-category="under_negotiation">{{ $categorizedTasks['under_negotiation']->count() }}</span>)
+            </h6>
             <div class="task-category category-negotiation" data-category="under_negotiation">
                 @if ($categorizedTasks['under_negotiation']->isEmpty())
                     <p class="text-muted">No tasks available in this category.</p>
@@ -267,8 +268,32 @@
         let currentCategory = null; // Define currentCategory outside the event listener
 
         // Retrieve the project's start and end dates (these should be set dynamically from the server-side when rendering the page)
-        const projectStartDate = '{{ $project->start_date }}'; // Example: '2024-10-10'
-        const projectEndDate = '{{ $project->end_date }}'; // Example: '2024-12-31'
+        const projectStartDate = '{{ $project->start_date }}';
+        const projectEndDate = '{{ $project->end_date }}';
+
+        const projectStatus = '{{ $project->status }}'; // Get project status
+
+        if (projectStatus === 'completed') {
+    // Disable the "Create Task" button and apply styles
+    $('.btn-create-task').prop('disabled', true).css({
+        'background-color': '#d3d3d3', // Gray color
+        'cursor': 'not-allowed',
+        'color': '#6c757d'
+    });
+
+    // Disable drag-and-drop functionality for tasks
+    $('.task-card').attr('draggable', false).css({
+        'cursor': 'default'
+    });
+
+    // Add hover style to indicate drag is disabled
+    $('.task-card').on('mouseenter', function() {
+        $(this).css('opacity', '0.6'); // Dim color on hover if needed
+    }).on('mouseleave', function() {
+        $(this).css('opacity', '1'); // Restore opacity
+    });
+}
+
 
         // Dragging the task card
         $('.task-card').on('dragstart', function(event) {
@@ -319,24 +344,31 @@
             });
 
             if (!taskId || !currentCategory || !newCategory || !projectId) {
-        console.error('Task ID, Current Category, New Category, or Project ID is missing during drop.');
-        alert('An error occurred while dropping the task.');
-        return;
-    }
+                console.error(
+                    'Task ID, Current Category, New Category, or Project ID is missing during drop.'
+                );
+                alert('An error occurred while dropping the task.');
+                return;
+            }
 
-    // Allow moving from Completed to Verified with confirmation
-    if (currentCategory === 'completed' && newCategory === 'verified') {
-        // Confirm action before moving
-        if (confirm("Is the task completed? Are you sure you want to move this task to Verified?")) {
-            updateTaskCategory(projectId, taskId, newCategory); // Pass projectId to the function
-        }
-    } else if ((currentCategory === 'priority_1' && newCategory === 'priority_2') ||
-               (currentCategory === 'priority_2' && newCategory === 'priority_1')) {
-        // Move the task to the new category
-        updateTaskCategory(projectId, taskId, newCategory); // Pass projectId to the function
-    } else {
-        alert('You can only move tasks between Priority 1 and Priority 2, or from Completed to Verified.');
-    }
+            // Allow moving from Completed to Verified with confirmation
+            if (currentCategory === 'completed' && newCategory === 'verified') {
+                // Confirm action before moving
+                if (confirm(
+                        "Is the task completed? Are you sure you want to move this task to Verified?"
+                    )) {
+                    updateTaskCategory(projectId, taskId,
+                        newCategory); // Pass projectId to the function
+                }
+            } else if ((currentCategory === 'priority_1' && newCategory === 'priority_2') ||
+                (currentCategory === 'priority_2' && newCategory === 'priority_1')) {
+                // Move the task to the new category
+                updateTaskCategory(projectId, taskId, newCategory); // Pass projectId to the function
+            } else {
+                alert(
+                    'You can only move tasks between Priority 1 and Priority 2, or from Completed to Verified.'
+                );
+            }
         });
 
         // On drag over, allow dropping
@@ -345,60 +377,61 @@
         });
 
         function updateTaskCategory(projectId, taskId, newCategory) {
-    console.log(`Updating Task ID: ${taskId} to Category: ${newCategory} in Project: ${projectId}`);
+            console.log(`Updating Task ID: ${taskId} to Category: ${newCategory} in Project: ${projectId}`);
 
-    $.ajax({
-        url: `/projects/${projectId}/tasks/${taskId}/update-category`,
-        type: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content'),
-            category: newCategory
-        },
-        success: function(response) {
-            if (response.success) {
-                // Find the task card element
-                const taskCard = $(`[data-task-id="${taskId}"]`);
+            $.ajax({
+                url: `/projects/${projectId}/tasks/${taskId}/update-category`,
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    category: newCategory
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Find the task card element
+                        const taskCard = $(`[data-task-id="${taskId}"]`);
 
-                // Log the response to check if the contractor email is being received
-                console.log("Server response:", response);
+                        // Log the response to check if the contractor email is being received
+                        console.log("Server response:", response);
 
-                // Clone the task card to avoid event listener loss, and append to the new category
-                const taskClone = taskCard.clone(true, true);
+                        // Clone the task card to avoid event listener loss, and append to the new category
+                        const taskClone = taskCard.clone(true, true);
 
-                // Update the contractor email in the cloned task card
-                if (response.task && response.task.contractor_email) {
-                    taskClone.find('.text-muted').html('Assigned to: ' + response.task.contractor_email);
-                } else {
-                    taskClone.find('.text-muted').html('Assigned to: Unassigned');
+                        // Update the contractor email in the cloned task card
+                        if (response.task && response.task.contractor_email) {
+                            taskClone.find('.text-muted').html('Assigned to: ' + response.task
+                                .contractor_email);
+                        } else {
+                            taskClone.find('.text-muted').html('Assigned to: Unassigned');
+                        }
+
+                        // Remove the task card from its current category
+                        taskCard.remove();
+
+                        // Append the cloned task card to the new category container
+                        const newCategoryContainer = $(`[data-category="${newCategory}"]`);
+                        newCategoryContainer.append(taskClone);
+
+                        // Show the cloned task card with a fade-in effect
+                        taskClone.fadeIn();
+
+                        // **Ensure the category message is correctly updated**
+                        updateCategoryMessage(currentCategory);
+                        updateCategoryMessage(newCategory);
+
+                        // **Ensure the task count is correctly updated**
+                        updateTaskCount(currentCategory);
+                        updateTaskCount(newCategory);
+                    } else {
+                        alert('Failed to update the task category.');
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    alert('An error occurred while updating the task category.');
                 }
-
-                // Remove the task card from its current category
-                taskCard.remove();
-
-                // Append the cloned task card to the new category container
-                const newCategoryContainer = $(`[data-category="${newCategory}"]`);
-                newCategoryContainer.append(taskClone);
-
-                // Show the cloned task card with a fade-in effect
-                taskClone.fadeIn();
-
-                // **Ensure the category message is correctly updated**
-                updateCategoryMessage(currentCategory);
-                updateCategoryMessage(newCategory);
-
-                // **Ensure the task count is correctly updated**
-                updateTaskCount(currentCategory);
-                updateTaskCount(newCategory);
-            } else {
-                alert('Failed to update the task category.');
-            }
-        },
-        error: function(xhr) {
-            console.error(xhr.responseText);
-            alert('An error occurred while updating the task category.');
+            });
         }
-    });
-}
 
 
         // Update the category message dynamically
@@ -419,45 +452,47 @@
             const taskCountElement = $(`.task-count[data-category="${category}"]`);
             const taskCount = $(`.task-category[data-category="${category}"] .task-card`).length;
 
-            taskCountElement.text(taskCount); 
-     
+            taskCountElement.text(taskCount);
+
         }
 
-        // Original task-card click functionality 
         $(document).on('click', '.task-card', function(event) {
             event.preventDefault();
 
-            // Get the task and project IDs from the clicked task card
             var taskId = $(this).data('task-id');
             var projectId = $(this).data('project-id');
 
-            // Logging the values for debugging
             console.log("Task ID:", taskId);
             console.log("Project ID:", projectId);
 
-            // Check if taskId and projectId are valid before making the AJAX request
             if (taskId && projectId) {
                 $.ajax({
                     url: '/projects/' + projectId + '/tasks/' + taskId + '/details',
                     type: 'GET',
                     success: function(response) {
                         if (response) {
-                            // If response is valid, show the task details in the modal
                             $('#task-details-content').html(response);
                             $('#taskDetailsModal').modal('show');
                         } else {
-                            // Handle case where the server returns an empty or invalid response
+                            console.warn(
+                                'Received empty or invalid response for task details.');
                             alert('Task details could not be loaded. Please try again.');
                         }
                     },
                     error: function(xhr, status, error) {
-                        // Log detailed error to the console for debugging
                         console.error('Error fetching task details:', xhr.responseText);
-                        alert('Error fetching task details. Please try again.');
+                        if (xhr.status === 404) {
+                            alert('Task not found. It may have been deleted or moved.');
+                        } else if (xhr.status === 403) {
+                            alert('You do not have permission to view this task.');
+                        } else {
+                            alert(
+                                'An error occurred while fetching task details. Please try again.'
+                                );
+                        }
                     }
                 });
             } else {
-                // Handle case where taskId or projectId is missing or undefined
                 if (!taskId) {
                     console.error('Task ID is missing.');
                     alert('Task ID is not defined. Please try again.');
@@ -470,59 +505,59 @@
         });
 
         $('#taskForm').on('submit', function(e) {
-        e.preventDefault(); 
+            e.preventDefault();
 
-        // CSRF token is necessary for secure form submission in Laravel
-        let csrfToken = $('meta[name="csrf-token"]').attr('content');
-        var projectId = $(this).data('project-id');
-        var url = '{{ route('tasks.store', ':projectId') }}';
-        url = url.replace(':projectId', projectId); // Replace projectId in the URL
+            // CSRF token is necessary for secure form submission in Laravel
+            let csrfToken = $('meta[name="csrf-token"]').attr('content');
+            var projectId = $(this).data('project-id');
+            var url = '{{ route('tasks.store', ':projectId') }}';
+            url = url.replace(':projectId', projectId); // Replace projectId in the URL
 
-        // Fetch the values of start date and due date
-        const startDate = $('#start_date').val();
-        const dueDate = $('#due_date').val();
+            // Fetch the values of start date and due date
+            const startDate = $('#start_date').val();
+            const dueDate = $('#due_date').val();
 
-        // Client-side validation to ensure the dates are within the project's range
-        if (startDate < projectStartDate || startDate > projectEndDate) {
-            alert('Start date must be within the project\'s start and end dates.');
-            return;
-        }
-
-        if (dueDate < projectStartDate || dueDate > projectEndDate) {
-            alert('Due date must be within the project\'s start and end dates.');
-            return;
-        }
-
-        if (startDate > dueDate) {
-            alert('Start date cannot be later than due date.');
-            return;
-        }
-
-        // Submit the form via AJAX
-        $.ajax({
-            url: url,
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            },
-            data: new FormData($('#taskForm')[0]), 
-            contentType: false,
-            processData: false,
-            success: function(response) {
-                if (response.success) {
-                    alert(response.message);
-                    $('#taskForm')[0].reset(); 
-                    location.reload(); 
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error during task submission:', xhr.responseText);
-                alert('An unexpected error occurred. Please try again.');
+            // Client-side validation to ensure the dates are within the project's range
+            if (startDate < projectStartDate || startDate > projectEndDate) {
+                alert('Start date must be within the project\'s start and end dates.');
+                return;
             }
+
+            if (dueDate < projectStartDate || dueDate > projectEndDate) {
+                alert('Due date must be within the project\'s start and end dates.');
+                return;
+            }
+
+            if (startDate > dueDate) {
+                alert('Start date cannot be later than due date.');
+                return;
+            }
+
+            // Submit the form via AJAX
+            $.ajax({
+                url: url,
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                data: new FormData($('#taskForm')[0]),
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        $('#taskForm')[0].reset();
+                        location.reload();
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error during task submission:', xhr.responseText);
+                    alert('An unexpected error occurred. Please try again.');
+                }
+            });
         });
-    });
 
     });
 </script>

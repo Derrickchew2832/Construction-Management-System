@@ -18,11 +18,12 @@
         <!-- Project Cards Section -->
         <div class="row" id="projectCards">
             @foreach ($projects as $project)
-                @if ($project->can_access_management) <!-- Only show the project if contractor is main -->
-                    <div class="col-md-4 mb-4 project-card" 
-                         data-is-favorite="{{ $project->is_favorite ? '1' : '0' }}" 
-                         data-title="{{ strtolower($project->name) }}">
-                        <div class="card position-relative h-100 shadow-sm border-0"> <!-- Added shadow for better appearance -->
+                @if ($project->can_access_management)
+                    <!-- Only show the project if contractor is main -->
+                    <div class="col-md-4 mb-4 project-card" data-is-favorite="{{ $project->is_favorite ? '1' : '0' }}"
+                        data-title="{{ strtolower($project->name) }}">
+                        <div class="card position-relative h-100 shadow-sm border-0">
+                            <!-- Added shadow for better appearance -->
                             <!-- Ribbon based on project status -->
                             @if ($project->ribbon === 'Completed')
                                 <div class="ribbon bg-success">Completed</div>
@@ -33,7 +34,8 @@
                             <div class="card-body">
                                 <!-- Adjusted Font Size for Project Title -->
                                 <h5 class="card-title project-title text-dark font-weight-bold">{{ $project->name }}</h5>
-                                <p class="card-text text-muted">{{ Str::limit($project->description, 100) }}</p> <!-- Limited description length -->
+                                <p class="card-text text-muted">{{ Str::limit($project->description, 100) }}</p>
+                                <!-- Limited description length -->
 
                                 <!-- Favorite Button and Project Management -->
                                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -54,6 +56,13 @@
                                     class="btn btn-outline-primary btn-block">
                                     Enter Project
                                 </a>
+
+                                <!-- Completed Project Message -->
+                                @if ($project->ribbon === 'Completed')
+                                    <div class="alert alert-info mt-3" role="alert">
+                                        This project is completed. All actions are disabled.
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -129,7 +138,8 @@
             let projectCards = Array.from(document.querySelectorAll('#projectCards .project-card'));
 
             projectCards.sort(function(a, b) {
-                let aIsFavorite = a.getAttribute('data-is-favorite') === '1'; // Check if project is favorite
+                let aIsFavorite = a.getAttribute('data-is-favorite') ===
+                '1'; // Check if project is favorite
                 let bIsFavorite = b.getAttribute('data-is-favorite') === '1';
 
                 if (aIsFavorite && !bIsFavorite) return -1; // Favorites stay on top
@@ -184,7 +194,8 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .getAttribute('content')
                         },
                         body: JSON.stringify({
                             is_favorite: !isFavorite // Send the opposite state
@@ -199,7 +210,7 @@
                     .then(data => {
                         // Update the star icon based on the response from the server
                         if (data.is_favorite) {
-                            icon.classList.add('fas');  // Filled star for favorite
+                            icon.classList.add('fas'); // Filled star for favorite
                             icon.classList.remove('far'); // Remove outline star
                             alert('Project added to favorites!');
                         } else {

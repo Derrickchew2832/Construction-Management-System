@@ -4,44 +4,37 @@
 
 @section('content')
     <div class="container mt-4">
-        <h1 class="mb-4">Projects</h1>
+        <h2 class="text-primary mb-4" style="font-weight: bold;">Projects</h2> <!-- Enhanced title styling -->
+
         <div class="d-flex justify-content-end align-items-center mb-3">
-            <!-- Sort and Search Input -->
+            <!-- Sort and Search Input moved to the right -->
             <div class="d-flex align-items-center">
-                <button class="btn btn-outline-secondary me-3 sort-btn" id="sortButton">Sort A-Z</button>
-                <input type="text" class="form-control search-bar" placeholder="Search projects" id="searchInput">
+                <button class="btn btn-outline-secondary me-3 w-auto" id="sortButton">Sort A-Z</button>
+                <input type="text" class="form-control w-auto search-bar" placeholder="Search projects" id="searchInput" style="max-width: 200px;">
             </div>
         </div>
 
         <div class="row" id="projectCards">
             @foreach ($projects as $project)
-                <div class="col-md-4 mb-4">
-                    <div class="card position-relative h-100">
-                        <!-- Ribbon based on project status -->
-                        @if ($project->ribbon === 'Completed')
-                            <div class="ribbon bg-success">Completed</div>
-                        @elseif ($project->ribbon === 'In Progress')
-                            <div class="ribbon bg-warning">In Progress</div>
-                        @else
-                            <div class="ribbon bg-secondary">Pending</div> <!-- Default ribbon for other statuses -->
-                        @endif
-
+                <div class="col-md-4 mb-4 project-card">
+                    <div class="card shadow-sm position-relative same-height border-0">
                         <div class="card-body">
-                            <!-- Adjusted Font Size for Project Title -->
-                            <h5 class="card-title project-title">{{ $project->name }}</h5>
-                            <p class="card-text">{{ $project->description }}</p>
+                            <!-- Ribbon based on project status -->
+                            @php
+                                $projectStatus = strtolower($project->status);
+                                $ribbonClass = ($projectStatus === 'completed') ? 'bg-success' : ($projectStatus === 'in progress' ? 'bg-warning' : 'bg-secondary');
+                            @endphp
+                            <div class="ribbon {{ $ribbonClass }}">{{ ucfirst($projectStatus) }}</div>
+
+                            <h5 class="card-title text-primary">{{ $project->name }}</h5>
+                            <p class="card-text text-muted">{{ Str::limit($project->description, 100) }}</p> <!-- Limiting description length -->
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div>
-                                    <!-- Display the number of people in the project -->
-                                    <span>{{ $project->members_count ?? 0 }}</span>
-                                    <i class="fas fa-users"></i>
-                                </div>
                                 <div>
                                     <!-- Favorite Button -->
                                     @php
                                         $isFavorite = $project->is_favorite ? 'fas' : 'far';
                                     @endphp
-                                    <a href="#" class="btn btn-link favorite-btn" data-project-id="{{ $project->id }}">
+                                    <a href="#" class="btn btn-link text-warning favorite-btn" data-project-id="{{ $project->id }}">
                                         <i class="{{ $isFavorite }} fa-star"></i>
                                     </a>
                                 </div>
@@ -51,6 +44,12 @@
                             <a href="{{ route('tasks.index', $project->id) }}" class="btn btn-outline-primary btn-block">
                                 Enter Project
                             </a>
+
+                            @if ($project->status === 'completed')
+                                <div class="alert alert-info mt-2" role="alert">
+                                    This project is completed. All actions are disabled.
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -69,73 +68,74 @@
             color: white;
             text-transform: uppercase;
             border-radius: 3px;
-            z-index: 10; /* Ensure the ribbon is displayed above other elements */
         }
 
         .ribbon.bg-warning {
-            background-color: #f0ad4e; /* Orange color for In Progress */
+            background-color: #f0ad4e;
         }
 
         .ribbon.bg-success {
-            background-color: #28a745; /* Green for Completed */
+            background-color: #28a745;
         }
 
         .ribbon.bg-secondary {
-            background-color: #6c757d; /* Grey color for Pending */
+            background-color: #6c757d;
         }
 
-        /* Adjusted Font Size for Project Title */
-        .project-title {
-            font-size: 1.1rem; /* Make the project title smaller */
+        /* Ensure cards are sorted correctly */
+        .same-height {
+            height: 100%;
         }
 
-        /* Sort Button and Search Input Alignment */
+        /* Adjust Sort Button and Search Box size and spacing */
         .me-3 {
-            margin-right: 1rem; /* Ensure a gap between Sort and Search */
+            margin-right: 1rem;
         }
 
-        .sort-btn {
-            height: 38px; /* Match search input height */
-            width: auto; /* Automatically adjust to fit text */
-            white-space: nowrap; /* Ensure the text fits in one row */
+        .w-auto {
+            width: 150px;
         }
 
-        .search-bar {
-            height: 38px; /* Adjust the height to match sort button */
-            min-width: 200px; /* Ensure the search bar has a minimum width */
+        .card-body {
+            padding: 1.5rem;
         }
 
-        .d-flex {
-            display: flex;
+        .btn-link {
+            font-size: 1.2rem;
         }
     </style>
 
     <script>
-        // Sort Functionality
-        document.getElementById('sortButton').addEventListener('click', function() {
-            let projectCards = Array.from(document.querySelectorAll('#projectCards .col-md-4'));
-            projectCards.sort(function(a, b) {
-                return a.querySelector('.card-title').textContent.trim().localeCompare(
-                    b.querySelector('.card-title').textContent.trim()
-                );
+        // Sorting functionality
+        let isAscending = true;
+        document.getElementById('sortButton').addEventListener('click', function () {
+            let projectCards = Array.from(document.querySelectorAll('.project-card'));
+            projectCards.sort(function (a, b) {
+                let titleA = a.querySelector('.card-title').textContent.trim().toLowerCase();
+                let titleB = b.querySelector('.card-title').textContent.trim().toLowerCase();
+                return isAscending ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA);
             });
+
+            isAscending = !isAscending;
+            let sortButtonText = isAscending ? 'Sort A-Z' : 'Sort Z-A';
+            document.getElementById('sortButton').textContent = sortButtonText;
 
             let projectContainer = document.getElementById('projectCards');
             projectContainer.innerHTML = '';
-            projectCards.forEach(function(card) {
+            projectCards.forEach(function (card) {
                 projectContainer.appendChild(card);
             });
         });
 
-        // Search Functionality
-        document.getElementById('searchInput').addEventListener('keyup', function() {
-            let searchQuery = this.value.toLowerCase();
-            let projectCards = document.querySelectorAll('#projectCards .col-md-4');
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function () {
+            let searchValue = this.value.toLowerCase();
+            let projectCards = document.querySelectorAll('.project-card');
 
-            projectCards.forEach(function(card) {
-                let title = card.querySelector('.card-title').textContent.toLowerCase();
-                let description = card.querySelector('.card-text').textContent.toLowerCase();
-                if (title.includes(searchQuery) || description.includes(searchQuery)) {
+            projectCards.forEach(function (card) {
+                let projectName = card.querySelector('.card-title').textContent.toLowerCase();
+                let projectDescription = card.querySelector('.card-text').textContent.toLowerCase();
+                if (projectName.includes(searchValue) || projectDescription.includes(searchValue)) {
                     card.style.display = 'block';
                 } else {
                     card.style.display = 'none';
@@ -143,50 +143,41 @@
             });
         });
 
-        // Toggle Favorite
-        document.querySelectorAll('.favorite-btn').forEach(function(button) {
-            button.addEventListener('click', function(event) {
+        // Toggle favorite status
+        document.querySelectorAll('.favorite-btn').forEach(function (button) {
+            button.addEventListener('click', function (event) {
                 event.preventDefault();
                 let icon = this.querySelector('i');
                 let projectId = this.getAttribute('data-project-id');
-                let isFavorite = icon.classList.contains('fas'); // Determine current favorite state
+                let isFavorite = icon.classList.contains('fas');
 
-                // Send AJAX request to toggle favorite state
+                icon.classList.toggle('fas');
+                icon.classList.toggle('far');
+
                 fetch(`/client/projects/${projectId}/favorite`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            is_favorite: !isFavorite // Send the opposite state
-                        })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        is_favorite: !isFavorite
                     })
-                    .then(response => {
-                        // Check if response is HTML and not JSON
-                        if (response.headers.get('content-type').includes('text/html')) {
-                            return response.text().then(text => {
-                                throw new Error(`Unexpected HTML response: ${text}`);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Update the star icon based on the response from the server
-                        if (data.is_favorite) {
-                            icon.classList.add('fas');  // Filled star for favorite
-                            icon.classList.remove('far'); // Remove outline star
-                            alert('Project added to favorites!');
-                        } else {
-                            icon.classList.add('far'); // Outline star for non-favorite
-                            icon.classList.remove('fas'); // Remove filled star
-                            alert('Project removed from favorites!');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while updating the favorite status.');
-                    });
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                }).then(data => {
+                    if (data.is_favorite) {
+                        alert('Project added to favorites!');
+                    } else {
+                        alert('Project removed from favorites!');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the favorite status.');
+                });
             });
         });
     </script>
