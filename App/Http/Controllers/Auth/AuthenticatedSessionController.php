@@ -32,7 +32,7 @@ class AuthenticatedSessionController extends Controller
         $clientRoleId = DB::table('roles')->where('name', 'client')->value('id');
         
         if ($user->role_id == $adminRoleId) {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
+            return redirect()->intended(route('admin.approvePage', absolute: false));
         } elseif ($user->role_id == $projectManagerRoleId) {
             return redirect()->intended(route('project_manager.projects.index', absolute: false));
         } elseif ($user->role_id == $contractorRoleId) {

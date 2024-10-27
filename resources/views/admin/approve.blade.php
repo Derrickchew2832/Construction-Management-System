@@ -37,15 +37,18 @@
                         <tr>
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
-                            <td>{{ ucfirst($user->role) }}</td>
+                            <td>{{ ucfirst($user->role_name ?? 'No Role Assigned') }}</td>
                             <td>{{ $user->phone }}</td>
                             <td><a href="{{ Storage::url($user->document_path) }}" target="_blank" class="btn btn-link">View Document</a></td>
                             <td class="text-center">
-                                <form action="{{ route('admin.approve', $user->id) }}" method="POST" style="display:inline-block;">
+                                <!-- Approve Button with Confirmation -->
+                                <form action="{{ route('admin.approve', $user->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to approve this user?');">
                                     @csrf
                                     <button type="submit" class="btn btn-success btn-sm me-2">Approve</button>
                                 </form>
-                                <form action="{{ route('admin.reject', $user->id) }}" method="POST" style="display:inline-block;">
+                                
+                                <!-- Reject Button with Confirmation -->
+                                <form action="{{ route('admin.reject', $user->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to reject this user?');">
                                     @csrf
                                     <button type="submit" class="btn btn-danger btn-sm">Reject</button>
                                 </form>

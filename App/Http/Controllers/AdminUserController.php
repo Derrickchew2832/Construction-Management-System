@@ -77,12 +77,20 @@ class AdminUserController extends Controller
     
 
 
-    public function approvePage()
-    {
-        // Retrieve all users with a pending status
-        $users = DB::table('users')->where('status', 'pending')->get();
-        return view('admin.approve', compact('users'));
-    }
+   
+
+public function approvePage()
+{
+    // Fetch users with role names using DB Facade
+    $users = DB::table('users')
+        ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
+        ->select('users.*', 'roles.name as role_name')
+        ->where('users.status', 'pending')
+        ->get();
+
+    return view('admin.approve', compact('users'));
+}
+
 
     public function approveUser($id)
     {
