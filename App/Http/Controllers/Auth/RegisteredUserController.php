@@ -35,28 +35,27 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'phone' => ['required', 'string', 'max:15'],
-            'role' => ['required', 'string', 'exists:roles,name'], // Validate role by name
+            'role' => ['required', 'string', 'exists:roles,name'], 
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ]);
 
         $documentPath = $request->file('document')->store('documents');
-
         // Retrieve the role_id from the role name
         $role = Role::where('name', $request->role)->firstOrFail();
-
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
-            'role_id' => $role->id, // Use role_id from the Role model
+            'role_id' => $role->id,
             'document_path' => $documentPath,
-            'status' => 'pending', // New users need admin approval
+            'status' => 'pending', 
         ]);
 
         event(new Registered($user));
+        $user->sendEmailVerificationNotification();  // Send verification email
 
-        // Don't log the user in immediately
-        return redirect()->route('login')->with('status', 'Registration successful, awaiting admin approval.');
+        // Redirect to the email verification notice
+        return redirect()->route('verification.notice')->with('status', 'Please verify your email to complete registration.');
     }
 }

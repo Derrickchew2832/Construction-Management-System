@@ -15,16 +15,20 @@ class AuthenticatedSessionController extends Controller
     {
         return view('auth.login');
     }
-
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
-
         $request->session()->regenerate();
 
         // Role-based redirection
         $user = Auth::user();
+
+        // Check if user is approved
+        if ($user->status === 'pending') {
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Your account is awaiting admin approval.');
+            }
+
         $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
         $projectManagerRoleId = DB::table('roles')->where('name', 'project_manager')->value('id');
         $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');

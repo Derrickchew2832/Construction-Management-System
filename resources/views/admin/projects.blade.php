@@ -49,31 +49,64 @@
                 <h5 class="modal-title" id="editProjectModalLabel">Edit Project</h5>
                 <button type="button" class="btn-close" onclick="closeEditModal()" aria-label="Close"></button>
             </div>
-            <form id="editProjectForm" method="POST">
+            <form id="editProjectForm" method="POST" onsubmit="return confirmSaveChanges()">
                 @csrf
                 @method('PUT')
                 <div class="modal-body">
                     <div class="form-group mb-3">
                         <label for="projectName" class="form-label">Project Name</label>
                         <input type="text" name="name" id="projectName" class="form-control" required>
+                        @error('name')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div class="form-group mb-3">
                         <label for="projectDescription" class="form-label">Description</label>
                         <textarea name="description" id="projectDescription" class="form-control" rows="3" required></textarea>
+                        @error('description')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="projectStartDate" class="form-label">Start Date</label>
                             <input type="date" name="start_date" id="projectStartDate" class="form-control" required>
+                            @error('start_date')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="projectEndDate" class="form-label">End Date</label>
                             <input type="date" name="end_date" id="projectEndDate" class="form-control" required>
+                            @error('end_date')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                     <div class="form-group mb-3">
                         <label for="projectBudget" class="form-label">Total Budget ($)</label>
                         <input type="number" step="0.01" name="total_budget" id="projectBudget" class="form-control" required>
+                        @error('total_budget')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" name="location" id="location" class="form-control" required>
+                        @error('location')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select" required>
+                            @foreach($statuses as $status)
+                                <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                            @endforeach
+                        </select>
+                        @error('status')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -118,7 +151,7 @@
     }
 </style>
 
-<!-- JavaScript for opening, closing modal, and delete confirmation -->
+<!-- JavaScript for opening, closing modal, confirmation, and delete confirmation -->
 <script>
     function openEditModal(projectId) {
         fetch(`/admin/projects/${projectId}/edit`)
@@ -129,6 +162,10 @@
                 document.getElementById('projectStartDate').value = data.start_date;
                 document.getElementById('projectEndDate').value = data.end_date;
                 document.getElementById('projectBudget').value = data.total_budget;
+                document.getElementById('location').value = data.location;
+                Array.from(document.getElementById('status').options).forEach(option => {
+                    option.selected = data.status.includes(option.value);
+                });
 
                 document.getElementById('editProjectForm').action = `/admin/projects/${projectId}`;
                 document.getElementById('editProjectModal').classList.add('show');
@@ -137,6 +174,10 @@
 
     function closeEditModal() {
         document.getElementById('editProjectModal').classList.remove('show');
+    }
+
+    function confirmSaveChanges() {
+        return confirm('Are you sure you want to save these changes?');
     }
 
     function confirmDelete(projectId) {

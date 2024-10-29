@@ -23,5 +23,11 @@ class RedirectIfAuthenticated
         }
 
         return $next($request);
+
+        if (! $request->user() || $request->user()->hasVerifiedEmail()) {
+            return $next($request);
+        }
+        
+        return redirect()->route('verification.notice');
     }
 }

@@ -13,10 +13,13 @@ class AdminUserController extends Controller
 {
     public function index()
     {
-        // Retrieve all projects from the database
         $projects = DB::table('projects')->get();
-        return view('admin.projects', compact('projects'));
+        $statuses = ['pending', 'started', 'completed']; // Define status options
+    
+        return view('admin.projects', compact('projects', 'statuses'));
     }
+    
+
 
     public function showProjects($id)
     {
@@ -39,24 +42,35 @@ class AdminUserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'total_budget' => 'required|numeric|min:0',
+            'start_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . now()->toDateString(), // start_date must be today or in the future
+            ],
+            'end_date' => [
+                'required',
+                'date',
+                'after_or_equal:start_date', // end_date must be after or equal to start_date
+            ],
+            'total_budget' => 'required|numeric|min:1',
+            'location' => 'required|string|max:255',
+            'status' => 'required|string|in:pending,started,completed', // validate against allowed status values
         ]);
-
+    
+        // Update project details in the database
         DB::table('projects')->where('id', $id)->update([
             'name' => $request->name,
             'description' => $request->description,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'total_budget' => $request->total_budget,
-            'budget_remaining' => $request->budget_remaining,
             'location' => $request->location,
             'status' => $request->status,
         ]);
-
-        return redirect()->route('admin.projects.index')->with('success', 'Project updated successfully');
+    
+        return redirect()->route('admin.projects')->with('success', 'Project updated successfully');
     }
+    
 
     public function deleteProject($id)
     {
