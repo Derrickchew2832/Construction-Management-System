@@ -39,7 +39,7 @@ class RegisteredUserController extends Controller
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ]);
 
-        $documentPath = $request->file('document')->store('documents');
+        $documentPath = $request->file('document')->store('documents','public');
         // Retrieve the role_id from the role name
         $role = Role::where('name', $request->role)->firstOrFail();
         $user = User::create([

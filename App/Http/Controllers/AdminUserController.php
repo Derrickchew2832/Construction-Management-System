@@ -26,7 +26,7 @@ class AdminUserController extends Controller
         // Retrieve a specific project by ID with related documents
         $project = DB::table('projects')->where('id', $id)->first();
         $documents = DB::table('project_documents')->where('project_id', $id)->get();
-        return view('admin.project_details', compact('project', 'documents'));
+    return view('admin.project_details', compact('project', 'documents'));
     }
 
     public function editProject($id)
@@ -90,12 +90,9 @@ class AdminUserController extends Controller
     }
     
 
-
-   
-
-public function approvePage()
+    public function approvePage()
 {
-    // Fetch users with role names using DB Facade
+    // Fetch users with their role names and document paths
     $users = DB::table('users')
         ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
         ->select('users.*', 'roles.name as role_name')
@@ -104,7 +101,6 @@ public function approvePage()
 
     return view('admin.approve', compact('users'));
 }
-
 
     public function approveUser($id)
     {

@@ -39,7 +39,13 @@
                             <td>{{ $user->email }}</td>
                             <td>{{ ucfirst($user->role_name ?? 'No Role Assigned') }}</td>
                             <td>{{ $user->phone }}</td>
-                            <td><a href="{{ Storage::url($user->document_path) }}" target="_blank" class="btn btn-link">View Document</a></td>
+                            <td>
+                                @if ($user->document_path)
+                                    <a href="{{ Storage::url($user->document_path) }}" target="_blank" class="btn btn-link">View Document</a>
+                                @else
+                                    No Document
+                                @endif
+                            </td>
                             <td class="text-center">
                                 <!-- Approve Button with Confirmation -->
                                 <form action="{{ route('admin.approve', $user->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to approve this user?');">

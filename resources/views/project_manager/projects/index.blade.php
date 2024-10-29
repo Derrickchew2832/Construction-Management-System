@@ -140,7 +140,7 @@
 
     <script>
         // Sorting functionality
-        let isAscending = true;
+        let isAscending = false;
         document.getElementById('sortButton').addEventListener('click', function () {
             let projectCards = Array.from(document.querySelectorAll('.project-card'));
             projectCards.sort(function (a, b) {

@@ -43,23 +43,6 @@ class ProjectManagerController extends Controller
         ->get();
 
     foreach ($projects as $project) {
-        // Start the user count with the project manager
-        $project->members_count = 1;
-
-        // Count accepted contractors
-        $contractors_count = DB::table('project_contractor')
-            ->where('project_id', $project->id)
-            ->where('status', 'approved')
-            ->count();
-
-       $clients_count = DB::table('project_invitations_client')
-            ->where('project_id', $project->id)
-            ->where('status', 'accepted')
-            ->count();
-        
-
-        // Add contractors and clients to members count
-        $project->members_count += ($contractors_count + $clients_count);
 
         // Check if the project has a main contractor
         $project->main_contractor = DB::table('project_contractor')

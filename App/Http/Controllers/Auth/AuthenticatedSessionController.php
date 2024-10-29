@@ -29,6 +29,12 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('login')->with('error', 'Your account is awaiting admin approval.');
             }
 
+        // Check if user is rejected
+        if ($user->status === 'rejected') {
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Your account has been rejected by the admin.');
+            }
+
         $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
         $projectManagerRoleId = DB::table('roles')->where('name', 'project_manager')->value('id');
         $contractorRoleId = DB::table('roles')->where('name', 'contractor')->value('id');

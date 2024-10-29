@@ -12,11 +12,6 @@ class VerifyEmail
 {
     public function handle($request, Closure $next)
     {
-        // Check if user is authenticated and role is admin
-        if ($request->user() && $request->user()->role === 'admin' && !$request->user()->hasVerifiedEmail()) {
-            // If admin and email not verified, allow access without verification
-            return $next($request);
-        }
 
         // For other users, enforce email verification
         if (!$request->user() || !$request->user()->hasVerifiedEmail()) {
