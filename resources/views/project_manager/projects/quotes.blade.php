@@ -14,6 +14,7 @@
                     <th>Contractor Name</th>
                     <th>Quoted Price</th>
                     <th>Quote Document</th>
+                    <th>Quote Suggestion</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -25,6 +26,7 @@
                         <td>{{ $quote->contractor_name }}</td>
                         <td>${{ number_format($quote->quoted_price, 2) }}</td>
                         <td><a href="{{ Storage::url($quote->quote_pdf) }}" target="_blank" class="btn btn-info btn-sm">View Document</a></td>
+                        <td>{{ $quote->quote_suggestion ? $quote->quote_suggestion : 'No suggestion provided' }}</td>
                         <td>
                             <span class="badge 
                                 @if($quote->quote_status === 'submitted') badge-warning 

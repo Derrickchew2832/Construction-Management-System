@@ -59,6 +59,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+    console.log("Main Contractor Quote: {{ $mainContractorQuote ?? 'null' }}");
+    console.log("Main Contractor Tasks Quoted Price: {{ $mainContractorTasksQuotedPrice ?? 'null' }}");
     // Task Completion Percentage Chart
     var taskCompletionCtx = document.getElementById('taskCompletionChart').getContext('2d');
     var taskCompletionChart = new Chart(taskCompletionCtx, {
@@ -135,7 +137,13 @@
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,  // Display only whole numbers
+                        callback: function(value) { 
+                            return Number.isInteger(value) ? value : null; 
+                        }
+                    }
                 }
             }
         }
@@ -149,7 +157,10 @@
         data: {
             labels: ['Total Project Quoted Price', 'Total Tasks Quoted Price'],
             datasets: [{
-                data: [{{ $mainContractorQuote ?? 0 }}, {{ $mainContractorTasksQuotedPrice ?? 0 }}],
+                data: [
+                    {{ $mainContractorQuote ?? 0 }}, 
+                    {{ $mainContractorTasksQuotedPrice ?? 0 }}
+                ],
                 backgroundColor: ['#e74c3c', '#3498db'],
             }]
         },
@@ -203,3 +214,5 @@
     @endif
 </script>
 @endsection
+
+

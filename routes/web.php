@@ -21,12 +21,17 @@ use App\Http\Controllers\Supplier\SupplierController;
 use App\Http\Controllers\Supplier\SupplyItemController;
 use Illuminate\Support\Facades\Log;
 
+
+
+
+
+
+
+
 // Redirect root URL to login
 Route::get('/', function () {
     return redirect()->route('login');
 });
-
-
 
 Route::get('/email/verify/{id}/{hash}', [VerifyEmailController::class, '__invoke'])
     ->middleware(['signed', 'throttle:6,1'])

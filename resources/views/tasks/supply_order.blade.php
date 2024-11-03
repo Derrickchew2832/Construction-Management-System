@@ -7,7 +7,8 @@
             <div class="card-body">
                 <h5 class="card-title">Project Financial Overview</h5>
                 <p class="card-text"><strong>Quoted Price:</strong> ${{ number_format($quotedPrice, 2) }}</p>
-                <p class="card-text"><strong>Total Supply Orders:</strong> ${{ number_format($totalSupplyOrderPrice, 2) }}</p>
+                <p class="card-text"><strong>Total Supply Orders:</strong> ${{ number_format($totalSupplyOrderPrice, 2) }}
+                </p>
                 <div class="d-flex justify-content-center">
                     <div style="width: 400px; height: 400px;">
                         <canvas id="financePieChart"></canvas>
@@ -22,7 +23,12 @@
         </div>
 
         <!-- Order Supply Button -->
-        <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#orderSupplyModal">Order Supply</button>
+        <!-- Order Supply Button - Disabled if project is completed -->
+        <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#orderSupplyModal"
+            @if ($project->status === 'completed') disabled @endif>
+            Order Supply
+        </button>
+
 
         <!-- Success and Error Messages -->
         @if (session('success'))
@@ -224,7 +230,10 @@
                                     if (label) {
                                         label += ': ';
                                     }
-                                    label += context.raw.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                                    label += context.raw.toLocaleString('en-US', {
+                                        style: 'currency',
+                                        currency: 'USD'
+                                    });
                                     return label;
                                 }
                             }
@@ -288,7 +297,9 @@
                     }
 
                     if (quantity > stockQuantity) {
-                        alert(`The quantity ordered for ${itemName} exceeds the stock quantity (${stockQuantity}).`);
+                        alert(
+                            `The quantity ordered for ${itemName} exceeds the stock quantity (${stockQuantity}).`
+                            );
                         hasValidationError = true;
                         return false;
                     }

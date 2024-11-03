@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class ProjectManagerController extends Controller
@@ -121,37 +122,10 @@ class ProjectManagerController extends Controller
         'description' => 'required|string',
         'start_date' => 'required|date|after_or_equal:today', // Start date must be today or in the future
         'end_date' => 'required|date|after:start_date', // End date must be after the start date
-        'total_budget' => 'required|numeric|min:0',
+        'total_budget' => 'required|numeric|min:1',
         'location' => 'required|string|max:255',
         'documents' => 'required|array', // Ensure at least one document is uploaded
         'documents.*' => 'mimes:pdf,doc,docx|max:2048' // Validate file types and size for each file
-    ], [
-        'name.required' => 'The project name is required.',
-        'name.string' => 'The project name must be a valid string.',
-        'name.max' => 'The project name must not exceed 255 characters.',
-        
-        'description.required' => 'The project description is required.',
-        'description.string' => 'The project description must be a valid string.',
-        
-        'start_date.required' => 'The start date is required.',
-        'start_date.date' => 'The start date must be a valid date.',
-        'start_date.after_or_equal' => 'The start date must be today or a future date.',
-
-        'end_date.required' => 'The end date is required.',
-        'end_date.date' => 'The end date must be a valid date.',
-        'end_date.after' => 'The end date must be after the start date.',
-
-        'total_budget.required' => 'The total budget is required.',
-        'total_budget.numeric' => 'The total budget must be a numeric value.',
-        'total_budget.min' => 'The total budget must be at least 0.',
-
-        'location.required' => 'The location is required.',
-        'location.string' => 'The location must be a valid string.',
-        'location.max' => 'The location must not exceed 255 characters.',
-
-        'documents.required' => 'At least one document is required.',
-        'documents.*.mimes' => 'Documents must be a PDF, DOC, or DOCX file.',
-        'documents.*.max' => 'Documents must not exceed 2MB in size.'
     ]);
 
     // Insert the new project
@@ -162,7 +136,7 @@ class ProjectManagerController extends Controller
         'start_date' => $data['start_date'],
         'end_date' => $data['end_date'],
         'total_budget' => $data['total_budget'],
-        'budget_remaining' => $data['total_budget'], // Set the remaining budget to the total budget initially
+        'budget_remaining' => $data['total_budget'],
         'location' => $data['location'],
         'created_at' => now(),
         'updated_at' => now(),
@@ -185,15 +159,6 @@ class ProjectManagerController extends Controller
         }
     }
 
-    // Insert the project manager as a project user
-    DB::table('project_user')->insert([
-        'project_id' => $projectId,
-        'user_id' => Auth::id(),
-        'role' => 'project_manager',
-        'invited_by' => Auth::id(),
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
 
     // Redirect to the project details page with a success message
     return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project created successfully');
@@ -201,61 +166,78 @@ class ProjectManagerController extends Controller
 
 public function editProject($projectId)
 {
+    // Fetch the project details
     $project = DB::table('projects')->where('id', $projectId)->first();
-    if (!$project) {
-        return redirect()->route('project_manager.projects.index')->with('error', 'Project not found.');
-    }
 
-    return view('project_manager.projects.edit', compact('project'));
+    // Fetch the current document associated with the project
+    $currentDocument = DB::table('project_documents')
+        ->where('project_id', $projectId)
+        ->first();
+
+    // Pass the project and document to the view
+    return view('project_manager.projects.edit', compact('project', 'currentDocument'));
 }
+
 
 public function updateProject(Request $request, $projectId)
 {
+    // Validate the incoming data
     $data = $request->validate([
         'name' => 'required|string|max:255',
         'description' => 'required|string',
-        'start_date' => 'required|date|after_or_equal:today', // Start date must be today or in the future
-        'end_date' => 'required|date|after:start_date', // End date must be after the start date
-        'total_budget' => 'required|numeric|min:0',
+        'start_date' => 'required|date|after_or_equal:today',
+        'end_date' => 'required|date|after:start_date',
+        'total_budget' => 'required|numeric|min:1',
         'location' => 'required|string|max:255',
-    ], [
-        'name.required' => 'The project name is required.',
-        'name.string' => 'The project name must be a valid string.',
-        'name.max' => 'The project name must not exceed 255 characters.',
-        
-        'description.required' => 'The project description is required.',
-        'description.string' => 'The project description must be a valid string.',
-
-        'start_date.required' => 'The start date is required.',
-        'start_date.date' => 'The start date must be a valid date.',
-        'start_date.after_or_equal' => 'The start date must be today or a future date.',
-
-        'end_date.required' => 'The end date is required.',
-        'end_date.date' => 'The end date must be a valid date.',
-        'end_date.after' => 'The end date must be after the start date.',
-
-        'total_budget.required' => 'The total budget is required.',
-        'total_budget.numeric' => 'The total budget must be a numeric value.',
-        'total_budget.min' => 'The total budget must be at least 0.',
-
-        'location.required' => 'The location is required.',
-        'location.string' => 'The location must be a valid string.',
-        'location.max' => 'The location must not exceed 255 characters.'
+        'documents' => 'array',
+        'documents.*' => 'mimes:pdf,doc,docx|max:2048', // Validate file types and size for each file
     ]);
 
+    // Update the project details in the `projects` table
     DB::table('projects')->where('id', $projectId)->update([
         'name' => $data['name'],
         'description' => $data['description'],
         'start_date' => $data['start_date'],
         'end_date' => $data['end_date'],
         'total_budget' => $data['total_budget'],
+        'budget_remaining' => $data['total_budget'],
         'location' => $data['location'],
         'updated_at' => now(),
     ]);
 
+    // Check if a new document is provided
+    if ($request->hasFile('documents')) {
+        // Delete the existing document associated with this project
+        $existingDocument = DB::table('project_documents')->where('project_id', $projectId)->first();
+        
+        if ($existingDocument) {
+            // Remove the existing document from storage
+            Storage::disk('public')->delete($existingDocument->document_path);
+            // Delete the document record from the database
+            DB::table('project_documents')->where('project_id', $projectId)->delete();
+        }
+
+        // Save the new document
+        foreach ($request->file('documents') as $file) {
+            $filePath = $file->store('project_documents', 'public'); // Save the file to public storage
+            $originalFileName = $file->getClientOriginalName(); // Get the original file name
+
+            // Insert the new document path and original name into the project_documents table
+            DB::table('project_documents')->insert([
+                'project_id' => $projectId,
+                'document_path' => $filePath,
+                'original_name' => $originalFileName,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Break after the first document since only one document is allowed
+            break;
+        }
+    }
+
     return redirect()->route('project_manager.projects.show', $projectId)->with('success', 'Project updated successfully!');
 }
-
 
     public function deleteProject($projectId)
     {
@@ -366,22 +348,6 @@ public function storeInvite(Request $request, $projectId)
         ->with('error', 'This contractor has already been invited.');
 }
 
-    public function viewQuote($projectId, $quoteId)
-    {
-        $quote = DB::table('project_contractor')
-            ->where('project_id', $projectId)
-            ->where('id', $quoteId)
-            ->first();
-
-        if (!$quote) {
-            return redirect()->route('project_manager.projects.index')->with('error', 'Quote not found.');
-        }
-
-        $project = DB::table('projects')->where('id', $projectId)->first();
-        $contractor = DB::table('users')->where('id', $quote->contractor_id)->first();
-
-        return view('project_manager.projects.view_quote', compact('quote', 'project', 'contractor'));
-    }
 
     public function manageQuotes()
 {
@@ -436,62 +402,70 @@ public function approveQuote($projectId, $contractorId)
 
     // Prevent approval if the new remaining balance is negative
     if ($newRemainingBalance < 0) {
-        // Redirect back with an error message
         return redirect()->route('project_manager.projects.quotes', $projectId)
             ->with('error', 'The quoted price exceeds the available project budget. Please reject or suggest a new price.');
     }
 
-    // Perform updates in a transaction to ensure data consistency
-    DB::transaction(function() use ($projectId, $contractorId, $newRemainingBalance) {
-        // Update project's remaining budget
-        DB::table('projects')->where('id', $projectId)->update([
-            'budget_remaining' => $newRemainingBalance,
-            'status' => 'started',
-            'updated_at' => now(),
-        ]);
-
-        // Approve the contractor as the main contractor
-        DB::table('project_contractor')
-            ->where('project_id', $projectId)
-            ->where('contractor_id', $contractorId)
-            ->update([
-                'status' => 'approved',
-                'main_contractor' => true,
+    try {
+        DB::transaction(function () use ($projectId, $contractorId, $newRemainingBalance) {
+            // Update project's remaining budget and main contractor ID
+            DB::table('projects')->where('id', $projectId)->update([
+                'budget_remaining' => $newRemainingBalance,
+                'status' => 'started',
+                'main_contractor_id' => $contractorId,
                 'updated_at' => now(),
             ]);
 
-        // Reject all other pending quotes for the project
-        DB::table('project_contractor')
-            ->where('project_id', $projectId)
-            ->where('contractor_id', '!=', $contractorId) // Reject all other contractors
-            ->update([
-                'status' => 'rejected',
-                'is_final' => true,
-                'updated_at' => now(),
-            ]);
+            // Approve the contractor as the main contractor
+            DB::table('project_contractor')
+                ->where('project_id', $projectId)
+                ->where('contractor_id', $contractorId)
+                ->update([
+                    'status' => 'approved',
+                    'main_contractor' => true,
+                    'updated_at' => now(),
+                ]);
 
-        // Update the accepted contractor's invitation status to 'accepted'
-        DB::table('project_invitations')
-            ->where('project_id', $projectId)
-            ->where('contractor_id', $contractorId)
-            ->update([
-                'status' => 'accepted',
-                'updated_at' => now(),
-            ]);
+            // Reject all other pending quotes for the project
+            DB::table('project_contractor')
+                ->where('project_id', $projectId)
+                ->where('contractor_id', '!=', $contractorId)
+                ->update([
+                    'status' => 'rejected',
+                    'is_final' => true,
+                    'updated_at' => now(),
+                ]);
 
-        // Reject all other pending invitations for the project
-        DB::table('project_invitations')
-            ->where('project_id', $projectId)
-            ->where('contractor_id', '!=', $contractorId) // Only close invitations not for the selected contractor
-            ->where('status', 'pending') // Only close pending invitations
-            ->update([
-                'status' => 'closed',  // Mark invitations as closed
-                'updated_at' => now(),
-            ]);
-    });
+            // Update the accepted contractor's invitation status to 'accepted'
+            DB::table('project_invitations')
+                ->where('project_id', $projectId)
+                ->where('contractor_id', $contractorId)
+                ->update([
+                    'status' => 'accepted',
+                    'updated_at' => now(),
+                ]);
 
-    return redirect()->route('project_manager.projects.quotes', $projectId)
-        ->with('success', 'Quote approved, contractor promoted to main contractor, and project started. All other invitations closed.');
+            // Reject all other pending invitations for the project
+            DB::table('project_invitations')
+                ->where('project_id', $projectId)
+                ->where('contractor_id', '!=', $contractorId)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'closed',
+                    'updated_at' => now(),
+                ]);
+        });
+
+        return redirect()->route('project_manager.projects.quotes', $projectId)
+            ->with('success', 'Quote approved, contractor promoted to main contractor, and project started. All other invitations closed.');
+
+    } catch (\Exception $e) {
+        // Log error message for troubleshooting
+        Log::error("Failed to approve quote for project ID: $projectId and contractor ID: $contractorId. Error: " . $e->getMessage());
+
+        return redirect()->route('project_manager.projects.quotes', $projectId)
+            ->with('error', 'Failed to approve quote. Please try again later.');
+    }
 }
 
 

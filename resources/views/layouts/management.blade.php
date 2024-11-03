@@ -283,7 +283,10 @@
                     <button class="btn btn-danger btn-sm" onclick="window.location.href='{{ $exiturl }}'">Exit</button>
                     @if ($isMainContractor && $project->status !== 'completed')
                         <!-- Project Ended button only for Main Contractor -->
-                        <button class="btn btn-warning btn-sm mt-2" id="endProjectBtn">Project Ended</button>
+                        <button class="btn btn-warning btn-sm mt-2" id="endProjectBtn" data-toggle="modal" data-target="#endProjectModal">
+                            Project Ended
+                        </button>
+                        
                     @endif        
                 </div>
             </header>
@@ -315,27 +318,43 @@
     </div>
 
 
-    <script>
-        // Check if 'mySidebarElement' is already defined to avoid redeclaration
-        if (typeof window.mySidebarElement === 'undefined') {
-            const mySidebarElement = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
+    <!-- Custom Error Message Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="errorModalMessage">
+                <!-- Error message will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            mySidebarElement.classList.add('collapsed');
-            mainContent.classList.add('collapsed');
+<script>
+    $(document).ready(function() {
+        // Sidebar expansion and collapse functionality
+        const mySidebarElement = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        mySidebarElement.classList.add('collapsed');
+        mainContent.classList.add('collapsed');
 
-            mySidebarElement.addEventListener('mouseenter', () => {
-                mySidebarElement.classList.add('expanded');
-                mainContent.classList.add('expanded');
-            });
+        mySidebarElement.addEventListener('mouseenter', () => {
+            mySidebarElement.classList.add('expanded');
+            mainContent.classList.add('expanded');
+        });
 
-            mySidebarElement.addEventListener('mouseleave', () => {
-                mySidebarElement.classList.remove('expanded');
-                mainContent.classList.remove('expanded');
-            });
-
-            window.mySidebarElement = mySidebarElement;
-        }
+        mySidebarElement.addEventListener('mouseleave', () => {
+            mySidebarElement.classList.remove('expanded');
+            mainContent.classList.remove('expanded');
+        });
 
         // Calculate remaining days and set the project status
         const projectStartDate = new Date('{{ $project->start_date }}');
@@ -343,12 +362,11 @@
         const currentDate = new Date();
         const statusElement = document.getElementById('project-status');
 
-        // Calculate and display project status based on dates
         if (currentDate < projectStartDate) {
             statusElement.innerHTML = 'Project hasn\'t started yet';
         } else if (currentDate >= projectStartDate && currentDate <= projectDueDate) {
             const timeDifference = projectDueDate.getTime() - currentDate.getTime();
-            const daysRemaining = Math.ceil(timeDifference / (1000 * 3600 * 24)); // Convert milliseconds to days
+            const daysRemaining = Math.ceil(timeDifference / (1000 * 3600 * 24));
             statusElement.innerHTML = daysRemaining + ' days remaining';
         } else {
             statusElement.innerHTML = 'Project has already ended';
@@ -370,16 +388,13 @@
             document.getElementById('current-date-time').innerHTML =
                 `Current Date: ${formattedDate} | Time: ${formattedTime}`;
         }
-
         updateDateTime();
         setInterval(updateDateTime, 1000);
 
-
-       
-        document.getElementById('confirmEndProjectBtn').addEventListener('click', function() {
+        // Event listener for confirming project end
+        $('#confirmEndProjectBtn').on('click', function() {
             const projectId = '{{ $project->id }}';
 
-            // Send AJAX request to end the project
             $.ajax({
                 url: '/projects/' + projectId + '/end',
                 type: 'POST',
@@ -388,23 +403,143 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        alert('Project has been marked as completed.');
-                        location.reload(); // Reload the page to update the UI
+                        $('#endProjectModal').modal('hide');
+                        showCustomErrorModal('Project has been marked as completed.');
+                        location.reload();
                     } else {
-                        alert('An error occurred while ending the project.');
+                        showCustomErrorModal(response.message || 'An error occurred while ending the project.');
                     }
                 },
                 error: function(xhr) {
-                    console.error(xhr.responseText);
-                    alert('An error occurred while ending the project.');
+                    const response = xhr.responseJSON;
+                    if (response && response.message) {
+                        showCustomErrorModal(response.message);
+                    } else {
+                        showCustomErrorModal('An unexpected error occurred. Please try again.');
+                    }
                 }
             });
         });
 
-        // Display current date and time (existing functionality)
+        // Function to display error messages in the custom modal
+        function showCustomErrorModal(message) {
+            $('#errorModalMessage').text(message); // Set the error message
+            $('#errorModal').modal('show'); // Show the modal
+        }
+    });
+</script>
+<!-- Custom Error Message Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="errorModalMessage">
+                <!-- Error message will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Sidebar expansion and collapse functionality
+        const mySidebarElement = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        mySidebarElement.classList.add('collapsed');
+        mainContent.classList.add('collapsed');
+
+        mySidebarElement.addEventListener('mouseenter', () => {
+            mySidebarElement.classList.add('expanded');
+            mainContent.classList.add('expanded');
+        });
+
+        mySidebarElement.addEventListener('mouseleave', () => {
+            mySidebarElement.classList.remove('expanded');
+            mainContent.classList.remove('expanded');
+        });
+
+        // Calculate remaining days and set the project status
+        const projectStartDate = new Date('{{ $project->start_date }}');
+        const projectDueDate = new Date('{{ $project->end_date }}');
+        const currentDate = new Date();
+        const statusElement = document.getElementById('project-status');
+
+        if (currentDate < projectStartDate) {
+            statusElement.innerHTML = 'Project hasn\'t started yet';
+        } else if (currentDate >= projectStartDate && currentDate <= projectDueDate) {
+            const timeDifference = projectDueDate.getTime() - currentDate.getTime();
+            const daysRemaining = Math.ceil(timeDifference / (1000 * 3600 * 24));
+            statusElement.innerHTML = daysRemaining + ' days remaining';
+        } else {
+            statusElement.innerHTML = 'Project has already ended';
+        }
+
+        // Display current date and time
+        function updateDateTime() {
+            const currentDate = new Date();
+            const formattedDate = currentDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+            const formattedTime = currentDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+            document.getElementById('current-date-time').innerHTML =
+                `Current Date: ${formattedDate} | Time: ${formattedTime}`;
+        }
         updateDateTime();
         setInterval(updateDateTime, 1000);
-    </script>
+
+        // Event listener for confirming project end
+        $('#confirmEndProjectBtn').on('click', function() {
+            const projectId = '{{ $project->id }}';
+
+            $.ajax({
+                url: '/projects/' + projectId + '/end',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#endProjectModal').modal('hide');
+                        showCustomErrorModal('Project has been marked as completed.');
+                        location.reload();
+                    } else {
+                        showCustomErrorModal(response.message || 'An error occurred while ending the project.');
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    if (response && response.message) {
+                        showCustomErrorModal(response.message);
+                    } else {
+                        showCustomErrorModal('An unexpected error occurred. Please try again.');
+                    }
+                }
+            });
+        });
+
+        // Function to display error messages in the custom modal
+        function showCustomErrorModal(message) {
+            $('#errorModalMessage').text(message); // Set the error message
+            $('#errorModal').modal('show'); // Show the modal
+        }
+    });
+</script>
+
+    
 
 </body>
 

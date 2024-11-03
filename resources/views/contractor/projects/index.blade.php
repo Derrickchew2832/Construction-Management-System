@@ -131,7 +131,7 @@
 
     <!-- Sort and Search Scripts -->
     <script>
-        let isAscending = true;
+        let isAscending = false;
 
         // Sort Functionality with Favorite Projects Sticking to Top
         document.getElementById('sortButton').addEventListener('click', function() {

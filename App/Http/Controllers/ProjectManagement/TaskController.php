@@ -299,79 +299,80 @@ private function calculateDueDate($startDate, $endDate)
     
 
     public function showQuote($projectId)
-{
-    // Fetch the project by its ID using DB facade
-    $project = DB::table('projects')->where('id', $projectId)->first();
-
-    if (!$project) {
-        return redirect()->route('projects.index')->with('error', 'Project not found.');
-    }
-
-    // Check if the current user is the project manager, main contractor, or has a specific role that grants access to view quotes
-    $userId = auth()->id();
-    $isProjectManager = $userId == $project->project_manager_id;
-    $isMainContractor = $userId == $project->main_contractor_id;
-
-    if (!$isProjectManager && !$isMainContractor) {
-        return redirect()->route('projects.index')->with('error', 'You do not have permission to view quotes for this project.');
-    }
-
-    // Fetch all tasks for the current project
-    $tasks = DB::table('tasks')->where('project_id', $projectId)->get();
-
-    if ($tasks->isEmpty()) {
-        return redirect()->back()->with('error', 'No tasks found for this project.');
-    }
-
-    // Fetch quotes and contractor information for each task
-    foreach ($tasks as $task) {
-        $task->quote = DB::table('task_contractor')->where('task_id', $task->id)->first();
-
-        // If contractor information is needed, fetch it from the `users` table if it exists there.
-        if ($task->quote) {
-            $task->contractor = DB::table('users')
-                ->where('id', $task->quote->contractor_id)
-                ->first();
-        } else {
-            $task->contractor = null;
+    {
+        // Fetch the project by its ID using DB facade
+        $project = DB::table('projects')->where('id', $projectId)->first();
+    
+        if (!$project) {
+            return redirect()->route('projects.index')->with('error', 'Project not found.');
         }
+    
+        // Check if the current user is the project manager, main contractor, or has a specific role that grants access to view quotes
+        $userId = auth()->id();
+        $isProjectManager = $userId == $project->project_manager_id;
+        $isMainContractor = $userId == $project->main_contractor_id;
+    
+        if (!$isProjectManager && !$isMainContractor) {
+            return redirect()->route('projects.index')->with('error', 'You do not have permission to view quotes for this project.');
+        }
+    
+        // Fetch all tasks for the current project along with the contractor information
+        $tasks = DB::table('tasks')
+            ->where('project_id', $projectId)
+            ->get()
+            ->map(function ($task) {
+                // Get the task's quote from task_contractor table
+                $task->quote = DB::table('task_contractor')->where('task_id', $task->id)->first();
+    
+                // Get the contractor's name if a quote exists
+                if ($task->quote) {
+                    $task->contractor = DB::table('users')
+                        ->where('id', $task->quote->contractor_id)
+                        ->select('name')
+                        ->first();
+                } else {
+                    $task->contractor = (object) ['name' => 'N/A']; // Default contractor if none exists
+                }
+    
+                return $task;
+            });
+    
+        // Fetch the project manager and main contractor using DB facade
+        $projectUsers = DB::table('users')
+            ->whereIn('id', [$project->project_manager_id, $project->main_contractor_id])
+            ->get()
+            ->keyBy('id');
+    
+        $projectManager = $projectUsers->get($project->project_manager_id);
+        $mainContractor = $projectUsers->get($project->main_contractor_id);
+    
+        // Calculate total project days
+        $startDate = \Carbon\Carbon::parse($project->start_date);
+        $endDate = \Carbon\Carbon::parse($project->end_date);
+        $totalProjectDays = $startDate->diffInDays($endDate);
+    
+        // Check if project manager and main contractor information is available
+        if (!$projectManager) {
+            return redirect()->back()->with('error', 'Project Manager information is missing.');
+        }
+    
+        if (!$mainContractor && $isMainContractor) {
+            return redirect()->back()->with('error', 'Main Contractor information is missing.');
+        }
+    
+        // Pass all necessary data to the view
+        return view('tasks.quote', [
+            'project' => $project,
+            'tasks' => $tasks,
+            'projectId' => $projectId,
+            'projectManagerName' => $projectManager ? $projectManager->name : 'N/A',
+            'mainContractorName' => $mainContractor ? $mainContractor->name : 'N/A',
+            'isMainContractor' => $isMainContractor,
+            'totalProjectDays' => $totalProjectDays
+        ]);
     }
-
-    // Fetch the project manager and main contractor using DB facade
-    $projectUsers = DB::table('users')
-        ->whereIn('id', [$project->project_manager_id, $project->main_contractor_id])
-        ->get()
-        ->keyBy('id');
-
-    $projectManager = $projectUsers->get($project->project_manager_id);
-    $mainContractor = $projectUsers->get($project->main_contractor_id);
-
-    // Calculate total project days
-    $startDate = \Carbon\Carbon::parse($project->start_date);
-    $endDate = \Carbon\Carbon::parse($project->end_date);
-    $totalProjectDays = $startDate->diffInDays($endDate);
-
-    // Check if project manager and main contractor information is available
-    if (!$projectManager) {
-        return redirect()->back()->with('error', 'Project Manager information is missing.');
-    }
-
-    if (!$mainContractor && $isMainContractor) {
-        return redirect()->back()->with('error', 'Main Contractor information is missing.');
-    }
-
-    // Pass all necessary data to the view
-    return view('tasks.quote', [
-        'project' => $project,
-        'tasks' => $tasks,
-        'projectId' => $projectId,
-        'projectManagerName' => $projectManager ? $projectManager->name : 'N/A',
-        'mainContractorName' => $mainContractor ? $mainContractor->name : 'N/A',
-        'isMainContractor' => $isMainContractor,
-        'totalProjectDays' => $totalProjectDays
-    ]);
-}
-
+    
+    
     
 
 
@@ -621,8 +622,6 @@ public function statistics($projectId)
         ->where('project_id', $projectId)
         ->count();
 
-    // Handling role-based data for charts
-
     // Main Contractor's Quoted Price
     $mainContractorQuote = DB::table('project_contractor')
         ->where('project_id', $projectId)
@@ -630,14 +629,18 @@ public function statistics($projectId)
         ->where('status', 'approved')
         ->value('quoted_price');
 
-    // For Main Contractor - Tasks Quoted Price
+    // For Main Contractor - Total Tasks Quoted Price for Current Project Only
     $mainContractorTasksQuotedPrice = DB::table('task_contractor')
         ->join('tasks', 'task_contractor.task_id', '=', 'tasks.id')
         ->where('tasks.project_id', $projectId)
         ->where('task_contractor.is_final', true)
         ->where('task_contractor.status', 'approved')
-        ->where('task_contractor.contractor_id', $project->main_contractor_id)
         ->sum('task_contractor.quoted_price');
+
+    // Logging for Verification
+    \Log::info("Project ID: $projectId");
+    \Log::info("Main Contractor Quote: $mainContractorQuote");
+    \Log::info("Main Contractor Total Tasks Quoted Price for Current Project: $mainContractorTasksQuotedPrice");
 
     // Contractor's Task Accepted Price
     $acceptedTasks = DB::table('task_contractor')
@@ -650,20 +653,17 @@ public function statistics($projectId)
     // Supply Ordered Price (Using 'quoted_price' instead of 'total_price')
     $supplyOrderTotal = DB::table('supply_orders')
         ->where('project_id', $projectId)
-        ->sum('quoted_price');  // Updated to reflect 'quoted_price' from supply_orders table
+        ->sum('quoted_price');
 
     // Pass all variables to the view
     return view('tasks.statistics', compact(
         'project', 'taskStatusData', 'taskCategoryData', 'projectBudgetData',
         'contractorAssignmentData', 'completedTasksCount', 'totalTasksCount', 'projectId', 
         'projectManagerName', 'mainContractorName', 'totalProjectDays', 
-        'mainContractorQuote', 'mainContractorTasksQuotedPrice', 'acceptedTasks', 'supplyOrderTotal'
+        'mainContractorQuote', 'mainContractorTasksQuotedPrice',
+        'acceptedTasks', 'supplyOrderTotal'
     ));
 }
-
-
-
-
 
     public function updateStatus(Request $request, $taskId)
     {
@@ -684,52 +684,55 @@ public function statistics($projectId)
     }
 
     public function viewTaskDetails($projectId, $taskId)
-    {
-        try {
-            // Retrieve task details with the associated contractor information
-            $task = DB::table('tasks')
-                ->leftJoin('task_contractor', 'tasks.id', '=', 'task_contractor.task_id')
-                ->leftJoin('users', 'task_contractor.contractor_id', '=', 'users.id')
-                ->where('tasks.id', $taskId)
-                ->where('tasks.project_id', $projectId)
-                ->select(
-                    'tasks.id',  // Ensure task ID is selected
-                    'tasks.title', 
-                    'tasks.description', 
-                    'tasks.start_date', 
-                    'tasks.due_date', 
-                    'tasks.status', 
-                    'tasks.category',
-                    'tasks.task_pdf',
-                    'users.name as contractor_name', 
-                    'task_contractor.quoted_price', 
-                    'task_contractor.quote_pdf', 
-                    'task_contractor.quote_suggestion'
-                )
-                ->first();
-    
-            if (!$task) {
-                \Log::error("Task not found for projectId: $projectId and taskId: $taskId");
-                return response()->json(['error' => 'Task not found'], 404);
-            }
-    
-            // Check if the user is the main contractor of the project
-            $isMainContractor = DB::table('projects')
-                ->where('id', $projectId)
-                ->where('main_contractor_id', auth()->id())
-                ->exists();
-    
-            $isProjectManagerOrClient = auth()->user()->hasRole('project_manager') || auth()->user()->hasRole('client');
-            $hasAccess = $isMainContractor || $isProjectManagerOrClient;
-    
-            // Pass variables to the view
-            return view('tasks.taskdetails', compact('task', 'projectId', 'isMainContractor', 'isProjectManagerOrClient', 'hasAccess'));
-    
-        } catch (\Exception $e) {
-            \Log::error("Error fetching task details for taskId: $taskId and projectId: $projectId - " . $e->getMessage());
-            return response()->json(['error' => 'An error occurred while retrieving task details.'], 500);
+{
+    try {
+        // Retrieve task details with the associated contractor information
+        $task = DB::table('tasks')
+            ->leftJoin('task_contractor', 'tasks.id', '=', 'task_contractor.task_id')
+            ->leftJoin('users', 'task_contractor.contractor_id', '=', 'users.id')
+            ->where('tasks.id', $taskId)
+            ->where('tasks.project_id', $projectId)
+            ->select(
+                'tasks.id',  // Ensure task ID is selected
+                'tasks.title', 
+                'tasks.description', 
+                'tasks.start_date', 
+                'tasks.due_date', 
+                'tasks.status', 
+                'tasks.category',
+                'tasks.task_pdf',
+                'users.name as contractor_name', 
+                'task_contractor.quoted_price', 
+                'task_contractor.quote_pdf', 
+                'task_contractor.quote_suggestion'
+            )
+            ->first();
+
+        if (!$task) {
+            \Log::error("Task not found for projectId: $projectId and taskId: $taskId");
+            return response()->json(['error' => 'Task not found'], 404);
         }
+
+        // Check if the user is the main contractor of the project
+        $isMainContractor = DB::table('projects')
+            ->where('id', $projectId)
+            ->where('main_contractor_id', auth()->id())
+            ->exists();
+
+        $user = auth()->user();
+        $isClient = $user->hasRole('client');
+        $isProjectManagerOrClient = $user->hasRole('project_manager') || $isClient;
+        $hasAccess = $isMainContractor || $isProjectManagerOrClient;
+
+        // Pass variables to the view
+        return view('tasks.taskdetails', compact('task', 'projectId', 'isMainContractor', 'isProjectManagerOrClient', 'hasAccess', 'isClient'));
+
+    } catch (\Exception $e) {
+        \Log::error("Error fetching task details for taskId: $taskId and projectId: $projectId - " . $e->getMessage());
+        return response()->json(['error' => 'An error occurred while retrieving task details.'], 500);
     }
+}
+
 
 
     public function updateCategory(Request $request, $projectId, $taskId)
@@ -1026,17 +1029,23 @@ public function deletePhoto($projectId, $photoId)
 
     // Check if the user is the main contractor and project is not already completed
     if (auth()->user()->id == $project->main_contractor_id && $project->status !== 'completed') {
-        // Check if all tasks are in the "verified" category
+        // Check if there are any unverified tasks that do not have a rejected quote under "under negotiation"
         $unverifiedTasks = DB::table('tasks')
-            ->where('project_id', $projectId)
-            ->where('category', '<>', 'verified')
+            ->leftJoin('task_contractor', 'tasks.id', '=', 'task_contractor.task_id') // Updated to use task_contractor
+            ->where('tasks.project_id', $projectId)
+            ->where('tasks.category', '<>', 'verified')
+            ->where(function ($query) {
+                $query->whereNull('task_contractor.status') // No quote exists
+                      ->orWhere('task_contractor.status', '<>', 'rejected') // Not rejected
+                      ->orWhere('tasks.category', '<>', 'under_negotiation'); // Not under negotiation
+            })
             ->count();
 
         if ($unverifiedTasks > 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'All tasks must be verified before ending the project.'
-            ], 403);
+                'message' => 'All tasks must be verified before ending the project, except for those with rejected quotes under negotiation.'
+            ], 403, ['Content-Type' => 'application/json']);
         }
 
         // Update the project status to completed
@@ -1045,15 +1054,18 @@ public function deletePhoto($projectId, $photoId)
             'updated_at' => now(),
         ]);
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true], 200, ['Content-Type' => 'application/json']);
     }
 
     // Unauthorized or already completed
     return response()->json([
         'success' => false,
         'message' => 'You are not authorized to end this project, or it has already been completed.'
-    ], 403);
+    ], 403, ['Content-Type' => 'application/json']);
 }
+
+
+
 
 
     

@@ -122,20 +122,24 @@ class AdminUserController extends Controller
     }
 
     public function updateProfile(Request $request)
-    {
-        $user = Auth::user();
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-        ]);
+{
+    $user = Auth::user();
 
-        DB::table('users')->where('id', $user->id)->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users,email,' . $user->id, // Validate unique email excluding current user
+    ], [
+        'email.unique' => 'The email address is already taken.', // Custom error message
+    ]);
 
-        return redirect()->route('admin.profile')->with('success', 'Profile updated successfully');
-    }
+    DB::table('users')->where('id', $user->id)->update([
+        'name' => $request->name,
+        'email' => $request->email,
+    ]);
+
+    return redirect()->route('admin.profile')->with('success', 'Profile updated successfully');
+}
+
 
     public function updatePassword(Request $request): RedirectResponse
     {

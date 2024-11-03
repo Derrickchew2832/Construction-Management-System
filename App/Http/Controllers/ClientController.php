@@ -17,7 +17,7 @@ class ClientController extends Controller
     {
         // Get the currently authenticated client
         $clientId = auth()->user()->id;
-
+    
         // Fetch all projects that the client has access to based on accepted invitations
         $projects = DB::table('projects')
             ->join('project_invitations_client', 'projects.id', '=', 'project_invitations_client.project_id')
@@ -25,25 +25,32 @@ class ClientController extends Controller
             ->where('project_invitations_client.status', 'accepted')  // Only show accepted invitations
             ->select('projects.*', 'project_invitations_client.status as invitation_status') // Invitation status
             ->get();
-
-        // For each project, set the ribbon value based on the project status
+                
+        // Map project statuses to ribbon values
         foreach ($projects as $project) {
-            if ($project->status === 'Completed') {
-                $project->ribbon = 'Completed'; // Green ribbon for completed projects
+            \Log::info("Project ID: {$project->id} - Status: {$project->status}");
+    
+            if ($project->status === 'completed') {
+                $project->ribbon = 'Completed';
+            } elseif ($project->status === 'started') {
+                $project->ribbon = 'In Progress';
             } else {
-                $project->ribbon = 'In Progress'; // Default to In Progress for all other statuses
+                $project->ribbon = 'Project Created';
             }
 
-            // Check if the project is favorited by the client
+    \Log::info("Project ID: {$project->id} - Ribbon Set To: {$project->ribbon}");
+    
+            // Determine if the project is favorited by the contractor
             $project->is_favorite = DB::table('project_user_favorites')
                 ->where('user_id', $clientId)
                 ->where('project_id', $project->id)
                 ->exists();
         }
-
-        // Pass the projects to the view
+    
         return view('client.projects.dashboard', compact('projects'));
     }
+    
+
 
     public function invitations()
     {

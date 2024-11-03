@@ -169,7 +169,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit Task Quote</button>
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to submit this task quote?');">Submit Task Quote</button>
                 </div>
             </div>
         </form>

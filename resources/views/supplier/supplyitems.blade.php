@@ -93,7 +93,8 @@
                                                 <span aria-hidden="true">&times;</span>
                                             </button>
                                         </div>
-                                        <form action="{{ route('supplier.supplyitems.update', $item->id) }}" method="POST">
+                                        <form action="{{ route('supplier.supplyitems.update', $item->id) }}" method="POST"
+                                            onsubmit="return confirmUpdate()">
                                             @csrf
                                             @method('PUT') <!-- Hidden field to override the method to PUT -->
 
@@ -182,7 +183,7 @@
     </div>
 @endsection
 
-<!-- JavaScript to handle confirmation for delete and price validation -->
+<!-- JavaScript to handle confirmation for delete, edit update, and price validation -->
 @section('scripts')
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -192,6 +193,11 @@
             // Confirm before deleting an item
             window.confirmDelete = function() {
                 return confirm("Are you sure you want to delete this item?");
+            };
+
+            // Confirm before updating an item
+            window.confirmUpdate = function() {
+                return confirm("Are you sure you want to update this item?");
             };
 
             // Validate price before form submission

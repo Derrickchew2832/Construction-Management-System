@@ -34,7 +34,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'phone' => ['required', 'string', 'max:15'],
+            'phone' => ['required', 'string', 'max:10'],
             'role' => ['required', 'string', 'exists:roles,name'], 
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ]);
@@ -52,10 +52,9 @@ class RegisteredUserController extends Controller
             'status' => 'pending', 
         ]);
 
-        event(new Registered($user));
-        $user->sendEmailVerificationNotification();  // Send verification email
+        
 
         // Redirect to the email verification notice
-        return redirect()->route('verification.notice')->with('status', 'Please verify your email to complete registration.');
+        return redirect()->route('login')->with('status', 'Please verify your email to complete registration.');
     }
 }
