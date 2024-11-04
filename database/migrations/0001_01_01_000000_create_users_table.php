@@ -20,7 +20,11 @@ class CreateUsersTable extends Migration
             $table->string('phone')->nullable();
             $table->unsignedBigInteger('role_id'); // Ensure this is an unsigned big integer
             $table->string('document_path')->nullable();
-            $table->string('status')->default('pending');
+            $table->enum('status', [
+                'pending',
+                'started',
+                'completed'
+            ])->default('pending'); 
             $table->rememberToken();
             $table->timestamps();
 

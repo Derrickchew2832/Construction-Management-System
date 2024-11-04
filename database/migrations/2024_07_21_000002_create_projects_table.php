@@ -17,7 +17,11 @@ return new class extends Migration {
             $table->decimal('total_budget', 15, 2);
             $table->decimal('budget_remaining', 15, 2);
             $table->string('location');
-            $table->string('status')->default('pending');
+            $table->enum('status', [
+                'pending',
+                'started',
+                'completed'
+            ])->default('pending'); 
             $table->boolean('is_favorite')->default(false);
             $table->unsignedBigInteger('main_contractor_id')->nullable();
             $table->integer('user_count')->default(1); // New column to track the number of members in the project
