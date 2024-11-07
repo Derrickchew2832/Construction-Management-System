@@ -684,57 +684,74 @@ public function statistics($projectId)
     }
 
     public function viewTaskDetails($projectId, $taskId)
-{
-    try {
-        // Retrieve task details with the associated contractor information
-        $task = DB::table('tasks')
-            ->leftJoin('task_contractor', 'tasks.id', '=', 'task_contractor.task_id')
-            ->leftJoin('users', 'task_contractor.contractor_id', '=', 'users.id')
-            ->where('tasks.id', $taskId)
-            ->where('tasks.project_id', $projectId)
-            ->select(
-                'tasks.id',  // Ensure task ID is selected
-                'tasks.title', 
-                'tasks.description', 
-                'tasks.start_date', 
-                'tasks.due_date', 
-                'tasks.status', 
-                'tasks.category',
-                'tasks.task_pdf',
-                'users.name as contractor_name', 
-                'task_contractor.quoted_price', 
-                'task_contractor.quote_pdf', 
-                'task_contractor.quote_suggestion'
-            )
-            ->first();
-
-        if (!$task) {
-            \Log::error("Task not found for projectId: $projectId and taskId: $taskId");
-            return response()->json(['error' => 'Task not found'], 404);
+    {
+        try {
+            // Retrieve task details with the associated contractor information
+            $task = DB::table('tasks')
+                ->leftJoin('task_contractor', 'tasks.id', '=', 'task_contractor.task_id')
+                ->leftJoin('users', 'task_contractor.contractor_id', '=', 'users.id')
+                ->where('tasks.id', $taskId)
+                ->where('tasks.project_id', $projectId)
+                ->select(
+                    'tasks.id',  
+                    'tasks.title', 
+                    'tasks.description', 
+                    'tasks.start_date', 
+                    'tasks.due_date', 
+                    'tasks.status', 
+                    'tasks.category',
+                    'tasks.task_pdf',
+                    'users.name as contractor_name', 
+                    'task_contractor.contractor_id',
+                    'task_contractor.quoted_price', 
+                    'task_contractor.quote_pdf', 
+                    'task_contractor.quote_suggestion'
+                )
+                ->first();
+    
+            if (!$task) {
+                \Log::error("Task not found for projectId: $projectId and taskId: $taskId");
+                return response()->json(['error' => 'Task not found'], 404);
+            }
+    
+            $user = auth()->user();
+            $isMainContractor = DB::table('projects')
+                ->where('id', $projectId)
+                ->where('main_contractor_id', $user->id)
+                ->exists();
+    
+            $isClient = $user->hasRole('client');
+            $isProjectManagerOrClient = $user->hasRole('project_manager') || $isClient;
+            $isTaskOwner = $task->contractor_id == $user->id;
+            $hasAccess = $isMainContractor || $isProjectManagerOrClient || $isTaskOwner;
+    
+            // Control visibility of certain fields
+            $showQuotedPrice = $isMainContractor || $isTaskOwner;
+    
+            // Fetch project status
+            $projectStatus = DB::table('projects')
+                ->where('id', $projectId)
+                ->value('status');
+    
+            // Pass variables to the view, ensuring $projectId is always passed
+            return view('tasks.taskdetails', compact(
+                'task',
+                'projectId',
+                'isMainContractor',
+                'isProjectManagerOrClient',
+                'isClient',
+                'isTaskOwner',
+                'showQuotedPrice',
+                'projectStatus',
+                'hasAccess'
+            ));
+    
+        } catch (\Exception $e) {
+            \Log::error("Error fetching task details for taskId: $taskId and projectId: $projectId - " . $e->getMessage());
+            return response()->json(['error' => 'An error occurred while retrieving task details.'], 500);
         }
-
-        // Check if the user is the main contractor of the project
-        $isMainContractor = DB::table('projects')
-            ->where('id', $projectId)
-            ->where('main_contractor_id', auth()->id())
-            ->exists();
-
-        $user = auth()->user();
-        $isClient = $user->hasRole('client');
-        $isProjectManagerOrClient = $user->hasRole('project_manager') || $isClient;
-        $hasAccess = $isMainContractor || $isProjectManagerOrClient;
-
-        // Pass variables to the view
-        return view('tasks.taskdetails', compact('task', 'projectId', 'isMainContractor', 'isProjectManagerOrClient', 'hasAccess', 'isClient'));
-
-    } catch (\Exception $e) {
-        \Log::error("Error fetching task details for taskId: $taskId and projectId: $projectId - " . $e->getMessage());
-        return response()->json(['error' => 'An error occurred while retrieving task details.'], 500);
     }
-}
-
-
-
+    
     public function updateCategory(Request $request, $projectId, $taskId)
     {
         // Validate the category input to ensure it's within the allowed categories

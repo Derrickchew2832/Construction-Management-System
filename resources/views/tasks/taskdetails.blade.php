@@ -17,8 +17,7 @@
                     <p><strong>Task Status:</strong> {{ ucfirst($task->status) }}</p>
 
                     @if ($task->task_pdf)
-                        <p><strong>Task PDF:</strong> <a href="{{ asset('storage/' . $task->task_pdf) }}" target="_blank">View
-                                PDF</a></p>
+                        <p><strong>Task PDF:</strong> <a href="{{ asset('storage/' . $task->task_pdf) }}" target="_blank">View PDF</a></p>
                     @else
                         <p><strong>Task PDF:</strong> Not available</p>
                     @endif
@@ -32,75 +31,72 @@
                     <div class="card-body">
                         <p><strong>Contractor Name:</strong> {{ $task->contractor_name ?? 'N/A' }}</p>
 
-                        <!-- Only show quoted price, quote suggestion, and quote PDF if user is not a client -->
-                        @if (!$isClient)
-                            @if ($isMainContractor || $isProjectManagerOrClient)
-                                <p><strong>Quoted Price:</strong> ${{ number_format($task->quoted_price, 2) ?? '0.00' }}</p>
-                            @endif
-                            <p><strong>Quote Suggestion:</strong> {{ $task->quote_suggestion ?? 'No suggestion provided' }}
-                            </p>
-                            @if ($task->quote_pdf)
-                                <p><strong>Quote PDF:</strong> <a href="{{ asset('storage/' . $task->quote_pdf) }}"
-                                        target="_blank">View Quote PDF</a></p>
-                            @else
-                                <p><strong>Quote PDF:</strong> Not available</p>
-                            @endif
+                        <!-- Show quoted price, quote suggestion, and quote PDF if allowed -->
+                        @if ($showQuotedPrice)
+                            <p><strong>Quoted Price:</strong> ${{ number_format($task->quoted_price, 2) ?? '0.00' }}</p>
+                        @endif
+                        @if ($showQuotedPrice && $task->quote_suggestion)
+                            <p><strong>Quote Suggestion:</strong> {{ $task->quote_suggestion }}</p>
+                        @endif
+                        @if ($showQuotedPrice && $task->quote_pdf)
+                            <p><strong>Quote PDF:</strong> <a href="{{ asset('storage/' . $task->quote_pdf) }}" target="_blank">View Quote PDF</a></p>
                         @endif
                     </div>
                 </div>
             @endif
 
-
             <!-- Edit and Delete Buttons for Main Contractor only if category is 'under_negotiation' -->
             @if ($isMainContractor && $task->category === 'under_negotiation')
                 <div class="mt-3">
-                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#editTaskModal">Edit
-                        Task</button>
-                    <button class="btn btn-danger btn-sm" onclick="confirmDelete()">Delete Task</button>
+                    <!-- Disable buttons if the project is completed -->
+                    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#editTaskModal" 
+                        @if ($projectStatus === 'completed') disabled @endif>Edit Task</button>
+                    
+                    <button class="btn btn-danger btn-sm" onclick="confirmDelete()" 
+                        @if ($projectStatus === 'completed') disabled @endif>Delete Task</button>
                 </div>
             @endif
         @endif
     </div>
 
     <!-- Edit Task Modal -->
-    <div class="modal fade" id="editTaskModal" tabindex="-1" role="dialog" aria-labelledby="editTaskModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ route('tasks.updateTask', ['projectId' => $projectId, 'taskId' => $task->id]) }}"
-                    method="POST" id="editTaskForm">
-                    @csrf
-                    @method('PUT')
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <textarea name="description" id="description" class="form-control" required>{{ $task->description }}</textarea>
+    @if ($isMainContractor)
+        <div class="modal fade" id="editTaskModal" tabindex="-1" role="dialog" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <form action="{{ route('tasks.updateTask', ['projectId' => $projectId, 'taskId' => $task->id]) }}" method="POST" id="editTaskForm">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label for="start_date">Start Date</label>
-                            <input type="date" name="start_date" id="start_date" class="form-control"
-                                value="{{ $task->start_date }}" required>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea name="description" id="description" class="form-control" required>{{ $task->description }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="start_date">Start Date</label>
+                                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ $task->start_date }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="due_date">Due Date</label>
+                                <input type="date" name="due_date" id="due_date" class="form-control" value="{{ $task->due_date }}" required>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="due_date">Due Date</label>
-                            <input type="date" name="due_date" id="due_date" class="form-control"
-                                value="{{ $task->due_date }}" required>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="confirmEdit()" 
+                                @if ($projectStatus === 'completed') disabled @endif>Update Task</button>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="confirmEdit()">Update Task</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
+    @endif
 
     <script>
         function confirmDelete() {

@@ -197,9 +197,6 @@ Route::middleware(['auth', 'role:client'])->prefix('client')->name('client.')->g
 });
 
 
-
-// routes/web.php
-
 Route::middleware(['auth', 'role:project_manager,contractor,client'])
     ->prefix('projects/{projectId}')
     ->name('tasks.')
